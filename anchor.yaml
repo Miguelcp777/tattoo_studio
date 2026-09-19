@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "spec_root": ".specanchor",
+  "module_map": ".specanchor/module-map.json",
+  "material_paths": [
+    "*"
+  ],
+  "exclude_paths": [
+    ".specanchor/*",
+    "docs/*",
+    "README.md",
+    "LICENSE",
+    "anchor.yaml",
+    ".gitignore",
+    "*node_modules/*",
+    "*__pycache__/*",
+    "*.venv/*",
+    "*.next/*",
+    "*/dist/*",
+    "*/build/*",
+    "*package-lock.json",
+    "*pnpm-lock.yaml",
+    "*uv.lock",
+    "*poetry.lock"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "modules": [
+    {
+      "name": "contracts",
+      "paths": [
+        "contracts/*"
+      ],
+      "spec": ".specanchor/modules/contracts.spec.md"
+    },
+    {
+      "name": "web",
+      "paths": [
+        "apps/web/*"
+      ],
+      "spec": ".specanchor/modules/web.spec.md"
+    },
+    {
+      "name": "consultation",
+      "paths": [
+        "packages/consultation/*"
+      ],
+      "spec": ".specanchor/modules/consultation.spec.md"
+    },
+    {
+      "name": "generation",
+      "paths": [
+        "services/worker/generation/*"
+      ],
+      "spec": ".specanchor/modules/generation.spec.md"
+    },
+    {
+      "name": "flash",
+      "paths": [
+        "services/worker/flash/*"
+      ],
+      "spec": ".specanchor/modules/flash.spec.md"
+    },
+    {
+      "name": "stencil",
+      "paths": [
+        "services/worker/stencil/*"
+      ],
+      "spec": ".specanchor/modules/stencil.spec.md"
+    },
+    {
+      "name": "mockup",
+      "paths": [
+        "services/worker/mockup/*"
+      ],
+      "spec": ".specanchor/modules/mockup.spec.md"
+    },
+    {
+      "name": "media",
+      "paths": [
+        "services/worker/media/*"
+      ],
+      "spec": ".specanchor/modules/media.spec.md"
+    },
+    {
+      "name": "safety",
+      "paths": [
+        "services/worker/safety/*"
+      ],
+      "spec": ".specanchor/modules/safety.spec.md"
+    },
+    {
+      "name": "jobs",
+      "paths": [
+        "services/worker/jobs/*"
+      ],
+      "spec": ".specanchor/modules/jobs.spec.md"
+    },
+    {
+      "name": "platform",
+      "paths": [
+        "package.json",
+        "pnpm-workspace.yaml",
+        "tsconfig.base.json",
+        "CLAUDE.md",
+        "scripts/*",
+        "infra/*",
+        ".github/*",
+        "services/worker/app/*",
+        "services/worker/pyproject.toml"
+      ],
+      "spec": ".specanchor/modules/platform.spec.md"
+    }
+  ],
+  "global_spec_paths": [
+    ".specanchor/global/*.spec.md"
+  ]
+}
