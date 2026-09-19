@@ -82,20 +82,52 @@ from the default run. A conformance suite every provider adapter must pass.
 
 ## Known uncertainties and debt
 
-- Provider selection is not final.
+- **The fal adapter has never made a real call.** Request construction and response
+  parsing follow fal's documentation, confirmed 2026-09-19, and every branch is tested
+  against a scripted transport. Whether fal behaves as documented is unverified, and no
+  offline test can establish it.
+- Whether the provider returns usable tattoo artwork is a separate and larger unknown.
+- The synchronous endpoint is used rather than fal's queue. The queue gives progress and
+  cancellation, which the product wants, but asynchrony belongs to `jobs` (TASK-0006);
+  two competing notions of a pending job would be worse than none.
 - Cost ceilings and per-call budgets are undefined.
 - Whether a fallback provider is attempted on failure is undecided.
+- GEN-INV-002 is **unverified**: no provider's no-training terms have been read. fal was
+  selected on capability, not on its data-handling guarantees.
+- Image-conditioned methods are declared but unimplemented by every adapter, because the
+  clearance they require cannot be constructed.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Aligned as of TASK-0004 for the text-to-image path.
+
+The invariants live in the provider base class rather than in each adapter, so an
+adapter inherits the clearance check, the retry policy and result normalization and
+implements only request construction and response parsing. A conformance suite runs
+against every adapter in the repository, which is what makes ADR-0001's claim of
+reversible provider choice concrete rather than aspirational.
+
+`SafetyClearance` is uninstantiable. Image-conditioned generation requires one, so that
+path is unreachable rather than guarded by a runtime branch a refactor could delete.
+
+The production HTTP client lives in `http.py` and nowhere else, which is what lets the
+architectural test assert outbound capability is confined to this module without the
+assertion being vacuous.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0004): Provider protocol, typed errors, retry policy, registry,
+  deterministic fixture provider, fal adapter and conformance suite. 52 tests.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| Hosted APIs behind an adapter | INTENT | ADR-0001; user decision 2026-09-19 | NOT_RUN |
-| Sole outbound integration point | INTENT | ARCH-INV-001 | NOT_RUN |
+| Conformance suite passes for every adapter | VERIFIED | 20 conformance tests, 2 adapters | PASS |
+| Sole outbound integration point | VERIFIED | Source-scan architectural test | PASS |
+| Photo path is unreachable without clearance | VERIFIED | Recording transport, zero requests | PASS |
+| Transient retried, policy rejection not | VERIFIED | Call-count assertions | PASS |
+| Malformed responses raise | VERIFIED | 7 malformed-payload tests | PASS |
+| Credentials absent from logs and errors | VERIFIED | Log-capture and message assertions | PASS |
+| fal behaves as documented | UNKNOWN | Never called; no credential | NOT_RUN |
+| Provider no-training terms satisfy SEC-INV-001 | UNKNOWN | Terms not read | NOT_RUN |

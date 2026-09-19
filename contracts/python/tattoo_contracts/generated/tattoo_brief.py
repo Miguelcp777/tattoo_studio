@@ -1,6 +1,6 @@
 # GENERATED FILE - DO NOT EDIT.
 #
-# Source: contracts/schemas/tattoo-brief.schema.json
+# Source: contracts/schemas/
 # Regenerate: uv run python scripts/generate.py  (from contracts/python)
 #
 # Editing this by hand fails the codegen reproducibility check.

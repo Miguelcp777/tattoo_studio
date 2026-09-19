@@ -13,8 +13,14 @@ studio-grade stencil and an on-body mockup, and which boundaries may not be cros
 
 ## Current behavior with evidence status
 
-Partially implemented. `contracts` exists and is verified (TASK-0002). `web` and `platform` have
-skeletons (TASK-0001). The seven other modules have no code, so statements about them are INTENT.
+Partially implemented. `contracts` (TASK-0002, TASK-0004), `generation` and `flash`
+(TASK-0004) exist and are verified offline. `web` and `platform` have skeletons
+(TASK-0001). The five other modules have no code, so statements about them are INTENT.
+
+Note that `generation` and `flash` declare dependencies on `media`, `safety` and `jobs`,
+none of which exist. Each consumer defines the narrow port it needs and the real module
+implements it later, so the dependency direction in the diagram holds even though the
+dependencies are not yet built.
 
 ## Intended behavior
 
@@ -74,7 +80,9 @@ User idea
 
 | Statement | Evidence status | Source / revision |
 |---|---|---|
-| ARCH-INV-005 holds for `TattooBrief` | VERIFIED | 28-case corpus, 69 tests across both runtimes |
+| ARCH-INV-001 sole egress | VERIFIED | Source-scan test; allowlist proven non-vacuous |
+| ARCH-INV-004 flash cannot reach photos | VERIFIED | Source-scan test |
+| ARCH-INV-005 holds for both schemas | VERIFIED | 52-case corpus across both runtimes |
 | ARCH-INV-002: contracts depends on nothing | VERIFIED | Package manifests declare no internal deps |
 | Three-stage pipeline decomposition | INTENT | User request, planning session 2026-09-19 |
 | Hosted models behind an adapter | INTENT | ADR-0001; user decision 2026-09-19 |

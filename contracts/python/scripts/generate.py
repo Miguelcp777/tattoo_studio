@@ -1,17 +1,19 @@
-"""Generate Python artifacts from the canonical schema.
+"""Generate Python artifacts from the canonical schemas.
 
-Two outputs, both committed (ADR-0004 refinement, TASK-0002/DEC-003):
+For every ``contracts/schemas/*.schema.json``, two outputs, both committed
+(ADR-0004 refinement, TASK-0002/DEC-003):
 
-    tattoo_contracts/schemas/tattoo-brief.schema.json   byte-identical copy
-    tattoo_contracts/generated/tattoo_brief.py          pydantic models, ergonomics only
+    tattoo_contracts/schemas/<name>.schema.json   byte-identical copy
+    tattoo_contracts/generated/<name>.py          pydantic models, ergonomics only
 
-The copy exists so the package can be installed and still find its schema without
-reaching outside its own tree. A test asserts it is byte-identical to the canonical
+The copies exist so the package can be installed and still find its schemas without
+reaching outside its own tree. A test asserts each is byte-identical to the canonical
 file, so the two provably cannot drift.
 
-The pydantic models carry no validating authority. They cannot express the schema's
-conditional colour rules, so treating them as the validator would silently accept
-payloads the schema rejects. `tattoo_contracts.validation` is the authority.
+The pydantic models carry no validating authority. They cannot express conditional
+rules such as the colour constraints on a brief, so treating them as the validator
+would silently accept payloads the schema rejects. ``tattoo_contracts.validation`` is
+the authority.
 """
 
 from __future__ import annotations
@@ -23,12 +25,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PACKAGE = HERE.parent / "tattoo_contracts"
-CANONICAL = HERE.parents[1] / "schemas" / "tattoo-brief.schema.json"
+SCHEMA_DIR = HERE.parents[1] / "schemas"
 
 BANNER = """\
 # GENERATED FILE - DO NOT EDIT.
 #
-# Source: contracts/schemas/tattoo-brief.schema.json
+# Source: contracts/schemas/
 # Regenerate: uv run python scripts/generate.py  (from contracts/python)
 #
 # Editing this by hand fails the codegen reproducibility check.
@@ -36,29 +38,24 @@ BANNER = """\
 """
 
 
-def main() -> int:
-    if not CANONICAL.is_file():
-        print(f"canonical schema not found: {CANONICAL}", file=sys.stderr)
-        return 1
+def _module_name(canonical: Path) -> str:
+    return canonical.name.removesuffix(".schema.json").replace("-", "_")
 
+
+def _generate_one(canonical: Path, generated_dir: Path) -> int:
+    """Copy one schema into the package and generate its pydantic model."""
     schema_dir = PACKAGE / "schemas"
     schema_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(CANONICAL, schema_dir / CANONICAL.name)
+    shutil.copyfile(canonical, schema_dir / canonical.name)
 
-    generated_dir = PACKAGE / "generated"
-    generated_dir.mkdir(parents=True, exist_ok=True)
-    (generated_dir / "__init__.py").write_text(
-        '"""Generated artifacts. Do not edit by hand."""\n', encoding="utf-8"
-    )
-
-    target = generated_dir / "tattoo_brief.py"
+    target = generated_dir / f"{_module_name(canonical)}.py"
     result = subprocess.run(
         [
             sys.executable,
             "-m",
             "datamodel_code_generator",
             "--input",
-            str(CANONICAL),
+            str(canonical),
             "--input-file-type",
             "jsonschema",
             "--output",
@@ -86,7 +83,26 @@ def main() -> int:
         return result.returncode
 
     print(f"generated: {target.relative_to(PACKAGE.parent)}")
-    print(f"copied:    {(schema_dir / CANONICAL.name).relative_to(PACKAGE.parent)}")
+    print(f"copied:    {(schema_dir / canonical.name).relative_to(PACKAGE.parent)}")
+    return 0
+
+
+def main() -> int:
+    schemas = sorted(SCHEMA_DIR.glob("*.schema.json"))
+    if not schemas:
+        print(f"no schemas found in {SCHEMA_DIR}", file=sys.stderr)
+        return 1
+
+    generated_dir = PACKAGE / "generated"
+    generated_dir.mkdir(parents=True, exist_ok=True)
+    (generated_dir / "__init__.py").write_text(
+        '"""Generated artifacts. Do not edit by hand."""\n', encoding="utf-8"
+    )
+
+    for canonical in schemas:
+        code = _generate_one(canonical, generated_dir)
+        if code != 0:
+            return code
     return 0
 
 

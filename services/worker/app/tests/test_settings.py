@@ -76,3 +76,42 @@ def test_production_flag_reflects_environment(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("TATTOO_ENVIRONMENT", "production")
 
     assert load_settings().is_production is True
+
+
+def test_generation_provider_defaults_to_the_offline_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A misconfigured deployment should produce obvious fakes, not spend real money."""
+    monkeypatch.setenv("TATTOO_ENVIRONMENT", "local")
+
+    assert load_settings().generation_provider == "fixture"
+
+
+def test_fal_key_is_read_from_the_plain_variable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """fal's own tooling uses FAL_KEY; a second prefixed copy would invite drift."""
+    monkeypatch.setenv("TATTOO_ENVIRONMENT", "local")
+    monkeypatch.setenv("FAL_KEY", "fal-secret-value")
+
+    settings = load_settings()
+
+    assert settings.fal_key is not None
+    assert settings.fal_key.get_secret_value() == "fal-secret-value"
+
+
+def test_fal_key_is_absent_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TATTOO_ENVIRONMENT", "local")
+
+    assert load_settings().fal_key is None
+
+
+def test_fal_key_does_not_appear_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SEC-INV-008: a credential must not leak through a traceback or a log line."""
+    secret = "fal-must-not-be-printed-4f2a"
+    monkeypatch.setenv("TATTOO_ENVIRONMENT", "local")
+    monkeypatch.setenv("FAL_KEY", secret)
+
+    settings = load_settings()
+
+    assert secret not in repr(settings)
+    assert secret not in str(settings)
+    assert secret not in repr(settings.fal_key)

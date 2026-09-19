@@ -23,6 +23,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["tattoo_contracts"]
+# Without py.typed, mypy treats this package as untyped in every consumer, which
+# silently disables checking across the most important boundary in the system.
+artifacts = ["tattoo_contracts/py.typed"]
 
 [tool.ruff]
 line-length = 100

@@ -23,7 +23,10 @@ the consultation produces it, and all three engines consume it.
 Schemas:
 - `schemas/tattoo-brief.schema.json` — the brief. **Exists** (TASK-0002), version `1.0.0`.
   Placement and size are embedded rather than extracted, until a second consumer exists.
-- `design.schema.json`, `job.schema.json`, `consent.schema.json` — planned, not built.
+- `schemas/design.schema.json` — generated artwork and its lineage. **Exists**
+  (TASK-0004), version `1.0.0`. Records the brief revision that produced it
+  (CONTRACTS-INV-003) and carries raster pixels without ever carrying millimetres.
+- `job.schema.json`, `consent.schema.json` — planned, not built.
 
 TypeScript (`@tattoo/contracts`):
 - `validateTattooBrief(payload)` — returns every issue rather than throwing.
@@ -91,8 +94,12 @@ Python validator. Divergence between them fails the build (ARCH-INV-005).
 
 ## Known uncertainties and debt
 
-- The schema is unproven against a real consumer. No engine reads a brief yet, so whether the
-  fields are the right fields is untested. Expect revisions once TASK-0004 renders from one.
+- `TattooBrief` now has a real consumer: the flash engine reads every field it defines.
+  That closed the "no consumer" gap but surfaced a new one — see FINDING-0002, where a
+  brief can validate and still be unrenderable because dimension bounds say nothing about
+  the ratio between them.
+- `Design` has no consumer yet. Whether its fields are the right fields is untested until
+  the stencil and mockup engines read it.
 - The vocabulary lists (10 styles, 26 body parts) were assembled without a practising tattooer's
   review. They are plausible, not authoritative.
 - Size bounds of 5mm to 600mm are a judgement call, not a measured constraint.
@@ -120,6 +127,10 @@ Arabic-Indic digits would validate in Python and fail in TypeScript.
 - 2026-09-19 (TASK-0002): `TattooBrief` 1.0.0 defined; dual-runtime validation against the one
   schema document; 28-case shared corpus; generated artifacts committed with a reproducibility
   check.
+- 2026-09-19 (TASK-0004): `Design` 1.0.0 added with a 24-case corpus. Validation generalised
+  over a schema registry, so a new schema is covered by the corpus the moment it is
+  registered. `py.typed` added — without it mypy treated this package as untyped in every
+  consumer, silently disabling checking across the system's most important boundary.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
@@ -129,5 +140,7 @@ Arabic-Indic digits would validate in Python and fail in TypeScript.
 | Packaged schema copy is byte-identical | VERIFIED | Byte-comparison test | PASS |
 | Codegen is reproducible | VERIFIED | Regenerate, then `git diff --quiet` exit 0 | PASS |
 | Divergence is detected, not assumed | VERIFIED | Injected drift failed 2 tests | PASS |
-| Brief is the central contract | INTENT | No consumer exists yet | NOT_RUN |
-| Field set is the right field set | UNKNOWN | Unproven against any engine | NOT_RUN |
+| Design corpus agrees across runtimes | VERIFIED | 24 cases, both runtimes | PASS |
+| Brief is the central contract | OBSERVED | Flash engine consumes every field | PASS |
+| Brief dimension bounds imply renderability | **FALSE** | FINDING-0002 | FAIL |
+| Design field set is the right field set | UNKNOWN | No consumer yet | NOT_RUN |

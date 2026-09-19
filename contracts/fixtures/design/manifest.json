@@ -1,0 +1,150 @@
+{
+  "schema": "contracts/schemas/design.schema.json",
+  "note": "Shared corpus. Both runtimes must reach the identical verdict on every case (ARCH-INV-005).",
+  "cases": [
+    {
+      "name": "first-render",
+      "file": "valid/first-render.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "image-without-bytesize",
+      "file": "valid/image-without-bytesize.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "line-art-pass",
+      "file": "valid/line-art-pass.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "provider-without-seed",
+      "file": "valid/provider-without-seed.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "refined-version-two",
+      "file": "valid/refined-version-two.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "with-negative-prompt",
+      "file": "valid/with-negative-prompt.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "brief-revision-zero",
+      "file": "invalid/brief-revision-zero.json",
+      "valid": false,
+      "why": "revisions start at 1"
+    },
+    {
+      "name": "empty-prompt",
+      "file": "invalid/empty-prompt.json",
+      "valid": false,
+      "why": "an empty prompt is not provenance"
+    },
+    {
+      "name": "missing-brief-revision",
+      "file": "invalid/missing-brief-revision.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-003: a design must record the brief revision that produced it"
+    },
+    {
+      "name": "missing-provenance",
+      "file": "invalid/missing-provenance.json",
+      "valid": false,
+      "why": "a design must be explainable and reproducible"
+    },
+    {
+      "name": "negative-seed",
+      "file": "invalid/negative-seed.json",
+      "valid": false,
+      "why": "seeds are non-negative"
+    },
+    {
+      "name": "nested-unknown-field",
+      "file": "invalid/nested-unknown-field.json",
+      "valid": false,
+      "why": "additionalProperties:false applies to nested objects too"
+    },
+    {
+      "name": "pixels-absurd",
+      "file": "invalid/pixels-absurd.json",
+      "valid": false,
+      "why": "raster dimensions are bounded"
+    },
+    {
+      "name": "pixels-zero",
+      "file": "invalid/pixels-zero.json",
+      "valid": false,
+      "why": "raster dimensions are positive"
+    },
+    {
+      "name": "provenance-without-prompt",
+      "file": "invalid/provenance-without-prompt.json",
+      "valid": false,
+      "why": "provenance without the prompt cannot reproduce the render"
+    },
+    {
+      "name": "schema-version-mismatch",
+      "file": "invalid/schema-version-mismatch.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-004: schemaVersion is fixed for this revision"
+    },
+    {
+      "name": "storage-key-is-a-url",
+      "file": "invalid/storage-key-is-a-url.json",
+      "valid": false,
+      "why": "SEC-INV-008: storage keys are opaque, never signed or public URLs"
+    },
+    {
+      "name": "timestamp-non-ascii-digits",
+      "file": "invalid/timestamp-non-ascii-digits.json",
+      "valid": false,
+      "why": "patterns use [0-9]; Python must not accept digits JavaScript rejects"
+    },
+    {
+      "name": "unknown-kind",
+      "file": "invalid/unknown-kind.json",
+      "valid": false,
+      "why": "kind is a closed set; a mockup is not a design"
+    },
+    {
+      "name": "unknown-status",
+      "file": "invalid/unknown-status.json",
+      "valid": false,
+      "why": "status is a closed set"
+    },
+    {
+      "name": "unknown-top-level-field",
+      "file": "invalid/unknown-top-level-field.json",
+      "valid": false,
+      "why": "additionalProperties:false; physical size belongs on the brief, never on a design"
+    },
+    {
+      "name": "unsupported-media-type",
+      "file": "invalid/unsupported-media-type.json",
+      "valid": false,
+      "why": "media types are a closed set"
+    },
+    {
+      "name": "uuid-uppercase",
+      "file": "invalid/uuid-uppercase.json",
+      "valid": false,
+      "why": "canonical lowercase UUID only, so both runtimes agree byte for byte"
+    },
+    {
+      "name": "version-zero",
+      "file": "invalid/version-zero.json",
+      "valid": false,
+      "why": "design versions start at 1"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import ValidationError
+from pydantic import Field, SecretStr, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -46,6 +46,23 @@ class Settings(BaseSettings):
     log_level: LogLevel = "INFO"
     """Constrained so that a malformed value is a validation failure, which is what
     makes the redaction path in ``_redacted_key_report`` testable."""
+
+    generation_provider: str = "fixture"
+    """Which generation adapter to use. Deliberately defaults to the offline fixture
+    provider: a misconfigured deployment should produce obviously fake artwork rather
+    than silently spend money against a real API."""
+
+    fal_key: SecretStr | None = Field(default=None, validation_alias="FAL_KEY")
+    """fal.ai credential.
+
+    Read from the plain ``FAL_KEY`` variable rather than the ``TATTOO_`` prefix, because
+    that is the name fal's own tooling uses and duplicating it would invite the two
+    copies to diverge.
+
+    Typed as ``SecretStr`` so it does not appear in logs, tracebacks or ``repr``
+    output (SEC-INV-008). Reading the value requires an explicit
+    ``.get_secret_value()``, which makes every such read visible in review.
+    """
 
     @property
     def is_production(self) -> bool:

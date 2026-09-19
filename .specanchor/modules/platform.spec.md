@@ -119,6 +119,12 @@ repositories without touching this one.
   justified where it is written, but the list is worth revisiting if it keeps growing.
 - There are now two independent Python projects with separate lockfiles. A dependency shared
   between them can drift in version without anything noticing.
+- `TATTOO_GENERATION_PROVIDER` defaults to the offline fixture provider. A misconfigured
+  deployment therefore produces obviously fake artwork rather than silently spending money
+  against a real API. Verify this default is overridden before any real launch.
+- The `FAL_KEY` credential is read from the unprefixed variable, matching fal's own
+  tooling. It is typed `SecretStr`, so reading it requires an explicit
+  `get_secret_value()` call that is visible in review.
 
 ## Alignment notes
 
@@ -138,6 +144,10 @@ files caught by `--baseline`.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five
   root configuration files.
+- 2026-09-19 (TASK-0004): Worker gained the contracts path dependency, an HTTP client for
+  the single egress point, and provider settings. Architectural tests added under
+  `app/tests/` enforcing ARCH-INV-001 and ARCH-INV-004 by source inspection, because an
+  invariant about which modules may do what cannot be owned by one of those modules.
 - 2026-09-19 (TASK-0011): Public remote added; CI executed for the first time and passed all five
   jobs on `ubuntu-latest`, confirming the toolchain works outside Windows.
 - 2026-09-19 (TASK-0002): `contracts` added to the pnpm workspace and as a uv path dependency of

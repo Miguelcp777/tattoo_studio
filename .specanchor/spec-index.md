@@ -14,8 +14,10 @@
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
 | platform | root manifests, `scripts/*`, `infra/*`, `.github/*`, `services/worker/app/*` | `.specanchor/modules/platform.spec.md` | draft | 2026-09-19 |
 
-Every module is `draft`. `contracts` is implemented and verified for `TattooBrief` (TASK-0002);
-`platform` and `web` have skeletons (TASK-0001); the other eight have no code.
+Every module is `draft`. `contracts`, `generation` and `flash` are implemented and verified
+offline; `platform` and `web` have skeletons; the other six have no code.
+
+No module has produced a real image. The adapter has never called a provider.
 
 No module is `verified` as a whole. `contracts` comes closest, but its remaining schemas do not
 exist and its field set is unproven against any consumer.
@@ -34,7 +36,15 @@ exist and its field set is unproven against any consumer.
 |---|---|---|
 | TASK-0001 | Repository skeleton, toolchain and CI | verified |
 | TASK-0002 | TattooBrief contract and dual-runtime validation | verified |
+| TASK-0004 | Generation provider adapter and the flash render path | verified |
 | TASK-0011 | Record first CI execution and the existence of a remote | verified |
+
+## Findings
+
+| Finding | Summary | Status |
+|---|---|---|
+| FINDING-0001 | OpenAI's image model offers editing, relevant to the ADR-0002 mockup blend | open |
+| FINDING-0002 | The brief contract permits size combinations flash cannot render | open |
 
 ## Decisions
 
@@ -53,12 +63,12 @@ Cross-cutting invariants are declared in the global specs and enforced in named 
 
 | Invariant | Declared in | Enforced by |
 |---|---|---|
-| ARCH-INV-001 sole outbound model call | architecture | generation |
+| ARCH-INV-001 sole outbound model call | architecture | generation (VERIFIED, TASK-0004) |
 | ARCH-INV-005 schema parity across runtimes | architecture | contracts (VERIFIED, TASK-0002) |
 | PROD-INV-001 design geometry preserved in mockup | product-behavior | mockup |
 | PROD-INV-002 stencil prints 1:1 | product-behavior | stencil |
 | PROD-INV-003 aging is illustrative | product-behavior | mockup, web |
-| PROD-INV-004 no living-artist mimicry | product-behavior | safety, consultation, flash |
+| PROD-INV-004 no living-artist mimicry | product-behavior | safety, consultation, flash (PARTIAL: constructions only) |
 | SEC-INV-001 no training on user photos | quality-and-security | generation |
 | SEC-INV-002 EXIF stripped | quality-and-security | media |
 | SEC-INV-004 cascade deletion | quality-and-security | media, safety |

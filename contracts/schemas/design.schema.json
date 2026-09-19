@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tattoo-creator.dev/schemas/design/1.0.0",
+  "title": "Design",
+  "description": "A generated artwork and its lineage. Produced by the flash engine from a TattooBrief, consumed by the stencil and mockup engines. Records the brief revision that produced it (CONTRACTS-INV-003). Follows the same conventions as TattooBrief: no 'format' keyword, and every pattern spells out [0-9], so TypeScript and Python reach identical verdicts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "designId",
+    "briefId",
+    "briefRevision",
+    "version",
+    "kind",
+    "status",
+    "createdAt",
+    "image",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Fixed for this schema revision (CONTRACTS-INV-004).",
+      "const": "1.0.0"
+    },
+    "designId": { "$ref": "#/$defs/uuid" },
+    "briefId": {
+      "description": "The brief this design was rendered from.",
+      "$ref": "#/$defs/uuid"
+    },
+    "briefRevision": {
+      "description": "The exact brief revision used. A design is only meaningful against the revision that produced it (CONTRACTS-INV-003).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "version": {
+      "description": "Design version within its lineage. Refinement produces version n+1 and never mutates n (FLASH-INV-002).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "parentDesignId": {
+      "description": "The design this one was refined from. Absent on a first render.",
+      "$ref": "#/$defs/uuid"
+    },
+    "kind": {
+      "description": "Which pass produced this artwork. 'flash' is the shaded reference render; 'line_art' is the dedicated stencil pass, which is generated natively rather than edge-detected from flash (ADR-0003).",
+      "enum": ["flash", "line_art"]
+    },
+    "status": {
+      "enum": ["draft", "accepted", "superseded"]
+    },
+    "createdAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "image": {
+      "$ref": "#/$defs/imageRef"
+    },
+    "provenance": {
+      "description": "What produced this artwork. Kept so a design can be explained, reproduced and audited.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "prompt"],
+      "properties": {
+        "provider": {
+          "description": "Adapter name, not a credential or endpoint.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "model": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "negativePrompt": { "type": "string", "maxLength": 2000 },
+        "seed": {
+          "description": "Recorded when the provider exposes one, so a render can be reproduced.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "description": "Canonical lowercase UUID. A pattern rather than 'format', so both runtimes assert it.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "description": "RFC 3339. ASCII digits only, so Python and JavaScript agree.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "imageRef": {
+      "description": "A handle to stored image bytes. Bytes themselves never cross a module boundary or travel through the queue (JOBS-INV-001).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["storageKey", "mediaType", "widthPx", "heightPx"],
+      "properties": {
+        "storageKey": {
+          "description": "Opaque key into media storage. Never a signed or public URL (SEC-INV-008).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "mediaType": {
+          "enum": ["image/png", "image/webp", "image/jpeg"]
+        },
+        "widthPx": { "$ref": "#/$defs/pixels" },
+        "heightPx": { "$ref": "#/$defs/pixels" },
+        "byteSize": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "pixels": {
+      "description": "Raster dimensions of this stored image. These describe the artifact, not the tattoo: the tattoo's authoritative size is in millimetres on the brief, and nothing derives physical size from these (CONTRACTS-INV-001).",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16384
+    }
+  }
+}

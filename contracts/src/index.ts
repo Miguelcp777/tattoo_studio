@@ -1,22 +1,25 @@
 /**
  * The contracts module.
  *
- * Validation authority lives here and nowhere else. `validateTattooBrief` runs the
- * canonical schema document through ajv; the generated types are for editor support
- * and carry no authority (ADR-0004 refinement).
+ * Validation authority lives here and nowhere else. `validateAgainst` runs a canonical
+ * schema document through ajv; the generated types are for editor support and carry no
+ * authority (ADR-0004 refinement).
  *
- * Do not add a hand-written type guard alongside this. The whole point of the module
- * is that one document decides what is valid, in both runtimes.
+ * Do not add a hand-written type guard alongside this. The whole point of the module is
+ * that one document decides what is valid, in both runtimes.
  */
 
 import Ajv2020, { type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
 
-import { tattooBriefSchema } from './generated/schema';
+import { type SchemaName, schemaNames, schemas } from './generated/schemas';
+import type { Design } from './generated/design';
 import type { TattooBrief } from './generated/tattoo-brief';
 
+export type { Design } from './generated/design';
 export type { TattooBrief } from './generated/tattoo-brief';
 export type { BodyPart, StyleName } from './generated/tattoo-brief';
-export { tattooBriefSchema } from './generated/schema';
+export { schemaNames, schemas } from './generated/schemas';
+export type { SchemaName } from './generated/schemas';
 
 /** A validation failure, reduced to what a caller can act on. */
 export interface ValidationIssue {
@@ -26,8 +29,8 @@ export interface ValidationIssue {
   keyword: string;
 }
 
-export type ValidationResult =
-  { valid: true; brief: TattooBrief } | { valid: false; issues: ValidationIssue[] };
+export type ValidationResult<T> =
+  { valid: true; value: T } | { valid: false; issues: ValidationIssue[] };
 
 const ajv = new Ajv2020({
   allErrors: true,
@@ -39,13 +42,15 @@ const ajv = new Ajv2020({
   // make the two runtimes disagree — the corpus would catch it if it could. Every other
   // strict-mode check stays on.
   strictRequired: false,
-  // `format` is deliberately unused in the schema: it is assertive only when a format
+  // `format` is deliberately unused in the schemas: it is assertive only when a format
   // checker is wired up, and the two runtimes wire it differently. Patterns are used
   // instead so both reach identical verdicts.
   validateFormats: false,
 });
 
-const compiled: ValidateFunction = ajv.compile(tattooBriefSchema);
+const compiled = new Map<SchemaName, ValidateFunction>(
+  schemaNames.map((name) => [name, ajv.compile(schemas[name]!)] as const),
+);
 
 function toIssue(error: ErrorObject): ValidationIssue {
   return {
@@ -55,37 +60,52 @@ function toIssue(error: ErrorObject): ValidationIssue {
   };
 }
 
-/**
- * Validate an unknown payload against the canonical TattooBrief schema.
- *
- * Returns a result rather than throwing, because callers at a boundary generally need
- * to report every problem at once rather than the first one.
- */
-export function validateTattooBrief(payload: unknown): ValidationResult {
-  if (compiled(payload)) {
-    return { valid: true, brief: payload as TattooBrief };
+/** Validate an unknown payload against a named canonical schema. */
+export function validateAgainst<T>(name: SchemaName, payload: unknown): ValidationResult<T> {
+  const validate = compiled.get(name);
+  if (!validate) {
+    throw new Error(`unknown schema '${name}'; known: ${schemaNames.join(', ')}`);
   }
-  const issues = (compiled.errors ?? []).map(toIssue);
-  return { valid: false, issues };
+  if (validate(payload)) {
+    return { valid: true, value: payload as T };
+  }
+  return { valid: false, issues: (validate.errors ?? []).map(toIssue) };
 }
 
-/** Thrown by {@link assertTattooBrief}. Names the schema and every failing path. */
-export class TattooBriefValidationError extends Error {
+/** Thrown by the `assert*` helpers. Names the schema and every failing path. */
+export class ContractValidationError extends Error {
   readonly issues: ValidationIssue[];
+  readonly schemaName: string;
 
-  constructor(issues: ValidationIssue[]) {
+  constructor(schemaName: string, issues: ValidationIssue[]) {
     const detail = issues.map((i) => `${i.path || '<root>'}: ${i.message}`).join('; ');
-    super(`TattooBrief failed validation: ${detail}`);
-    this.name = 'TattooBriefValidationError';
+    super(`${schemaName} failed validation: ${detail}`);
+    this.name = 'ContractValidationError';
+    this.schemaName = schemaName;
     this.issues = issues;
   }
 }
 
-/** Validate, or throw a typed error naming the schema and the failing paths. */
+export function validateTattooBrief(payload: unknown): ValidationResult<TattooBrief> {
+  return validateAgainst<TattooBrief>('tattoo-brief', payload);
+}
+
+export function validateDesign(payload: unknown): ValidationResult<Design> {
+  return validateAgainst<Design>('design', payload);
+}
+
 export function assertTattooBrief(payload: unknown): TattooBrief {
   const result = validateTattooBrief(payload);
   if (!result.valid) {
-    throw new TattooBriefValidationError(result.issues);
+    throw new ContractValidationError('TattooBrief', result.issues);
   }
-  return result.brief;
+  return result.value;
+}
+
+export function assertDesign(payload: unknown): Design {
+  const result = validateDesign(payload);
+  if (!result.valid) {
+    throw new ContractValidationError('Design', result.issues);
+  }
+  return result.value;
 }

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE - DO NOT EDIT.
  *
- * Source: contracts/schemas/tattoo-brief.schema.json
+ * Source: contracts/schemas/
  * Regenerate: pnpm --filter @tattoo/contracts generate
  *
  * Editing this by hand fails the codegen reproducibility check.
