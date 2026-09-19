@@ -70,9 +70,21 @@ uv sync && uv run ruff check . && uv run ruff format --check . && uv run mypy . 
 There is no remote yet, so `--base origin/main` does not work. Use a local base revision
 (`--base HEAD~1`) until one exists.
 
+**The impact review is bound to one revision.** It carries the HEAD it was produced at, and the
+guard rejects it against any other (`Review revision must match HEAD`). So the committed
+`evidence/impact-review.json` is stale the moment another commit lands — that is the guard working
+as designed, not a failure. Regenerate it at the current HEAD when verifying a change.
+
+A document cannot contain its own commit hash, which is why the guard treats the review as an
+execution-time artifact rather than a durable one. The copy kept in `evidence/` is a record of what
+was reviewed, not a reusable gate.
+
 **Known enforcement gap:** CI runs `--baseline` only. The `--review` gate needs an impact review
 generated at CI time from the task's recorded classification, and that tooling does not exist.
 Review-based coverage is currently a local, manual step per task.
+
+**Follow-up worth doing:** a small script that regenerates the review from a task spec at the
+current HEAD would close most of that gap and remove the hand-assembly step. Not yet written.
 
 ## What the guard does and does not prove
 
