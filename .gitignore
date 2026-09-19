@@ -32,3 +32,8 @@ Thumbs.db
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Execution-time artifact: the guard binds it to the HEAD it was generated at, so a
+# committed copy is stale against the very commit containing it. Regenerate per
+# verification. Task specs hold the durable record.
+.specanchor/evidence/impact-review.json
