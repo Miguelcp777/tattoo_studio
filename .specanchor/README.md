@@ -63,12 +63,12 @@ Project test suites run as **separate** checks, never bundled with the guard res
 # TypeScript, from the repository root
 pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter web build
 
-# Python worker, from services/worker
+# Python: run in BOTH contracts/python and services/worker
 uv sync && uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest
 ```
 
-There is no remote yet, so `--base origin/main` does not work. Use a local base revision
-(`--base HEAD~1`) until one exists.
+`--base origin/main` works after `git fetch origin`. The remote is
+`https://github.com/Miguelcp777/tattoo_studio` (public).
 
 **The impact review is bound to one revision.** It carries the HEAD it was produced at, and the
 guard rejects it against any other (`Review revision must match HEAD`). So the committed

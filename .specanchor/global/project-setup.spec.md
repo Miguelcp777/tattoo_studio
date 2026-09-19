@@ -24,10 +24,14 @@ Describe how the repository is laid out, how it is run locally, and how changes 
   Evidence status: VERIFIED (TASK-0001 evidence ledger, 2026-09-19).
 - Toolchain versions in use: pnpm 12.4.2, uv 0.12.17, TypeScript 5.9.3, Next.js 15.5.25.
   Evidence status: VERIFIED (2026-09-19).
-- A GitHub Actions workflow exists at `.github/workflows/ci.yml` declaring three independent jobs.
-  Evidence status: OBSERVED — the file parses and its structure was checked, but **CI has never
-  executed**, because the repository has no remote.
-- No domain code exists. There are no contract schemas, engines, queue, storage or moderation.
+- The repository has a public remote at `https://github.com/Miguelcp777/tattoo_studio`.
+  Evidence status: VERIFIED (`git push -u origin main`, 2026-09-19).
+- A GitHub Actions workflow at `.github/workflows/ci.yml` declares five jobs and **passes**.
+  Evidence status: VERIFIED — run #1 at commit `652f938`: spec coverage, TypeScript,
+  Python (contracts), Python (worker) and codegen all succeeded on `ubuntu-latest`.
+- The `TattooBrief` contract exists and is verified in both runtimes (TASK-0002).
+  Evidence status: VERIFIED — 81 tests across four packages.
+- No engine code exists. There is no queue, storage, moderation or product surface.
   Evidence status: OBSERVED.
 
 ## Intended behavior
@@ -35,7 +39,7 @@ Describe how the repository is laid out, how it is run locally, and how changes 
 Layout, with `[x]` marking what exists today:
 
 ```
-[ ] contracts/              shared JSON Schemas and fixtures
+[x] contracts/              shared JSON Schemas, fixtures, both runtime packages
 [x] apps/web/               Next.js UI and BFF
 [ ] packages/consultation/  brief-building state machine
     services/worker/
@@ -72,7 +76,7 @@ Any new top-level source tree must be added to `.specanchor/module-map.json` in 
 
 ## Conventions
 
-TypeScript workspace, from the repository root:
+TypeScript workspace, from the repository root (covers `apps/web` and `contracts`):
 
 ```sh
 pnpm install
@@ -82,7 +86,7 @@ pnpm test          # vitest
 pnpm --filter web build
 ```
 
-Python worker, from `services/worker`:
+Python — run in **both** `contracts/python` and `services/worker`:
 
 ```sh
 uv sync
@@ -100,8 +104,8 @@ python scripts/check-spec-sync.py --review .specanchor/evidence/impact-review.js
 python scripts/check-spec-sync.py --base origin/main --review .specanchor/evidence/impact-review.json
 ```
 
-The `--base origin/main` form requires a remote, which does not exist yet. Until one does, use a
-local base revision, for example `--base HEAD~1`.
+`--base origin/main` works once `git fetch origin` has run. `--base HEAD~1` remains useful for
+checking a single commit locally.
 
 The guard proves documentary coverage only. It cannot produce a semantic verdict, so every task
 additionally records a Spec to Code and a Code to Spec review.
@@ -120,16 +124,17 @@ additionally records a Spec to Code and a Code to Spec review.
 | Guard rejects unmapped files | VERIFIED | Planted-file probe, exit 1, 2026-09-19 |
 | Both runtimes install, lint, typecheck, test | VERIFIED | TASK-0001 EV-002, EV-003 |
 | Web app builds | VERIFIED | `pnpm --filter web build` exit 0, 2026-09-19 |
-| CI workflow structure | OBSERVED | `.github/workflows/ci.yml` parsed, 3 jobs |
-| CI actually passes | UNKNOWN | Never executed; no remote |
+| CI workflow structure | VERIFIED | 5 jobs, executed |
+| CI actually passes | VERIFIED | GitHub Actions run #1, commit 652f938, 5/5 jobs success |
+| Checks pass on Linux | VERIFIED | CI runs on `ubuntu-latest` |
 | Remaining directory layout | INTENT | Planning session 2026-09-19 |
 
 ## Unknowns
 
-- **CI has never run.** The workflow is structurally valid but unexecuted, so the action versions,
-  the pnpm and uv setup steps, and the Linux behavior of every check are unverified. All local
-  verification was done on Windows.
 - Target deployment platform and region are undecided. Region has GDPR residency consequences.
+- Branch protection is not configured. `main` currently accepts direct pushes, so CI passing is
+  advisory rather than enforced. Changing it is an external repository setting and needs its own
+  authorization.
 - The `--review` gate is not automated in CI. Generating an impact review at CI time from a task's
   recorded classification needs tooling that does not exist yet, so CI currently runs `--baseline`
   only. Review-based coverage is run locally per task.
@@ -141,3 +146,5 @@ Resolved 2026-09-19 in TASK-0001: CI provider is GitHub Actions; package manager
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0001): Skeleton, toolchain and CI added. Layout, commands and guard behavior
   move from INTENT to VERIFIED for the parts that now exist. CI execution remains UNKNOWN.
+- 2026-09-19 (TASK-0011): Remote added and CI executed for the first time, passing all five jobs.
+  CI execution and Linux behavior move from UNKNOWN to VERIFIED.

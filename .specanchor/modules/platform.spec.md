@@ -100,8 +100,9 @@ repositories without touching this one.
 
 ## Known uncertainties and debt
 
-- **CI has never executed.** The workflow is structurally valid but unrun; there is no remote. All
-  verification to date is local and on Windows, so Linux behavior of every check is unverified.
+- Branch protection is not configured, so a passing CI run is advisory rather than enforced;
+  `main` accepts direct pushes. Enabling it is an external repository setting requiring its own
+  authorization.
 - The `--review` coverage gate is not automated in CI. Producing an impact review at CI time from
   a task's recorded classification requires tooling that does not exist. CI runs `--baseline`
   only, and review-based coverage is run locally per task. This is a real gap in enforcement.
@@ -137,6 +138,8 @@ files caught by `--baseline`.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five
   root configuration files.
+- 2026-09-19 (TASK-0011): Public remote added; CI executed for the first time and passed all five
+  jobs on `ubuntu-latest`, confirming the toolchain works outside Windows.
 - 2026-09-19 (TASK-0002): `contracts` added to the pnpm workspace and as a uv path dependency of
   the worker. CI grew a Python matrix over both Python packages and a `codegen` job asserting
   generated artifacts match the schema. `.gitattributes` added to normalise line endings, since
@@ -150,6 +153,7 @@ files caught by `--baseline`.
 | Repository on branch `main` | VERIFIED | `git init` 2026-09-19 | PASS |
 | Worker installs, lints, typechecks, tests | VERIFIED | `uv sync`, `ruff`, `mypy`, `pytest` all exit 0 | PASS |
 | Settings fail loudly and redact values | VERIFIED | `app/tests/test_settings.py`, 6 tests | PASS |
-| CI declares four independent jobs | OBSERVED | `ci.yml` parsed; jobs enumerated | PASS |
-| CI actually passes | UNKNOWN | Never executed; no remote | NOT_RUN |
+| CI declares five independent jobs | VERIFIED | Executed; jobs enumerated | PASS |
+| CI actually passes | VERIFIED | GitHub Actions run #1, commit 652f938, 5/5 jobs success | PASS |
+| Checks pass on Linux | VERIFIED | CI runs on `ubuntu-latest` | PASS |
 | Hosting and region | UNKNOWN | Undecided | NOT_RUN |

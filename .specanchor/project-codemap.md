@@ -21,7 +21,7 @@ product surfaces. Sections describing engine behavior remain INTENT.
 | Web application | `apps/web` | shell only; builds, one placeholder route |
 | Worker service | `services/worker/app` | shell only; `/health`, validated settings |
 | Coverage guard | `scripts/check-spec-sync.py` | present and verified enforcing |
-| CI | `.github/workflows/ci.yml` | present; **never executed**, no remote |
+| CI | `.github/workflows/ci.yml` | 5 jobs, passing (GitHub Actions run #1, commit 652f938, 5/5 jobs success) |
 
 ## Main modules
 
@@ -95,7 +95,6 @@ No deployment configuration exists. `infra/` is declared in the module map but e
 - Every module is `draft`. Only `contracts`, `platform` and `web` have any code.
 - The `TattooBrief` field set is unproven: no consumer reads a brief yet, so whether these are the
   right fields is untested. Expect revisions once an engine renders from one.
-- CI has never run, and all verification so far was performed on Windows, so the Linux behavior
-  of every check is unverified.
+- Branch protection is not configured, so CI passing is advisory rather than enforced.
 - The largest open technical risk is ADR-0002 (mockup blending), pending the TASK-0008 spike.
 - The largest open non-technical risk is the absence of legal review for body-photo processing.

@@ -34,6 +34,7 @@ exist and its field set is unproven against any consumer.
 |---|---|---|
 | TASK-0001 | Repository skeleton, toolchain and CI | verified |
 | TASK-0002 | TattooBrief contract and dual-runtime validation | verified |
+| TASK-0011 | Record first CI execution and the existence of a remote | verified |
 
 ## Decisions
 
