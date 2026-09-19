@@ -37,3 +37,4 @@ Thumbs.db
 # committed copy is stale against the very commit containing it. Regenerate per
 # verification. Task specs hold the durable record.
 .specanchor/evidence/impact-review.json
+.specanchor/evidence/baseline.json
