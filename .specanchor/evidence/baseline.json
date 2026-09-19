@@ -1,0 +1,9 @@
+{
+  "revision": "cbb2641bfdb1a41cb2f4e12702adf112e9eb70e6",
+  "material_files": [
+    "CLAUDE.md",
+    "scripts/check-spec-sync.py"
+  ],
+  "unmapped": [],
+  "functional_validation": "NOT_RUN"
+}
