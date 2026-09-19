@@ -17,8 +17,11 @@ import pytest
 
 WORKER_ROOT = Path(__file__).resolve().parents[2]
 
-#: Modules permitted to reach the network. Exactly one, by ARCH-INV-001.
-EGRESS_ALLOWED = {"generation"}
+#: Modules permitted to reach the network, by ARCH-INV-001 as amended in TASK-0013.
+#: `generation` owns image-model calls; `safety` owns moderation calls. Routing
+#: moderation through `generation` was rejected because it would let that module's
+#: failure disable the gate that constrains it.
+EGRESS_ALLOWED = {"generation", "safety"}
 
 #: HTTP clients and provider SDKs. Importing any of these is outbound capability.
 NETWORK_MODULES = {

@@ -144,6 +144,9 @@ files caught by `--baseline`.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five
   root configuration files.
+- 2026-09-19 (TASK-0013): Egress allowlist in the architectural test widened to
+  `generation` and `safety`, matching the amended ARCH-INV-001. Both entries are proven
+  non-vacuous by the existing check.
 - 2026-09-19 (TASK-0012): Worker gained Pillow and cryptography, plus storage and
   encryption settings. Architectural tests extended with an acyclic-graph check over the
   declared module dependencies and a declared-versus-actual import check.
@@ -170,3 +173,10 @@ files caught by `--baseline`.
 | CI actually passes | VERIFIED | GitHub Actions run #1, commit 652f938, 5/5 jobs success | PASS |
 | Checks pass on Linux | VERIFIED | CI runs on `ubuntu-latest` | PASS |
 | Hosting and region | UNKNOWN | Undecided | NOT_RUN |
+
+
+## TASK-0019 intended reconciliation
+
+Implementation follows `.specanchor/tasks/TASK-0019.spec.md` and ADR-0007.
+Previous VERIFIED statements apply only to their cited historical checks, not the new studio path.
+Current acceptance is pending TASK-0019 evidence; no new product guarantee is verified yet.

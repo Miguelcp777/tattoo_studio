@@ -16,13 +16,16 @@ from .gate import (
     ReasonCode,
     Verdict,
 )
+from .openai_moderation import ModerationError, OpenAIModerationProvider
 
 __all__ = [
     "GATE_VERSION",
     "GateResult",
     "InputGate",
+    "ModerationError",
     "ModerationOutcome",
     "ModerationProvider",
+    "OpenAIModerationProvider",
     "ReasonCode",
     "SafetyClearance",
     "Verdict",

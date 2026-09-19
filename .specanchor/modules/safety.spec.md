@@ -59,6 +59,10 @@ was lawful. They contain no image data.
 
 `contracts`.
 
+Performs its own outbound moderation calls, which ARCH-INV-001 permits since TASK-0013.
+The HTTP transport is a deliberate small duplicate of `generation`'s rather than a shared
+import, so the gate cannot be disabled by a change or failure in the module it constrains.
+
 **Not `media`.** The gate screens *bytes*, before anything is stored and before anything
 reaches a provider (SEC-INV-007), so at the moment it runs there is nothing in `media` to
 look at. The earlier declaration was both circular and contradicted the invariant it
@@ -95,10 +99,16 @@ tested by simulating provider outage. Test corpora use synthetic or licensed ima
 
 ## Known uncertainties and debt
 
-- **The gate currently passes nothing.** There is no moderation provider, so every input
-  is denied with `no_moderation_provider`. That is deliberate (TASK-0012/DEC-003): a gate
-  that cannot pass is useless but safe, while one that passes without checking is neither.
-  TASK-0013 supplies the provider.
+- **Classification accuracy is unmeasured.** Three synthetic images were screened
+  correctly (TASK-0013). That is a smoke test, not a measurement. Unchecked cases include
+  a drawing or statue of a person, a person reflected or partially in frame, a crowd in
+  the background, and a pet photographed with its owner's hand visible.
+- The prompt instructs the model to answer `true` when genuinely unsure, biasing toward
+  refusal. Nothing measures how often that produces a false refusal of a legitimate pet
+  photograph, and there is no appeal path when it does.
+- Moderation cost is incurred per upload and is unbudgeted.
+- `own_body_consented` bypasses the person check when the caller asserts consent. Nothing
+  verifies that assertion; the guarantee is only as strong as whoever sets the flag.
 - Consent records, age verification and the third-party-photograph question are not built.
   The agreed scope is pets and objects, where a user consents only for themselves.
 - `screen_output` and `screen_brief` are specified but not implemented.
@@ -130,6 +140,9 @@ that specific attack.
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0012): Gate structure, clearance type and deny-by-default
   implementation. Dependency on `media` removed, resolving FINDING-0003.
+- 2026-09-19 (TASK-0013): OpenAI vision moderation provider and its transport. The gate
+  can now pass a pet or object photograph and refuses one containing a person, verified
+  against the real API.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
@@ -139,6 +152,17 @@ that specific attack.
 | No rejection ever carries a clearance | VERIFIED | Parametrised over every reject path | PASS |
 | Clearance is bound to the screened bytes | VERIFIED | Digest-binding tests | PASS |
 | Clearance cannot be forged or retargeted | VERIFIED | Direct construction and `replace` | PASS |
-| Input gate actually moderates | **NO** | No provider exists; everything is denied | NOT_RUN |
+| Input gate actually moderates | VERIFIED | Live: pet and object passed, person refused | PASS |
+| Every provider failure becomes a denial | VERIFIED | 4 failure modes through the gate | PASS |
+| Malformed verdicts raise rather than default | VERIFIED | 9 malformed verdict shapes | PASS |
+| Credential absent from logs and exceptions | VERIFIED | Log capture and exception strings | PASS |
+| Classification accuracy | UNKNOWN | 3 synthetic images is a smoke test | NOT_RUN |
 | Output gate exists | **NO** | Not built | NOT_RUN |
 | Moderation accuracy on body imagery | UNKNOWN | Unmeasured | NOT_RUN |
+
+
+## TASK-0019 intended reconciliation
+
+Implementation follows `.specanchor/tasks/TASK-0019.spec.md` and ADR-0007.
+Previous VERIFIED statements apply only to their cited historical checks, not the new studio path.
+Current acceptance is pending TASK-0019 evidence; no new product guarantee is verified yet.

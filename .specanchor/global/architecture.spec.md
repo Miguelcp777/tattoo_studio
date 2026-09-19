@@ -55,7 +55,13 @@ User idea
 
 ## Invariants
 
-- ARCH-INV-001: No module outside `generation` performs an outbound call to an image model.
+- ARCH-INV-001: Outbound model calls are confined to two modules and no others.
+  `generation` owns image-model calls; `safety` owns moderation calls. Amended in
+  TASK-0013: the original wording assumed image generation was the only outbound concern.
+  Routing moderation through `generation` was considered and rejected, because it would
+  make the gate's integrity depend on the availability and correctness of the module the
+  gate exists to constrain — a bug or outage there could then disable moderation. A test
+  enforces both halves and proves the allowlist is not vacuous.
 - ARCH-INV-002: `contracts` has no dependency on any other module.
 - ARCH-INV-006: The module dependency graph is acyclic. A cycle means some module can
   never be built first, and one survived four tasks unnoticed because neither of its
@@ -85,7 +91,7 @@ User idea
 
 | Statement | Evidence status | Source / revision |
 |---|---|---|
-| ARCH-INV-001 sole egress | VERIFIED | Source-scan test; allowlist proven non-vacuous |
+| ARCH-INV-001 egress confined to generation and safety | VERIFIED | Source-scan test; both allowlist entries proven non-vacuous |
 | ARCH-INV-004 flash cannot reach photos | VERIFIED | Source-scan test |
 | ARCH-INV-006 acyclic module graph | VERIFIED | Spec-parsing cycle test |
 | ARCH-INV-005 holds for both schemas | VERIFIED | 52-case corpus across both runtimes |
@@ -103,6 +109,9 @@ User idea
 
 ## Change history
 
+- 2026-09-19 (TASK-0013): ARCH-INV-001 amended to permit `safety` its own moderation
+  egress, with the reasoning recorded above. Tightening rather than loosening: the
+  invariant now names exactly two modules and the test enforces both.
 - 2026-09-19: Created during SDD bootstrap. Status draft, no implementation.
 - 2026-09-19 (TASK-0002): ARCH-INV-005 restated. It previously allowed validators to be
   *generated from* the schema; the refinement is that generated code may not be the authority,
