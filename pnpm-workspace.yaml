@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Packages permitted to run install scripts. Allowed individually and deliberately:
+# a blanket approval would let any transitive dependency execute code at install time.
+# esbuild's postinstall links its platform binary, which vitest requires.
+allowBuilds:
+  esbuild: true

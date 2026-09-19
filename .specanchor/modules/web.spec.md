@@ -88,18 +88,33 @@ upload to deletion. Accessibility checks to WCAG 2.1 AA on the primary flows.
 - Authentication approach is undecided.
 - Whether job completion uses polling or server-sent events is undecided.
 - The placement editor interaction model is undesigned.
+- The shell has no styling, no layout system and no accessibility work. The WCAG 2.1 AA
+  commitment under *Tests / verification* is unaddressed and currently unmeasured.
+- `vitest` runs in a `node` environment. Component rendering tests will need a DOM environment,
+  which is added by the first task that renders something worth asserting on.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Partially aligned as of TASK-0001. What exists is a shell: a root layout, one placeholder route,
+and the required disclaimer copy. None of the product surfaces listed under *Public interfaces*
+are built.
+
+The disclaimer strings in `src/content/disclaimers.ts` are the single source of the copy that
+WEB-INV-003 requires, with tests asserting their content. That makes the invariant checkable now,
+before there is any artifact to display. The invariant itself — that the UI never shows an
+artifact without the disclaimer — cannot be verified until artifacts exist.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0001): Next.js shell added, building under TypeScript strict mode. Disclaimer
+  copy established with tests.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| BFF with no domain logic | INTENT | ADR-0005 | NOT_RUN |
-| Disclaimers required on artifacts | INTENT | PROD-INV-003, PROD-INV-005 | NOT_RUN |
+| BFF with no domain logic | OBSERVED | Shell contains no domain logic | PASS |
+| App builds under strict TypeScript | VERIFIED | `pnpm --filter web build`, `tsc --noEmit` exit 0 | PASS |
+| Disclaimer copy exists and is non-empty | VERIFIED | `src/content/disclaimers.test.ts`, 4 tests | PASS |
+| Disclaimer shown on every artifact | INTENT | WEB-INV-003; no artifacts exist yet | NOT_RUN |
 | Authentication approach | UNKNOWN | Undecided | NOT_RUN |

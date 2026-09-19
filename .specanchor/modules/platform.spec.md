@@ -93,27 +93,44 @@ repositories without touching this one.
 
 ## Known uncertainties and debt
 
-- CI provider, hosting platform and deployment region are undecided. The region choice has GDPR
-  data-residency consequences (see quality-and-security spec).
-- TypeScript package manager is unfixed; `pnpm-workspace.yaml` in the module map is provisional
-  and must be corrected if npm is chosen.
-- Python dependency manager is undecided.
+- **CI has never executed.** The workflow is structurally valid but unrun; there is no remote. All
+  verification to date is local and on Windows, so Linux behavior of every check is unverified.
+- The `--review` coverage gate is not automated in CI. Producing an impact review at CI time from
+  a task's recorded classification requires tooling that does not exist. CI runs `--baseline`
+  only, and review-based coverage is run locally per task. This is a real gap in enforcement.
+- Hosting platform and deployment region are undecided. Region has GDPR residency consequences.
+- `esbuild` is the one dependency permitted to run an install script, listed individually in
+  `pnpm-workspace.yaml` under `onlyBuiltDependencies`. Approval is recorded per package rather
+  than blanket-enabled, and each future addition is a deliberate decision.
+- The worker declares only the settings the shell needs. Engine configuration arrives with each
+  engine, so that an unset key always means something genuinely missing.
 
 ## Alignment notes
 
-The repository currently contains only specifications, the guard and its configuration. The
-manifests and application shell listed in `source_paths` do not exist yet; those paths are
-declared ahead of the code they will own, so that the first commit introducing them is already
-anchored.
+Aligned as of TASK-0001. The manifests, workspace wiring, worker application shell and CI
+workflow listed in `source_paths` now exist and are verified locally.
+
+`infra/*` is still declared ahead of the code it will own; no deployment configuration exists.
+
+This module owns root configuration files by exact path rather than by a recursive glob, because
+guard patterns use `fnmatch` where `*` matches slashes. Adding a root config file therefore
+requires adding it to the module map by name — TASK-0001 hit exactly this, with five unmapped
+files caught by `--baseline`.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
+  settings, GitHub Actions workflow with three independent jobs. Module map extended with five
+  root configuration files.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| Guard installed verbatim | OBSERVED | `scripts/check-spec-sync.py` 2026-09-19 | NOT_RUN |
+| Guard installed verbatim and enforcing | VERIFIED | `--baseline` exit 0; planted-file probe exit 1 | PASS |
 | Repository on branch `main` | VERIFIED | `git init` 2026-09-19 | PASS |
-| Manifests and app shell not yet present | OBSERVED | Directory listing 2026-09-19 | NOT_RUN |
-| CI provider and hosting | UNKNOWN | Undecided | NOT_RUN |
+| Worker installs, lints, typechecks, tests | VERIFIED | `uv sync`, `ruff`, `mypy`, `pytest` all exit 0 | PASS |
+| Settings fail loudly and redact values | VERIFIED | `app/tests/test_settings.py`, 6 tests | PASS |
+| CI declares three independent jobs | OBSERVED | `ci.yml` parsed; jobs enumerated | PASS |
+| CI actually passes | UNKNOWN | Never executed; no remote | NOT_RUN |
+| Hosting and region | UNKNOWN | Undecided | NOT_RUN |

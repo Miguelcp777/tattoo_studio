@@ -57,8 +57,22 @@ Inventory and unmapped-file check:
 python scripts/check-spec-sync.py --baseline
 ```
 
-Project test suites run as **separate** checks. They do not exist yet; this section is updated in
-TASK-0001 when the toolchain lands.
+Project test suites run as **separate** checks, never bundled with the guard result:
+
+```sh
+# TypeScript, from the repository root
+pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter web build
+
+# Python worker, from services/worker
+uv sync && uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest
+```
+
+There is no remote yet, so `--base origin/main` does not work. Use a local base revision
+(`--base HEAD~1`) until one exists.
+
+**Known enforcement gap:** CI runs `--baseline` only. The `--review` gate needs an impact review
+generated at CI time from the task's recorded classification, and that tooling does not exist.
+Review-based coverage is currently a local, manual step per task.
 
 ## What the guard does and does not prove
 

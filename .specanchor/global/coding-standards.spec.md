@@ -61,10 +61,15 @@ No implementation exists. All statements are INTENT.
 
 ## Unknowns
 
-- Package manager for the TS workspace (npm vs pnpm) is not yet fixed; the module map currently
-  anticipates `pnpm-workspace.yaml` and must be corrected if npm is chosen.
-- Python dependency manager (uv vs poetry) is undecided.
+- Generation mechanism from JSON Schema to `zod` and `pydantic` is unselected (ADR-0004,
+  resolved in TASK-0002).
+
+Resolved 2026-09-19 in TASK-0001: the TypeScript workspace uses **pnpm** (12.4.2) and the Python
+worker uses **uv** (0.12.17). Both are recorded VERIFIED in `project-setup.spec.md`.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap. Status draft, no implementation.
+- 2026-09-19 (TASK-0001): Toolchain unknowns resolved. Lint, format, typecheck and test are
+  configured and passing in both runtimes. Prettier is scoped away from `.specanchor/` so that
+  reformatting never churns specification diffs.

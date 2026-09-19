@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Three independent jobs. A documentary-coverage pass is not functional verification, so
+# the guard never gates on, or is reported together with, the test suites (PLAT-INV-004).
+jobs:
+  spec-coverage:
+    name: Spec coverage (documentary only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The guard compares merge-base(target, HEAD) to HEAD and needs real history.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Every material file is anchored to a spec
+        run: python scripts/check-spec-sync.py --baseline
+
+      - name: Report scope of this check
+        if: always()
+        run: |
+          echo "This job checks documentary coverage only."
+          echo "It does not verify behavior, run tests, or establish semantic alignment."
+
+  typescript:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm --filter web build
+
+  python:
+    name: Python worker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Typecheck
+        run: uv run mypy .
+
+      - name: Test
+        run: uv run pytest

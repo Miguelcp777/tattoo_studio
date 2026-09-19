@@ -1,0 +1,17 @@
+# Specifications are authored prose. Reformatting them churns guard diffs for no benefit.
+.specanchor/
+anchor.yaml
+CLAUDE.md
+README.md
+
+# Generated, vendored or tool-owned
+pnpm-lock.yaml
+uv.lock
+**/.next/
+**/dist/
+**/build/
+**/node_modules/
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/

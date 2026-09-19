@@ -73,15 +73,20 @@
     {
       "name": "platform",
       "paths": [
+        ".github/*",
+        ".npmrc",
+        ".prettierignore",
+        ".prettierrc.json",
+        "CLAUDE.md",
+        "eslint.config.mjs",
+        "infra/*",
         "package.json",
         "pnpm-workspace.yaml",
-        "tsconfig.base.json",
-        "CLAUDE.md",
         "scripts/*",
-        "infra/*",
-        ".github/*",
+        "services/worker/.python-version",
         "services/worker/app/*",
-        "services/worker/pyproject.toml"
+        "services/worker/pyproject.toml",
+        "tsconfig.base.json"
       ],
       "spec": ".specanchor/modules/platform.spec.md"
     }
