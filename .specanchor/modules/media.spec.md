@@ -20,9 +20,13 @@ module that touches durable image storage.
 
 ## Public interfaces
 
-- `ingest_photo(upload, consent_ref) -> ImageRef` — strips EXIF, screens, then persists
+- `ingest_photo(upload, clearance) -> StoredAsset` — refuses without a `SafetyClearance`
+  covering exactly these bytes, then sanitises, encrypts and persists. Takes the clearance
+  rather than a consent reference because the clearance is what actually evidences the
+  gate having passed (FINDING-0003).
 - `store_artifact(bytes, kind, lineage) -> ImageRef`
-- `resolve(image_ref) -> signed, expiring URL`
+- `read(asset_id) -> bytes` — decrypts. Signed expiring URLs (MEDIA-INV-005) await an
+  HTTP surface and are not built.
 - `delete_cascade(image_ref) -> DeletionReceipt` — removes the asset and everything derived
 
 ## Inputs and outputs
@@ -85,21 +89,47 @@ graph including multi-level derivations.
 
 ## Known uncertainties and debt
 
+- **The backend is a local filesystem**, which is a development implementation behind the
+  port a cloud object store will implement. No durability guarantee, no replication, no
+  residency control.
+- **No key rotation.** The encryption key comes from settings; rotating it would make
+  existing assets unreadable. A rotation strategy does not exist.
+- **Retention sweeps are not scheduled.** `expired()` reports what is due; nothing runs it.
+- Sanitisation re-encodes, which is lossy for JPEG. Acceptable for a photograph destined
+  for stylisation, but it is a real trade rather than a free one.
+- MEDIA-INV-005 (signed expiring URLs) is unimplemented; there is no HTTP surface yet.
 - Storage backend and region are undecided.
 - Backup rotation period, which bounds SEC-INV-004, is undefined.
 - Maximum upload size and accepted formats are undefined.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Aligned as of TASK-0012 for ingest, storage, retrieval and deletion.
+
+Sanitisation works by decode-and-re-encode rather than by removing an enumerated tag list,
+so a metadata block nobody anticipated is dropped too.
+
+One thing found while implementing and worth recording: **Pillow logs EXIF tag values at
+DEBUG level**, including device make, model and the GPS pointer. An application running at
+DEBUG would have the imaging library write to the log precisely the identifiers this module
+strips from the file. Pillow's loggers are silenced around every decode, and a test asserts
+those values do not reach captured logs (SEC-INV-008).
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0012): EXIF stripping, AES-GCM encryption at rest, lineage recording,
+  cascade deletion and retention classes, over a local filesystem backend.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| EXIF stripped before persistence | INTENT | SEC-INV-002 | NOT_RUN |
-| Cascade deletion by lineage | INTENT | SEC-INV-004 | NOT_RUN |
-| Storage backend and residency | UNKNOWN | Undecided | NOT_RUN |
+| EXIF stripped before persistence | VERIFIED | GPS and device tags absent after ingest | PASS |
+| Bytes on disk are encrypted | VERIFIED | No image signature; wrong key cannot read | PASS |
+| Nothing persists without a clearance | VERIFIED | Storage directory empty after refusal | PASS |
+| A clearance cannot be replayed on other bytes | VERIFIED | Mismatched-digest test | PASS |
+| Cascade deletion by lineage | VERIFIED | Three-level lineage, receipt asserted | PASS |
+| Designs survive a photo cascade | VERIFIED | Retention-class test | PASS |
+| Imaging library does not log EXIF | VERIFIED | Log capture after silencing PIL | PASS |
+| Retention sweeps actually run | **NO** | Nothing schedules them | NOT_RUN |
+| Storage backend and residency | UNKNOWN | Local filesystem only | NOT_RUN |

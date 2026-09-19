@@ -43,7 +43,12 @@ Designs and their version lineage are persisted; raster bytes go to media storag
 
 ## Dependencies
 
-`contracts`, `generation`, `media`, `safety`, `jobs`.
+`contracts`, `generation`, `safety`, `jobs`.
+
+**Not `media`.** ARCH-INV-004 forbids this module acquiring any dependency that would give
+it access to user photographs, and a test enforces it. Raster bytes reach storage through
+`generation`, which owns that relationship. The earlier declaration listed `media` and
+contradicted the invariant directly; the implementation never did.
 
 ## External integrations
 

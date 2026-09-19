@@ -14,8 +14,9 @@
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
 | platform | root manifests, `scripts/*`, `infra/*`, `.github/*`, `services/worker/app/*` | `.specanchor/modules/platform.spec.md` | draft | 2026-09-19 |
 
-Every module is `draft`. `contracts`, `generation` and `flash` are implemented and verified
-offline; `platform` and `web` have skeletons; the other six have no code.
+Every module is `draft`. `contracts`, `generation`, `flash`, `media` and `safety` are
+implemented and verified offline; `platform` and `web` have skeletons; `consultation`,
+`stencil`, `mockup` and `jobs` have no code.
 
 No module has produced a real image. The adapter has never called a provider.
 
@@ -38,6 +39,7 @@ exist and its field set is unproven against any consumer.
 | TASK-0002 | TattooBrief contract and dual-runtime validation | verified |
 | TASK-0004 | Generation provider adapter and the flash render path | verified |
 | TASK-0011 | Record first CI execution and the existence of a remote | verified |
+| TASK-0012 | Safe photo ingestion: media storage and the safety gate | verified |
 
 ## Findings
 
@@ -45,6 +47,7 @@ exist and its field set is unproven against any consumer.
 |---|---|---|
 | FINDING-0001 | OpenAI's image model offers editing, relevant to the ADR-0002 mockup blend | open |
 | FINDING-0002 | The brief contract permits size combinations flash cannot render | open |
+| FINDING-0003 | `media` and `safety` declared a circular dependency | resolved (TASK-0012) |
 
 ## Decisions
 
@@ -70,7 +73,7 @@ Cross-cutting invariants are declared in the global specs and enforced in named 
 | PROD-INV-003 aging is illustrative | product-behavior | mockup, web |
 | PROD-INV-004 no living-artist mimicry | product-behavior | safety, consultation, flash (PARTIAL: constructions only) |
 | SEC-INV-001 no training on user photos | quality-and-security | generation |
-| SEC-INV-002 EXIF stripped | quality-and-security | media |
-| SEC-INV-004 cascade deletion | quality-and-security | media, safety |
-| SEC-INV-006 gates always active | quality-and-security | safety |
+| SEC-INV-002 EXIF stripped | quality-and-security | media (VERIFIED, TASK-0012) |
+| SEC-INV-004 cascade deletion | quality-and-security | media (VERIFIED, TASK-0012) |
+| SEC-INV-006 gates always active | quality-and-security | safety (PARTIAL: denies all) |
 | SEC-INV-007 no unscreened photo leaves the system | quality-and-security | safety, media, generation |

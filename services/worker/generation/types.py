@@ -1,5 +1,9 @@
 """Value types crossing the generation boundary.
 
+``SafetyClearance`` is re-exported from `safety`, which is the only module allowed to
+mint one. It lived here during TASK-0004 purely because `safety` did not exist yet
+(FINDING-0003).
+
 Image bytes never appear here. A generated image is referred to by an opaque storage
 key, so nothing large or sensitive travels through the queue (JOBS-INV-001) and no
 signed URL is ever held in a domain object (SEC-INV-008).
@@ -9,8 +13,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
-
-from .errors import SafetyGateUnavailableError
 
 MediaType = Literal["image/png", "image/webp", "image/jpeg"]
 
@@ -74,26 +76,14 @@ class GeneratedImage:
     seed: int | None = None
 
 
-class SafetyClearance:
-    """Proof that an image passed the safety input gate.
+# Re-exported so existing call sites keep working; the type is owned by `safety`.
+from safety import SafetyClearance  # noqa: E402
 
-    **This type cannot be constructed.** Image-conditioned generation requires an
-    instance, and no code path can produce one while the safety module does not exist,
-    so the photo path is unreachable rather than merely guarded (SEC-INV-007).
-
-    That is deliberate. A runtime ``if`` guarding the photo path could be deleted by a
-    later refactor without any test noticing; an uninstantiable argument type cannot.
-
-    TASK-0007 introduces the safety module and, with it, the only legitimate way to
-    mint a clearance: after ``screen_upload`` has actually passed. Until then, every
-    attempt raises.
-    """
-
-    __slots__ = ("gate_version", "image_key")
-
-    def __init__(self, *_args: object, **_kwargs: object) -> None:
-        raise SafetyGateUnavailableError(
-            "image-conditioned generation requires a safety clearance, and the safety "
-            "module does not exist yet; refusing rather than proceeding",
-            provider="<none>",
-        )
+__all__ = [
+    "GeneratedImage",
+    "ImageConditionedRequest",
+    "ImageRef",
+    "MediaType",
+    "SafetyClearance",
+    "TextToImageRequest",
+]

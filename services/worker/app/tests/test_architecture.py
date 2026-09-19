@@ -147,3 +147,108 @@ def test_the_allowlist_is_not_vacuous(module: str) -> None:
         f"{module} is allowlisted for egress but imports no network client; "
         "either the allowlist or the scan is stale"
     )
+
+
+# ---------------------------------------------------------------------------
+# Module dependency graph (FINDING-0003)
+# ---------------------------------------------------------------------------
+
+SPEC_ROOT = WORKER_ROOT.parents[1] / ".specanchor" / "modules"
+
+#: Modules that live in this worker. Others (web, consultation) are TypeScript.
+WORKER_MODULES = {"generation", "flash", "media", "safety", "app"}
+
+
+def _declared_dependencies() -> dict[str, set[str]]:
+    """Parse each module spec's Dependencies section.
+
+    Reads the specification rather than the code deliberately: the point is to catch a
+    contradiction between what the specs claim and what is buildable, which is exactly
+    how the media/safety cycle survived the bootstrap and four tasks.
+    """
+    import re
+
+    graph: dict[str, set[str]] = {}
+    for spec in sorted(SPEC_ROOT.glob("*.spec.md")):
+        name = spec.stem.removesuffix(".spec")
+        text = spec.read_text(encoding="utf-8")
+        match = re.search(r"^## Dependencies\s*\n(.*?)(?=^## )", text, re.MULTILINE | re.DOTALL)
+        if not match:
+            continue
+        # Only the first paragraph lists dependencies. Prose after it may mention other
+        # modules legitimately - safety's spec explains why it is *not* coupled to media -
+        # and scanning the whole section would read those mentions as edges.
+        first_paragraph: list[str] = []
+        for line in match.group(1).strip().splitlines():
+            if not line.strip():
+                break
+            first_paragraph.append(line)
+        body = " ".join(first_paragraph)
+        deps = {m.group(1) for m in re.finditer(r"`([a-z][a-z_-]*)`", body)}
+        graph[name] = {d for d in deps if d != name}
+    return graph
+
+
+def test_dependency_graph_was_actually_parsed() -> None:
+    """Guards the guard: an empty parse would make the cycle check vacuous."""
+    graph = _declared_dependencies()
+
+    assert "media" in graph and "safety" in graph and "generation" in graph
+    assert any(deps for deps in graph.values()), "no dependencies parsed at all"
+
+
+def test_declared_module_graph_is_acyclic() -> None:
+    """A cycle means some module can never be built first (FINDING-0003)."""
+    graph = _declared_dependencies()
+    known = set(graph)
+
+    visiting: set[str] = set()
+    done: set[str] = set()
+    cycles: list[str] = []
+
+    def visit(node: str, trail: list[str]) -> None:
+        if node in done:
+            return
+        if node in visiting:
+            cycles.append(" -> ".join([*trail, node]))
+            return
+        visiting.add(node)
+        for dep in sorted(graph.get(node, set()) & known):
+            visit(dep, [*trail, node])
+        visiting.discard(node)
+        done.add(node)
+
+    for module in sorted(graph):
+        visit(module, [])
+
+    assert not cycles, f"circular module dependencies declared: {cycles}"
+
+
+def test_safety_does_not_depend_on_media() -> None:
+    """The gate screens bytes before anything is stored (SEC-INV-007).
+
+    If it depended on media it would be screening something already persisted, which
+    contradicts the invariant it exists to serve.
+    """
+    assert "media" not in _declared_dependencies().get("safety", set())
+
+
+def test_worker_imports_respect_declared_dependencies() -> None:
+    """A module importing something its spec does not declare is undocumented coupling."""
+    graph = _declared_dependencies()
+    offenders: list[str] = []
+
+    for top, path in _module_files():
+        if top not in WORKER_MODULES or top == "app":
+            continue
+        declared = graph.get(top, set())
+        for imported in _imported_roots(path) & (WORKER_MODULES - {"app"}):
+            if imported == top:
+                continue
+            if imported not in declared:
+                offenders.append(
+                    f"{path.relative_to(WORKER_ROOT)} imports '{imported}', "
+                    f"not declared in {top}.spec.md"
+                )
+
+    assert not offenders, offenders

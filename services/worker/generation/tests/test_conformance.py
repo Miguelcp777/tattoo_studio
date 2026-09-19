@@ -139,9 +139,14 @@ def _conditioned() -> ImageConditionedRequest:
 
 
 def test_safety_clearance_cannot_be_constructed() -> None:
-    """Fail-closed is a property of the type, not of a deletable runtime branch."""
-    with pytest.raises(SafetyGateUnavailableError):
-        SafetyClearance()
+    """Fail-closed is a property of the type, not of a deletable runtime branch.
+
+    The type moved to the `safety` module in TASK-0012, which is its proper owner. It now
+    refuses construction with PermissionError rather than being unconstructable for lack
+    of a gate; the guarantee this test cares about is unchanged.
+    """
+    with pytest.raises(PermissionError):
+        SafetyClearance(content_sha256="0" * 64, gate_version="forged", reason_code="ok")
 
 
 def test_image_to_image_refuses_without_clearance(adapter: GenerationProvider) -> None:

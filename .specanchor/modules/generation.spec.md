@@ -117,6 +117,9 @@ assertion being vacuous.
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0012): `SafetyClearance` relocated to the `safety` module, which now
+  exists and is its proper owner (FINDING-0003). Re-exported here so call sites are
+  unchanged. No behaviour change.
 - 2026-09-19 (TASK-0004): Provider protocol, typed errors, retry policy, registry,
   deterministic fixture provider, fal adapter and conformance suite. 52 tests.
 

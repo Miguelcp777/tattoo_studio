@@ -144,6 +144,9 @@ files caught by `--baseline`.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five
   root configuration files.
+- 2026-09-19 (TASK-0012): Worker gained Pillow and cryptography, plus storage and
+  encryption settings. Architectural tests extended with an acyclic-graph check over the
+  declared module dependencies and a declared-versus-actual import check.
 - 2026-09-19 (TASK-0004): Worker gained the contracts path dependency, an HTTP client for
   the single egress point, and provider settings. Architectural tests added under
   `app/tests/` enforcing ARCH-INV-001 and ARCH-INV-004 by source inspection, because an

@@ -57,6 +57,11 @@ User idea
 
 - ARCH-INV-001: No module outside `generation` performs an outbound call to an image model.
 - ARCH-INV-002: `contracts` has no dependency on any other module.
+- ARCH-INV-006: The module dependency graph is acyclic. A cycle means some module can
+  never be built first, and one survived four tasks unnoticed because neither of its
+  members existed (FINDING-0003). A test parses the declared dependencies and fails on a
+  cycle, and a second test fails when a module imports something its spec does not
+  declare.
 - ARCH-INV-003: A user-visible artifact is always traceable to the brief revision that produced it.
 - ARCH-INV-004: No user photo is passed to any module that has not declared a media dependency.
 - ARCH-INV-005: TypeScript and Python validate a shared payload against the same JSON Schema
@@ -82,6 +87,7 @@ User idea
 |---|---|---|
 | ARCH-INV-001 sole egress | VERIFIED | Source-scan test; allowlist proven non-vacuous |
 | ARCH-INV-004 flash cannot reach photos | VERIFIED | Source-scan test |
+| ARCH-INV-006 acyclic module graph | VERIFIED | Spec-parsing cycle test |
 | ARCH-INV-005 holds for both schemas | VERIFIED | 52-case corpus across both runtimes |
 | ARCH-INV-002: contracts depends on nothing | VERIFIED | Package manifests declare no internal deps |
 | Three-stage pipeline decomposition | INTENT | User request, planning session 2026-09-19 |
