@@ -1,8 +1,9 @@
 # Project Codemap
 
-Status as of 2026-09-19, after TASK-0001: **a skeleton exists; no domain code does.** Both
-runtimes install, lint, typecheck, test and build. There are no contract schemas, engines, queue,
-storage, moderation or product surfaces. Sections describing domain behavior remain INTENT.
+Status as of 2026-09-19, after TASK-0002: **the central contract exists; no engine does.**
+`TattooBrief` is defined once and validated identically in both runtimes, with 81 tests passing
+across four packages. There are still no engines, no queue, no storage, no moderation and no
+product surfaces. Sections describing engine behavior remain INTENT.
 
 ## Runtime / stack
 
@@ -16,6 +17,7 @@ storage, moderation or product surfaces. Sections describing domain behavior rem
 
 | Entry point | Path | Status |
 |---|---|---|
+| Contracts | `contracts/` | `TattooBrief` 1.0.0, both runtimes, verified |
 | Web application | `apps/web` | shell only; builds, one placeholder route |
 | Worker service | `services/worker/app` | shell only; `/health`, validated settings |
 | Coverage guard | `scripts/check-spec-sync.py` | present and verified enforcing |
@@ -25,7 +27,7 @@ storage, moderation or product surfaces. Sections describing domain behavior rem
 
 | Module | Responsibility | Primary paths | Dependencies |
 |---|---|---|---|
-| contracts | Shared schemas; owns `TattooBrief` | `contracts/*` | none |
+| contracts | Shared schemas; owns `TattooBrief` | `contracts/*` | none — implemented |
 | web | UI and BFF | `apps/web/*` | contracts, consultation |
 | consultation | Brief-building state machine | `packages/consultation/*` | contracts, safety |
 | generation | Sole adapter to hosted image models | `services/worker/generation/*` | contracts, media, safety |
@@ -63,11 +65,16 @@ checks on every media resolution; age affirmation before upload.
 Build and test are established; deploy is not.
 
 ```
-# TypeScript, from the repository root
+# TypeScript, from the repository root (covers apps/web and contracts)
 pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter web build
 
-# Python worker, from services/worker
+# Python: run in BOTH contracts/python and services/worker
 uv sync && uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest
+
+# Generated artifacts match the schema
+pnpm --filter @tattoo/contracts generate
+(cd contracts/python && uv run python scripts/generate.py)
+git diff --quiet   # must be clean
 
 # Documentary coverage
 python scripts/check-spec-sync.py --baseline
@@ -84,8 +91,10 @@ No deployment configuration exists. `infra/` is declared in the module map but e
 
 ## Unanchored or uncertain areas
 
-- Nothing is unanchored: `--baseline` reports an empty unmapped list over 27 material files.
-- Every module is `draft`. Only `platform` and `web` have any code, and only a skeleton.
+- Nothing is unanchored: `--baseline` reports an empty unmapped list over 76 material files.
+- Every module is `draft`. Only `contracts`, `platform` and `web` have any code.
+- The `TattooBrief` field set is unproven: no consumer reads a brief yet, so whether these are the
+  right fields is untested. Expect revisions once an engine renders from one.
 - CI has never run, and all verification so far was performed on Windows, so the Linux behavior
   of every check is unverified.
 - The largest open technical risk is ADR-0002 (mockup blending), pending the TASK-0008 spike.

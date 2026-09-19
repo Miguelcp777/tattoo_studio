@@ -5,6 +5,7 @@ description = "Imaging and generation worker for Tattoo Creator"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
+    "tattoo-contracts",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.5.0",
     "uvicorn>=0.31.0",
@@ -17,6 +18,11 @@ dev = [
     "pytest>=8.3.0",
     "ruff>=0.6.0",
 ]
+
+[tool.uv.sources]
+# Path dependency into the contracts module. The worker consumes the contract; it never
+# redefines it (ARCH-INV-002: contracts depends on nothing, everything depends on it).
+tattoo-contracts = { path = "../../contracts/python", editable = true }
 
 [build-system]
 requires = ["hatchling"]

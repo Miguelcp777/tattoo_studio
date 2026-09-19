@@ -1,0 +1,22 @@
+# Normalise line endings. Development is on Windows and CI runs on Linux, and the
+# contracts module asserts that two copies of the schema are byte-identical. Without
+# this, that assertion could pass on one platform and fail on the other for reasons
+# having nothing to do with the contract.
+* text=auto eol=lf
+
+# Binary assets must never be translated.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Generated; excluded from diffs to keep reviews readable. They are still committed and
+# a reproducibility check proves they match the schema.
+pnpm-lock.yaml linguist-generated=true -diff
+uv.lock linguist-generated=true -diff
+contracts/src/generated/** linguist-generated=true
+contracts/python/tattoo_contracts/generated/** linguist-generated=true

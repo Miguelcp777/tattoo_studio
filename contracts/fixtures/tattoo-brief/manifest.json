@@ -1,0 +1,174 @@
+{
+  "schema": "contracts/schemas/tattoo-brief.schema.json",
+  "note": "Shared corpus. Both runtimes must reach the identical verdict on every case (ARCH-INV-005).",
+  "cases": [
+    {
+      "name": "accent-with-palette",
+      "file": "valid/accent-with-palette.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "fractional-offset-timestamp",
+      "file": "valid/fractional-offset-timestamp.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "full-colour-traditional",
+      "file": "valid/full-colour-traditional.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "minimal-required-only",
+      "file": "valid/minimal-required-only.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "placement-without-side",
+      "file": "valid/placement-without-side.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "size-at-both-bounds",
+      "file": "valid/size-at-both-bounds.json",
+      "valid": true,
+      "why": "Represents a shape the system must accept."
+    },
+    {
+      "name": "accent-without-palette",
+      "file": "invalid/accent-without-palette.json",
+      "valid": false,
+      "why": "conditional rule: an accent brief requires a palette"
+    },
+    {
+      "name": "body-part-outside-vocabulary",
+      "file": "invalid/body-part-outside-vocabulary.json",
+      "valid": false,
+      "why": "body parts are a curated list"
+    },
+    {
+      "name": "duplicate-subject-elements",
+      "file": "invalid/duplicate-subject-elements.json",
+      "valid": false,
+      "why": "uniqueItems on motifs"
+    },
+    {
+      "name": "empty-palette-on-colour",
+      "file": "invalid/empty-palette-on-colour.json",
+      "valid": false,
+      "why": "a palette, when present, has at least one entry"
+    },
+    {
+      "name": "missing-required-block",
+      "file": "invalid/missing-required-block.json",
+      "valid": false,
+      "why": "shading is required"
+    },
+    {
+      "name": "nested-unknown-field",
+      "file": "invalid/nested-unknown-field.json",
+      "valid": false,
+      "why": "additionalProperties:false applies to nested objects too"
+    },
+    {
+      "name": "palette-on-black-and-grey",
+      "file": "invalid/palette-on-black-and-grey.json",
+      "valid": false,
+      "why": "conditional rule: a black-and-grey brief cannot carry a palette"
+    },
+    {
+      "name": "pixel-dimensions-instead-of-mm",
+      "file": "invalid/pixel-dimensions-instead-of-mm.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-001: pixels are never authoritative and have no place in the contract"
+    },
+    {
+      "name": "revision-not-integer",
+      "file": "invalid/revision-not-integer.json",
+      "valid": false,
+      "why": "revision is an integer"
+    },
+    {
+      "name": "revision-zero",
+      "file": "invalid/revision-zero.json",
+      "valid": false,
+      "why": "revisions start at 1"
+    },
+    {
+      "name": "schema-version-mismatch",
+      "file": "invalid/schema-version-mismatch.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-004: schemaVersion is fixed for this revision"
+    },
+    {
+      "name": "size-above-maximum",
+      "file": "invalid/size-above-maximum.json",
+      "valid": false,
+      "why": "600mm upper bound on millimetres"
+    },
+    {
+      "name": "size-below-minimum",
+      "file": "invalid/size-below-minimum.json",
+      "valid": false,
+      "why": "5mm lower bound on millimetres"
+    },
+    {
+      "name": "size-missing-height",
+      "file": "invalid/size-missing-height.json",
+      "valid": false,
+      "why": "both dimensions are required"
+    },
+    {
+      "name": "style-free-text",
+      "file": "invalid/style-free-text.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-002: free text is not accepted in the style field"
+    },
+    {
+      "name": "style-outside-vocabulary",
+      "file": "invalid/style-outside-vocabulary.json",
+      "valid": false,
+      "why": "CONTRACTS-INV-002: style is a closed vocabulary"
+    },
+    {
+      "name": "subject-description-too-short",
+      "file": "invalid/subject-description-too-short.json",
+      "valid": false,
+      "why": "a 10 character minimum keeps briefs usable by an engine"
+    },
+    {
+      "name": "timestamp-missing-zone",
+      "file": "invalid/timestamp-missing-zone.json",
+      "valid": false,
+      "why": "RFC 3339 requires an offset or Z"
+    },
+    {
+      "name": "timestamp-non-ascii-digits",
+      "file": "invalid/timestamp-non-ascii-digits.json",
+      "valid": false,
+      "why": "patterns use [0-9] so Python does not accept Arabic-Indic digits that JavaScript rejects"
+    },
+    {
+      "name": "unknown-top-level-field",
+      "file": "invalid/unknown-top-level-field.json",
+      "valid": false,
+      "why": "additionalProperties:false must reject an unknown field rather than ignore it"
+    },
+    {
+      "name": "uuid-malformed",
+      "file": "invalid/uuid-malformed.json",
+      "valid": false,
+      "why": "UUID pattern is asserted without relying on the format keyword"
+    },
+    {
+      "name": "uuid-uppercase",
+      "file": "invalid/uuid-uppercase.json",
+      "valid": false,
+      "why": "canonical lowercase UUID only, so both runtimes agree byte for byte"
+    }
+  ]
+}

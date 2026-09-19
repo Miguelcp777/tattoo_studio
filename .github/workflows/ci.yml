@@ -5,8 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# Three independent jobs. A documentary-coverage pass is not functional verification, so
-# the guard never gates on, or is reported together with, the test suites (PLAT-INV-004).
+# Independent jobs. A documentary-coverage pass is not functional verification, so the
+# guard never gates on, or is reported together with, the test suites (PLAT-INV-004).
 jobs:
   spec-coverage:
     name: Spec coverage (documentary only)
@@ -60,11 +60,17 @@ jobs:
         run: pnpm --filter web build
 
   python:
-    name: Python worker
+    name: Python (${{ matrix.package }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - contracts/python
+          - services/worker
     defaults:
       run:
-        working-directory: services/worker
+        working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
 
@@ -86,3 +92,47 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+  codegen:
+    name: Generated artifacts match the schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install TypeScript workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Install contracts Python package
+        working-directory: contracts/python
+        run: uv sync --frozen
+
+      - name: Regenerate TypeScript artifacts
+        run: pnpm --filter @tattoo/contracts generate
+
+      - name: Regenerate Python artifacts
+        working-directory: contracts/python
+        run: uv run python scripts/generate.py
+
+      # Catches a hand-edited generated file, and a generated file left stale after a
+      # schema change. Either would break the guarantee that one document defines the
+      # contract for both runtimes.
+      - name: Generated artifacts are in sync with the schema
+        run: |
+          if ! git diff --quiet; then
+            echo "Generated artifacts differ from the schema. Run codegen and commit."
+            git diff --stat
+            exit 1
+          fi
+          echo "Generated artifacts are in sync."

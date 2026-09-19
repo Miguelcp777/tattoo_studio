@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "briefId": "3f2a9c41-7b2e-4d1a-9f3c-0a1b2c3d4e5f",
+  "revision": 1.5,
+  "createdAt": "2026-09-19T10:30:00Z",
+  "subject": {
+    "description": "A snake coiled around a dagger, the blade pointing down the forearm.",
+    "elements": [
+      "snake",
+      "dagger",
+      "rose"
+    ]
+  },
+  "style": {
+    "primary": "american_traditional",
+    "notes": "Bold outlines, limited palette."
+  },
+  "linework": {
+    "weight": "bold"
+  },
+  "shading": {
+    "technique": "solid_fill",
+    "intensity": "medium"
+  },
+  "colour": {
+    "mode": "colour",
+    "palette": [
+      "red",
+      "black",
+      "green"
+    ]
+  },
+  "placement": {
+    "bodyPart": "outer_forearm",
+    "orientation": "vertical",
+    "side": "left"
+  },
+  "size": {
+    "widthMm": 90,
+    "heightMm": 180
+  },
+  "constraints": {
+    "coverUp": false,
+    "avoid": [
+      "skulls"
+    ]
+  }
+}

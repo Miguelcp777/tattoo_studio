@@ -14,10 +14,11 @@
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
 | platform | root manifests, `scripts/*`, `infra/*`, `.github/*`, `services/worker/app/*` | `.specanchor/modules/platform.spec.md` | draft | 2026-09-19 |
 
-Every module is `draft`. `platform` and `web` have a partial implementation as of TASK-0001 — a
-skeleton only, with no product surface. The other nine have no code at all.
+Every module is `draft`. `contracts` is implemented and verified for `TattooBrief` (TASK-0002);
+`platform` and `web` have skeletons (TASK-0001); the other eight have no code.
 
-No module is `verified`, and none can be until the behavior its spec describes actually exists.
+No module is `verified` as a whole. `contracts` comes closest, but its remaining schemas do not
+exist and its field set is unproven against any consumer.
 
 ## Global specifications
 
@@ -32,6 +33,7 @@ No module is `verified`, and none can be until the behavior its spec describes a
 | Task | Title | Status |
 |---|---|---|
 | TASK-0001 | Repository skeleton, toolchain and CI | verified |
+| TASK-0002 | TattooBrief contract and dual-runtime validation | verified |
 
 ## Decisions
 
@@ -40,7 +42,7 @@ No module is `verified`, and none can be until the behavior its spec describes a
 | ADR-0001 | Hosted image models behind a provider adapter | proposed |
 | ADR-0002 | Hybrid mockup: geometric warp then constrained AI blend | proposed |
 | ADR-0003 | Stencil via native line-art pass and centerline vector trace | proposed |
-| ADR-0004 | One JSON Schema as the source of truth for both runtimes | proposed |
+| ADR-0004 | One JSON Schema as the source of truth for both runtimes | accepted (validated TASK-0002) |
 | ADR-0005 | Next.js BFF and Python worker separated by a job queue | proposed |
 | ADR-0006 | Privacy posture for body photographs | proposed |
 
@@ -51,7 +53,7 @@ Cross-cutting invariants are declared in the global specs and enforced in named 
 | Invariant | Declared in | Enforced by |
 |---|---|---|
 | ARCH-INV-001 sole outbound model call | architecture | generation |
-| ARCH-INV-005 schema parity across runtimes | architecture | contracts |
+| ARCH-INV-005 schema parity across runtimes | architecture | contracts (VERIFIED, TASK-0002) |
 | PROD-INV-001 design geometry preserved in mockup | product-behavior | mockup |
 | PROD-INV-002 stencil prints 1:1 | product-behavior | stencil |
 | PROD-INV-003 aging is illustrative | product-behavior | mockup, web |

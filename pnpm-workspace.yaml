@@ -1,6 +1,7 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  - 'contracts'
 
 # Packages permitted to run install scripts. Allowed individually and deliberately:
 # a blanket approval would let any transitive dependency execute code at install time.

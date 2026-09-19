@@ -13,8 +13,8 @@ studio-grade stencil and an on-body mockup, and which boundaries may not be cros
 
 ## Current behavior with evidence status
 
-No implementation exists. The repository contains specifications and the coverage guard only.
-Every statement below is INTENT unless marked otherwise.
+Partially implemented. `contracts` exists and is verified (TASK-0002). `web` and `platform` have
+skeletons (TASK-0001). The seven other modules have no code, so statements about them are INTENT.
 
 ## Intended behavior
 
@@ -53,8 +53,10 @@ User idea
 - ARCH-INV-002: `contracts` has no dependency on any other module.
 - ARCH-INV-003: A user-visible artifact is always traceable to the brief revision that produced it.
 - ARCH-INV-004: No user photo is passed to any module that has not declared a media dependency.
-- ARCH-INV-005: TypeScript and Python validators for a shared schema are generated from, or
-  validated against, the same JSON Schema file; neither is hand-maintained independently.
+- ARCH-INV-005: TypeScript and Python validate a shared payload against the same JSON Schema
+  document. Neither hand-maintains a parallel definition, and neither substitutes a generated
+  translation for the document when deciding validity. A shared fixture corpus proves the two
+  reach identical verdicts.
 
 ## Conventions
 
@@ -72,6 +74,8 @@ User idea
 
 | Statement | Evidence status | Source / revision |
 |---|---|---|
+| ARCH-INV-005 holds for `TattooBrief` | VERIFIED | 28-case corpus, 69 tests across both runtimes |
+| ARCH-INV-002: contracts depends on nothing | VERIFIED | Package manifests declare no internal deps |
 | Three-stage pipeline decomposition | INTENT | User request, planning session 2026-09-19 |
 | Hosted models behind an adapter | INTENT | ADR-0001; user decision 2026-09-19 |
 | Hybrid mockup pipeline | INTENT | ADR-0002; user decision 2026-09-19 |
@@ -86,3 +90,7 @@ User idea
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap. Status draft, no implementation.
+- 2026-09-19 (TASK-0002): ARCH-INV-005 restated. It previously allowed validators to be
+  *generated from* the schema; the refinement is that generated code may not be the authority,
+  because a generated validator cannot express the schema's conditional rules and would silently
+  accept payloads the schema rejects. The invariant now moves from INTENT to VERIFIED.

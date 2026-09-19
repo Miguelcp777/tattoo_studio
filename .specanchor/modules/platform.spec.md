@@ -3,15 +3,21 @@ type: module-spec
 module: platform
 status: draft
 source_paths:
+  - .gitattributes
+  - .github/*
+  - .npmrc
+  - .prettierignore
+  - .prettierrc.json
+  - CLAUDE.md
+  - eslint.config.mjs
+  - infra/*
   - package.json
   - pnpm-workspace.yaml
-  - tsconfig.base.json
-  - CLAUDE.md
   - scripts/*
-  - infra/*
-  - .github/*
+  - services/worker/.python-version
   - services/worker/app/*
   - services/worker/pyproject.toml
+  - tsconfig.base.json
 last_reviewed: 2026-09-19
 ---
 
@@ -51,7 +57,8 @@ Inputs: environment configuration. Outputs: a running worker process and CI verd
 - PLAT-INV-003: Secrets are read from environment configuration and never committed. No spec,
   evidence file or log records a secret value.
 - PLAT-INV-004: CI runs the guard and the project test suites as separate checks. A guard pass is
-  never reported as functional verification.
+  never reported as functional verification. As of TASK-0002 there are four jobs: `spec-coverage`,
+  `typescript`, `python` (a matrix over both Python packages) and `codegen`.
 - PLAT-INV-005: Settings are validated at process start. A missing or malformed required setting
   fails startup loudly rather than defaulting.
 
@@ -100,10 +107,17 @@ repositories without touching this one.
   only, and review-based coverage is run locally per task. This is a real gap in enforcement.
 - Hosting platform and deployment region are undecided. Region has GDPR residency consequences.
 - `esbuild` is the one dependency permitted to run an install script, listed individually in
-  `pnpm-workspace.yaml` under `onlyBuiltDependencies`. Approval is recorded per package rather
-  than blanket-enabled, and each future addition is a deliberate decision.
+  `pnpm-workspace.yaml` under `allowBuilds`. Approval is recorded per package rather than
+  blanket-enabled, and each future addition is a deliberate decision. Note that pnpm rewrites
+  this file itself when `approve-builds` runs, normalising quoting and the key name, so
+  hand-formatting it does not survive.
 - The worker declares only the settings the shell needs. Engine configuration arrives with each
   engine, so that an unset key always means something genuinely missing.
+- Prettier and ESLint now carry a growing exclusion list (Next-generated files, generated
+  contract artifacts, corpus fixtures, the pnpm-owned workspace file). Each exclusion is
+  justified where it is written, but the list is worth revisiting if it keeps growing.
+- There are now two independent Python projects with separate lockfiles. A dependency shared
+  between them can drift in version without anything noticing.
 
 ## Alignment notes
 
@@ -123,6 +137,11 @@ files caught by `--baseline`.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five
   root configuration files.
+- 2026-09-19 (TASK-0002): `contracts` added to the pnpm workspace and as a uv path dependency of
+  the worker. CI grew a Python matrix over both Python packages and a `codegen` job asserting
+  generated artifacts match the schema. `.gitattributes` added to normalise line endings, since
+  the contracts module asserts two files are byte-identical while development is on Windows and
+  CI is on Linux.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
@@ -131,6 +150,6 @@ files caught by `--baseline`.
 | Repository on branch `main` | VERIFIED | `git init` 2026-09-19 | PASS |
 | Worker installs, lints, typechecks, tests | VERIFIED | `uv sync`, `ruff`, `mypy`, `pytest` all exit 0 | PASS |
 | Settings fail loudly and redact values | VERIFIED | `app/tests/test_settings.py`, 6 tests | PASS |
-| CI declares three independent jobs | OBSERVED | `ci.yml` parsed; jobs enumerated | PASS |
+| CI declares four independent jobs | OBSERVED | `ci.yml` parsed; jobs enumerated | PASS |
 | CI actually passes | UNKNOWN | Never executed; no remote | NOT_RUN |
 | Hosting and region | UNKNOWN | Undecided | NOT_RUN |

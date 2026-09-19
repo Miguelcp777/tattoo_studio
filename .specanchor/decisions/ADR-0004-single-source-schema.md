@@ -1,6 +1,6 @@
 ---
 type: adr
-status: proposed
+status: accepted
 id: ADR-0004
 created: 2026-09-19
 ---
@@ -34,6 +34,36 @@ reaching production (ARCH-INV-005).
 derived at render time and are never the source of truth, so that a design's physical size means
 the same thing to the consultation, the stencil exporter and the mockup placer.
 
+## Refinement (TASK-0002, 2026-09-19)
+
+The decision above stands. Two details it left open are now resolved, and one named tool is
+replaced. The original text is kept intact so the reasoning that led here stays visible.
+
+**The schema document itself is the validator input in both runtimes**, rather than a generated
+validator in each. TypeScript compiles it with `ajv`; Python runs it through `jsonschema`.
+
+The original wording named `zod` for TypeScript. `zod` would be a *translation* of the schema, and
+a translation is exactly the thing that can drift — the failure mode this ADR exists to prevent,
+reintroduced one layer down. The decisive case is conditional rules: the schema uses `if`/`then`
+to forbid a colour palette on a black-and-grey brief, and neither a generated `zod` schema nor a
+generated pydantic model reliably expresses that. A generated validator would silently accept
+payloads the schema rejects.
+
+So generated artifacts are demoted to **ergonomics with no authority**: TypeScript interfaces from
+`json-schema-to-typescript`, pydantic models from `datamodel-code-generator`, useful for editor
+support and FastAPI request models, never consulted for a validity verdict.
+
+**Generated artifacts are committed** rather than produced at build time, which the Consequences
+section left undecided. Committing makes drift visible in review, and a check proves regeneration
+produces no diff.
+
+Two further parity hazards were found while implementing and are handled in the schema itself:
+
+- `format` is assertive only when a format checker is wired up, and the two ecosystems wire it
+  differently. UUID and timestamp fields use `pattern` instead.
+- Python's `re` matches Unicode digits with `\d` while JavaScript's does not, so `\d` would accept
+  Arabic-Indic digits in Python and reject them in TypeScript. Every pattern spells out `[0-9]`.
+
 ## Alternatives considered
 
 - **Hand-written types on both sides, kept in sync by review.** Rejected: relies on discipline to
@@ -62,8 +92,18 @@ the same thing to the consultation, the stencil exporter and the mockup placer.
 
 ## Validation / revisit conditions
 
-Validated in TASK-0002, which must show a schema change propagating to both runtimes and a
-deliberately introduced divergence failing a test.
+**Validated in TASK-0002, 2026-09-19.** Both conditions were demonstrated by execution:
+
+*Propagation.* A new required field `artistNotes` was added to the canonical schema. After
+regeneration, the generated TypeScript interface carried `artistNotes: string`, the generated
+pydantic model carried `artistNotes: Annotated[str, Field(max_length=100)]`, and all six
+previously-valid fixtures began failing in both runtimes because they lacked the field. The
+schema was then restored and all 81 tests returned to passing.
+
+*Divergence.* The conditional rule forbidding a palette on a black-and-grey brief was deleted
+from the Python schema copy alone. Two tests failed: the corpus case `palette-on-black-and-grey`,
+because Python accepted what TypeScript rejected, and the byte-identity check on the two schema
+copies. Restoring returned the suite to green.
 
 Revisit if the generation toolchain proves unreliable for either target — in which case the
 fallback is a schema-conformance test suite over hand-written types, which preserves the guarantee

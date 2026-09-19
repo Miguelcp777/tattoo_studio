@@ -20,3 +20,16 @@ uv.lock
 # forever, so they are left exactly as Next emits them.
 apps/web/next-env.d.ts
 apps/web/tsconfig.json
+
+# Generated from contracts/schemas. A reproducibility check proves they match.
+**/src/generated/
+contracts/python/tattoo_contracts/generated/
+contracts/python/tattoo_contracts/schemas/
+
+# Corpus data, written to match the canonical schema byte for byte. Reformatting it
+# would break the byte-identity assertion between the two schema copies.
+contracts/fixtures/
+contracts/schemas/
+
+# pnpm rewrites this file itself (approve-builds), so formatting it starts a fight.
+pnpm-workspace.yaml

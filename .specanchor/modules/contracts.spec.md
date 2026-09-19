@@ -20,15 +20,31 @@ the consultation produces it, and all three engines consume it.
 
 ## Public interfaces
 
-- `tattoo-brief.schema.json` — the brief.
-- `design.schema.json` — a generated design and its version lineage.
-- `placement.schema.json` — body location, size in mm, rotation, anchor point.
-- `job.schema.json` — queued job envelope and lifecycle state.
-- `consent.schema.json` — recorded consent, its version and timestamp.
+Schemas:
+- `schemas/tattoo-brief.schema.json` — the brief. **Exists** (TASK-0002), version `1.0.0`.
+  Placement and size are embedded rather than extracted, until a second consumer exists.
+- `design.schema.json`, `job.schema.json`, `consent.schema.json` — planned, not built.
+
+TypeScript (`@tattoo/contracts`):
+- `validateTattooBrief(payload)` — returns every issue rather than throwing.
+- `assertTattooBrief(payload)` — validates or throws `TattooBriefValidationError`.
+- `TattooBrief`, `StyleName`, `BodyPart` — generated types.
+
+Python (`tattoo-contracts`):
+- `validate_tattoo_brief(payload)`, `is_valid_tattoo_brief(payload)`,
+  `assert_tattoo_brief(payload)`, `tattoo_brief_schema()`.
+
+**Authority versus ergonomics.** The validating authority in both runtimes is the schema
+document itself, run through `ajv` in TypeScript and `jsonschema` in Python. Generated
+artifacts — TypeScript interfaces and pydantic models — are for editor support and FastAPI
+and are never consulted for a verdict. They cannot express the schema's conditional colour
+rules, so a generated validator would silently accept payloads the schema rejects.
 
 ## Inputs and outputs
 
-Inputs: none at runtime. Outputs: validated types for TypeScript (`zod`) and Python (`pydantic`).
+Inputs: none at runtime. Outputs: a validation verdict in either runtime, plus generated
+types for editor support. See the authority note above; `zod` was considered and rejected in
+the ADR-0004 refinement.
 
 ## Domain invariants
 
@@ -75,19 +91,43 @@ Python validator. Divergence between them fails the build (ARCH-INV-005).
 
 ## Known uncertainties and debt
 
-- Generation mechanism from JSON Schema to `zod` and `pydantic` is not yet chosen.
-- Field-level content of `TattooBrief` is designed in TASK-0002, not here.
+- The schema is unproven against a real consumer. No engine reads a brief yet, so whether the
+  fields are the right fields is untested. Expect revisions once TASK-0004 renders from one.
+- The vocabulary lists (10 styles, 26 body parts) were assembled without a practising tattooer's
+  review. They are plausible, not authoritative.
+- Size bounds of 5mm to 600mm are a judgement call, not a measured constraint.
+- `design`, `job` and `consent` schemas do not exist.
+- Fixture parity is asserted on accept-or-reject, not on which rule fired. Two runtimes could in
+  principle reject the same payload for different reasons without the corpus noticing.
+
+Resolved in TASK-0002: the generation mechanism (`json-schema-to-typescript` and
+`datamodel-code-generator`, both committed) and the field-level content of `TattooBrief`.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Aligned as of TASK-0002 for `TattooBrief`. The remaining schemas named under *Public interfaces*
+are declared ahead of the code that will own them.
+
+Two parity hazards were found while implementing and are handled in the schema rather than left
+to chance. `format` is assertive only when a format checker is wired up, and the ecosystems wire
+it differently, so patterns are used instead. Python's `re` matches Unicode digits with `\d`
+while JavaScript's does not, so every pattern spells out `[0-9]` — otherwise a timestamp with
+Arabic-Indic digits would validate in Python and fail in TypeScript.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0002): `TattooBrief` 1.0.0 defined; dual-runtime validation against the one
+  schema document; 28-case shared corpus; generated artifacts committed with a reproducibility
+  check.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| Brief is the central contract | INTENT | Planning session 2026-09-19 | NOT_RUN |
-| Dual validation from one schema | INTENT | ADR-0004 | NOT_RUN |
+| Schema is valid JSON Schema 2020-12 | VERIFIED | Metaschema test | PASS |
+| Both runtimes agree on all 28 fixtures | VERIFIED | 33 TS tests, 36 Python tests | PASS |
+| Packaged schema copy is byte-identical | VERIFIED | Byte-comparison test | PASS |
+| Codegen is reproducible | VERIFIED | Regenerate, then `git diff --quiet` exit 0 | PASS |
+| Divergence is detected, not assumed | VERIFIED | Injected drift failed 2 tests | PASS |
+| Brief is the central contract | INTENT | No consumer exists yet | NOT_RUN |
+| Field set is the right field set | UNKNOWN | Unproven against any engine | NOT_RUN |
