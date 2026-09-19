@@ -1,0 +1,404 @@
+{
+  "revision": "fa0f875369fa6ddc1ea393e8e836558c2556a4a5",
+  "task_spec": ".specanchor/tasks/TASK-0001.spec.md",
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Introduces CI as three independent jobs so a guard pass is never reported together with the test suites (PLAT-INV-004). Structure verified; execution NOT_RUN, no remote.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": ".npmrc",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": ".prettierignore",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": ".prettierrc.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": ".specanchor/global/coding-standards.spec.md",
+      "kind": "clarification",
+      "specs": [
+        ".specanchor/global/coding-standards.spec.md"
+      ],
+      "rationale": "Resolves the two recorded toolchain unknowns to pnpm and uv, both now VERIFIED, and records that prettier is scoped away from the specification corpus. No standard changed; previously open choices were closed.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": ".specanchor/global/project-setup.spec.md",
+      "kind": "requirement",
+      "specs": [
+        ".specanchor/global/project-setup.spec.md"
+      ],
+      "rationale": "Layout, commands and guard behaviour move from INTENT to VERIFIED for what now exists. Adds that CI has never executed and that all verification was done on Windows.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/platform.spec.md",
+      "kind": "requirement",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Records the manifests, worker shell and CI workflow this task created, the per-package esbuild build approval, and the fnmatch reason root config files are owned by exact path. Adds the unautomated --review gate as known debt.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/web.spec.md",
+      "kind": "requirement",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Records that only a shell exists, that it builds under strict TypeScript, and that the disclaimer copy required by WEB-INV-003 is now testable while the invariant itself is not yet verifiable because no artifacts exist.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": "apps/web/next-env.d.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/next.config.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/layout.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/src/content/disclaimers.test.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/src/content/disclaimers.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "apps/web/vitest.config.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Establishes the web module public surface where none existed: a Next.js shell building under strict TypeScript, plus the disclaimer copy WEB-INV-003 requires. web.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "eslint.config.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/.python-version",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/__init__.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/main.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/settings.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/tests/__init__.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/tests/test_health.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/app/tests/test_settings.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Establishes the worker application shell and its startup settings contract, including the fail-loud redacting validation required by PLAT-INV-005. platform.spec.md changed to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "services/worker/pyproject.toml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "tsconfig.base.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Toolchain and workspace configuration establishing how the project installs, lints, typechecks, tests and builds. Part of the platform module surface created by this task; platform.spec.md changed in this commit to match.",
+      "evidence": [
+        ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+      ]
+    }
+  ],
+  "traceability": [
+    {
+      "requirement": "TASK-0001/REQ-001",
+      "acceptance": "TASK-0001/AC-001",
+      "verification": "pnpm install",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-0001/REQ-002",
+      "acceptance": "TASK-0001/AC-003",
+      "verification": "pnpm --filter web build",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-0001/REQ-003",
+      "acceptance": "TASK-0001/AC-006",
+      "verification": "uv sync",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-0001/REQ-004",
+      "acceptance": "TASK-0001/AC-002",
+      "verification": "pnpm typecheck",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-0001/REQ-004",
+      "acceptance": "TASK-0001/AC-004",
+      "verification": "pnpm lint",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-0001/REQ-004",
+      "acceptance": "TASK-0001/AC-007",
+      "verification": "uv run ruff check . and uv run mypy .",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-0001/REQ-005",
+      "acceptance": "TASK-0001/AC-005",
+      "verification": "pnpm test",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-0001/REQ-005",
+      "acceptance": "TASK-0001/AC-008",
+      "verification": "uv run pytest",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-0001/REQ-006",
+      "acceptance": "TASK-0001/AC-009",
+      "verification": "services/worker/app/tests/test_settings.py",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-004"
+    },
+    {
+      "requirement": "TASK-0001/REQ-007",
+      "acceptance": "TASK-0001/AC-012",
+      "verification": "ci.yml YAML parse and job enumeration",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-006"
+    },
+    {
+      "requirement": "TASK-0001/REQ-008",
+      "acceptance": "TASK-0001/AC-010",
+      "verification": "check-spec-sync.py --baseline",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-0001.spec.md#ev-005"
+    }
+  ]
+}

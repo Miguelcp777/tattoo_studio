@@ -1,23 +1,25 @@
 # Project Codemap
 
-Status as of 2026-09-19: **no application code exists.** This codemap describes the intended
-structure agreed during planning, so that the first code to land is already anchored. Sections
-describing runtime behavior are INTENT, not OBSERVED.
+Status as of 2026-09-19, after TASK-0001: **a skeleton exists; no domain code does.** Both
+runtimes install, lint, typecheck, test and build. There are no contract schemas, engines, queue,
+storage, moderation or product surfaces. Sections describing domain behavior remain INTENT.
 
 ## Runtime / stack
 
-- TypeScript on Node 22 for `apps/web` and `packages/consultation` (Next.js). INTENT.
-- Python 3.11+ (FastAPI) for `services/worker`. INTENT.
-  Development machine currently has Python 3.13.5, Node 22.16.0, Git 2.51.0. VERIFIED 2026-09-19.
+- TypeScript on Node 22 for `apps/web` (Next.js 15.5.25), managed by pnpm 12.4.2. VERIFIED.
+  `packages/consultation` does not exist yet. INTENT.
+- Python (FastAPI) for `services/worker`, managed by uv 0.12.17. VERIFIED.
+  Development machine has Python 3.13.5, Node 22.16.0, Git 2.51.0. VERIFIED 2026-09-19.
 - The two runtimes communicate only through the job queue and shared contract schemas.
 
 ## Entry points
 
 | Entry point | Path | Status |
 |---|---|---|
-| Web application | `apps/web` | not created |
-| Worker service | `services/worker/app` | not created |
-| Coverage guard | `scripts/check-spec-sync.py` | present |
+| Web application | `apps/web` | shell only; builds, one placeholder route |
+| Worker service | `services/worker/app` | shell only; `/health`, validated settings |
+| Coverage guard | `scripts/check-spec-sync.py` | present and verified enforcing |
+| CI | `.github/workflows/ci.yml` | present; **never executed**, no remote |
 
 ## Main modules
 
@@ -58,13 +60,21 @@ checks on every media resolution; age affirmation before upload.
 
 ## Build / test / deploy
 
-Not yet established. Documentary coverage today:
+Build and test are established; deploy is not.
 
 ```
+# TypeScript, from the repository root
+pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter web build
+
+# Python worker, from services/worker
+uv sync && uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest
+
+# Documentary coverage
 python scripts/check-spec-sync.py --baseline
-python scripts/check-spec-sync.py --review .specanchor/evidence/impact-review.json
-python scripts/check-spec-sync.py --base origin/main --review .specanchor/evidence/impact-review.json
+python scripts/check-spec-sync.py --base HEAD~1 --review .specanchor/evidence/impact-review.json
 ```
+
+No deployment configuration exists. `infra/` is declared in the module map but empty.
 
 ## Cross-cutting concerns
 
@@ -74,7 +84,9 @@ python scripts/check-spec-sync.py --base origin/main --review .specanchor/eviden
 
 ## Unanchored or uncertain areas
 
-- Nothing is unanchored: `--baseline` reports an empty unmapped list.
-- Every module is `draft` with no implementation, so all behavioral statements are INTENT.
+- Nothing is unanchored: `--baseline` reports an empty unmapped list over 27 material files.
+- Every module is `draft`. Only `platform` and `web` have any code, and only a skeleton.
+- CI has never run, and all verification so far was performed on Windows, so the Linux behavior
+  of every check is unverified.
 - The largest open technical risk is ADR-0002 (mockup blending), pending the TASK-0008 spike.
 - The largest open non-technical risk is the absence of legal review for body-photo processing.

@@ -14,7 +14,10 @@
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
 | platform | root manifests, `scripts/*`, `infra/*`, `.github/*`, `services/worker/app/*` | `.specanchor/modules/platform.spec.md` | draft | 2026-09-19 |
 
-Every module is `draft`. No module has an implementation, so none can reach `verified`.
+Every module is `draft`. `platform` and `web` have a partial implementation as of TASK-0001 — a
+skeleton only, with no product surface. The other nine have no code at all.
+
+No module is `verified`, and none can be until the behavior its spec describes actually exists.
 
 ## Global specifications
 
@@ -23,6 +26,12 @@ Every module is `draft`. No module has an implementation, so none can reach `ver
 - `.specanchor/global/project-setup.spec.md`
 - `.specanchor/global/product-behavior.spec.md`
 - `.specanchor/global/quality-and-security.spec.md`
+
+## Tasks
+
+| Task | Title | Status |
+|---|---|---|
+| TASK-0001 | Repository skeleton, toolchain and CI | verified |
 
 ## Decisions
 
