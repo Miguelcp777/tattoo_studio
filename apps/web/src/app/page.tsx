@@ -8,6 +8,9 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
+import { StepFlow } from '@/components/StepFlow';
+
+import { buildSteps } from '@/lib/steps';
 
 import type { StudioJobStatus, GeneratedTattooArtifact } from '@/types/generation';
 
@@ -407,6 +410,26 @@ export default function ConsultationPage(): ReactNode {
 
   const unsaved = JSON.stringify(form) !== JSON.stringify(savedForm);
 
+  // TASK-0026: the rail reads state the page already holds; it decides nothing (WEB-INV-001).
+  const slots = session?.slots;
+  const hasBrief = Boolean(
+    slots?.style?.primary && slots?.placement?.bodyPart && slots?.colour?.mode,
+  );
+  const steps = buildSteps({
+    hasIdea: Boolean(slots?.subject?.description),
+    hasBrief,
+    referenceCount: session?.references.length ?? 0,
+    adult,
+    consent,
+    referencesReviewed,
+    hasArtifact: Boolean(artifact),
+    proposedSize: slots?.size,
+  });
+
+  function goToStep(id: string) {
+    document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <div>
       <header className="studio-header">
@@ -417,8 +440,10 @@ export default function ConsultationPage(): ReactNode {
         <span className="model-badge">Diseño · Piel · Stencil</span>
       </header>
 
+      <StepFlow steps={steps} onSelect={goToStep} />
+
       <main className="studio-container">
-        <section className="chat-surface" aria-label="Consulta de diseño">
+        <section id="step-idea" className="chat-surface" aria-label="Consulta de diseño">
           <div className="studio-intro">
             <p className="eyebrow">DE LA IDEA AL TRAZO</p>
 
@@ -430,7 +455,8 @@ export default function ConsultationPage(): ReactNode {
             </p>
 
             <p className="small-note">
-              Hasta 3 preguntas. Las medidas y preferencias se completan en el panel.
+              Hasta 3 preguntas. Proponemos el tamaño según la zona del cuerpo; puedes cambiarlo en
+              el panel cuando quieras.
             </p>
           </div>
 
@@ -487,7 +513,7 @@ export default function ConsultationPage(): ReactNode {
         </section>
 
         <aside className="brief-panel" aria-label="Preferencias y entrega">
-          <h2>Tu proyecto</h2>
+          <h2 id="step-brief">Tu proyecto</h2>
 
           <p>{session ? `Preguntas: ${session.questionsAsked} / 3` : 'Empieza por tu idea'}</p>
 
@@ -587,33 +613,30 @@ export default function ConsultationPage(): ReactNode {
             )}
 
             <label>
-              Ancho (mm)
+              Ancho (mm) <span className="field-optional">opcional</span>
               <input
                 type="number"
-
                 min="5"
-
                 max="600"
-
+                placeholder={
+                  slots?.size?.widthMm ? String(slots.size.widthMm) : 'Lo propone el estudio'
+                }
                 value={form.width}
-
                 onChange={(e) => setForm({ ...form, width: e.target.value })}
-
                 disabled={disabled}
               />
             </label>
 
             <label>
-              Alto (mm)
+              Alto (mm) <span className="field-optional">opcional</span>
               <input
                 type="number"
-
                 min="5"
-
                 max="600"
-
+                placeholder={
+                  slots?.size?.heightMm ? String(slots.size.heightMm) : 'Lo propone el estudio'
+                }
                 value={form.height}
-
                 onChange={(e) => setForm({ ...form, height: e.target.value })}
 
                 disabled={disabled}
@@ -632,7 +655,7 @@ export default function ConsultationPage(): ReactNode {
             contornos de la plantilla.
           </p>
 
-          <h3>Referencias</h3>
+          <h3 id="step-referencias">Referencias</h3>
           {session?.missingFields.some((field) => field.startsWith('referencia')) && (
             <button
               disabled={disabled}

@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0026 (ADR-0010): size is no longer pushed into `missingFields`. The provider prompt already
+recommends a size per anatomy, and `missingPreferences` never gated on it, so reporting it as
+outstanding asked the client to settle a decision that had already been taken for them.
+
 TASK-0020/REQ-001: retrieve Valencia CF's live official navigation crest with provenance,
 fall back to filtered Commons queries, isolate per-entity failures, and allow a bounded
 retry of missing references preserving the initial subject and existing references.
@@ -41,8 +45,11 @@ Output: a progressively filled brief plus the next question to ask.
   Partial briefs are explicitly typed as incomplete.
 - CONSULT-INV-003: Free-text style input is mapped onto the closed curated vocabulary. Unmapped
   styles prompt a clarifying question rather than passing through raw.
-- CONSULT-INV-004: Size is captured in millimetres, and the user is asked for it explicitly rather
-  than having it inferred.
+- CONSULT-INV-004: Size is captured in millimetres. The design process proposes it from the body
+  zone and the idea rather than demanding it, and it is never reported as a missing client answer
+  (ADR-0010). An explicit client value always wins, and the proposal is shown rather than applied
+  silently. Amended by TASK-0026: the original text required asking explicitly, which contradicted
+  the shipped provider prompt and predated the reference anatomy ADR-0008 introduced.
 - CONSULT-INV-005: A request to imitate a named living artist is declined in-conversation with an
   explanation, and the brief is steered to the underlying style instead (PROD-INV-004).
 

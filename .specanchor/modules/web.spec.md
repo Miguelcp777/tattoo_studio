@@ -9,6 +9,14 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0026 (ADR-0010): a persistent progress rail names the five steps and marks each completed,
+current or pending, with optional steps labelled. It is derived from the session the page already
+holds and gates nothing (WEB-INV-001); its conditions read the same values the panel gates on, so
+it cannot report readiness the panel would refuse. The millimetre fields are labelled optional and
+show the proposed size as placeholder. Above 1024px the preferences panel is sticky with its own
+scroll, so it cannot outgrow the viewport and the primary action stays reachable. The background is
+authored in CSS with an inline SVG grain rather than a shipped image asset.
+
 TASK-0024 (ADR-0008): the coverage controls no longer describe themselves as uniformly visual.
 Smaller/larger remain view-only; "Ocupar toda la zona" states that it changes the print
 millimetres and that the figure comes from reference adult anatomy to be confirmed with a

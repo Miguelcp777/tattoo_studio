@@ -106,8 +106,9 @@ export class OrchestratorAgent {
     delete next.brief;
     if (result.complete && missing.length === 0) next.brief = result.brief;
     next.missingFields = [...missing];
-    if (!next.slots.size?.widthMm || !next.slots.size?.heightMm)
-      next.missingFields.push('medidas en mm');
+    // TASK-0026 (ADR-0010): size is not a missing client answer. The design process proposes
+    // it from the anatomy and the idea, and the client may override it. Reporting it as
+    // pending asked for a decision that had already been taken for them.
     if (!next.references.length) next.missingFields.push('referencia visual');
     const searched = next.references.filter((r) => r.referenceQuery);
     if (searched.length && !next.references.some((r) => r.verification === 'user_supplied')) {
