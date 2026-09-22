@@ -159,7 +159,7 @@ def test_the_allowlist_is_not_vacuous(module: str) -> None:
 SPEC_ROOT = WORKER_ROOT.parents[1] / ".specanchor" / "modules"
 
 #: Modules that live in this worker. Others (web, consultation) are TypeScript.
-WORKER_MODULES = {"generation", "flash", "media", "safety", "app"}
+WORKER_MODULES = {"generation", "flash", "media", "safety", "app", "jobs", "stencil", "mockup"}
 
 
 def _declared_dependencies() -> dict[str, set[str]]:

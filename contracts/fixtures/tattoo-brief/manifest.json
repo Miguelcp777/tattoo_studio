@@ -40,9 +40,9 @@
     },
     {
       "name": "accent-without-palette",
-      "file": "invalid/accent-without-palette.json",
-      "valid": false,
-      "why": "conditional rule: an accent brief requires a palette"
+      "file": "valid/accent-without-palette.json",
+      "valid": true,
+      "why": "Client can delegate accent colour selection without a palette"
     },
     {
       "name": "body-part-outside-vocabulary",

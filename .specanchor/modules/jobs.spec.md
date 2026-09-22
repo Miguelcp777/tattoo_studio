@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0021: owner-scoped successful history (latest 20 within 24 hours) and source_payload
+support branching revisions. HTTP validates a completed owned parent's master and reuses its
+brief/references/body/placement before enqueue. Edited master feeds all derived outputs;
+stored backgrounds are reused when available, otherwise legacy jobs generate a new one.
+Parent jobs are immutable. Failed edits remain visible and leave earlier results available.
+
 ## Responsibility
 
 Own asynchronous execution: enqueue, run, report status, enforce quotas. Every generation in the
@@ -53,13 +59,12 @@ failure reason, attempt count. Records outlive the assets they reference for aud
 
 ## External integrations
 
-Queue backend, undecided (candidates: Redis with RQ, Celery, or a cloud-native queue).
+SQLite single-worker for the local studio (ADR-0007). Multi-host backend remains undecided.
 
 ## Error semantics
 
-Transient failures retry with backoff and a cap. Policy rejections and validation failures are
-terminal and never retried. Exhausted retries land in a dead-letter state that is visible, not
-silent.
+The current studio makes failures terminal and visible; paid calls are not automatically retried.
+Restarted running jobs fail explicitly. A future distributed retry/dead-letter policy remains intent.
 
 ## Security and permissions
 
@@ -101,3 +106,10 @@ No implementation exists; nothing to align yet.
 | All generation is asynchronous | INTENT | ADR-0005 | NOT_RUN |
 | References, not bytes, in the queue | INTENT | Planning session 2026-09-19 | NOT_RUN |
 | Queue backend | UNKNOWN | Undecided | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+queue.py implements one SQLite worker, one active job per owner and eight globally. Idempotency binds owner+key to the entire payload. Startup fails interrupted running jobs, never replays paid calls. No automatic retry or dead-letter engine exists in this local version. Shared studio-status validation protects emitted results. All generation is off HTTP request execution; media screening remains synchronous on a threadpool.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

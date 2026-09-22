@@ -160,9 +160,9 @@ that specific attack.
 | Output gate exists | **NO** | Not built | NOT_RUN |
 | Moderation accuracy on body imagery | UNKNOWN | Unmeasured | NOT_RUN |
 
+## TASK-0019 current implementation and remaining intent
 
-## TASK-0019 intended reconciliation
+TASK-0019 adds an explicit own_body_consented input-gate exception for non-explicit body photographs, enabled only by the studio after adult/consent validation. Ordinary references still reject real people. Missing/moderation failures deny input. Provider-generated outputs are moderated before derivation. Provider data-retention contractual guarantees remain unverified and are not asserted by tests.
 
-Implementation follows `.specanchor/tasks/TASK-0019.spec.md` and ADR-0007.
-Previous VERIFIED statements apply only to their cited historical checks, not the new studio path.
-Current acceptance is pending TASK-0019 evidence; no new product guarantee is verified yet.
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

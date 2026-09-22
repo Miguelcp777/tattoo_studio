@@ -13,7 +13,10 @@ must never appear to promise.
 
 ## Current behavior with evidence status
 
-No implementation exists. All statements are INTENT.
+TASK-0019 implements reference search, up to three chat questions, explicit mm entry and
+common-master black contour delivery. The realistic colour artwork and automatic anatomical
+surface goal below remain INTENT, not accepted reductions of the user's goal. These open
+requirements prevent declaring the whole product verified.
 
 ## Intended behavior
 

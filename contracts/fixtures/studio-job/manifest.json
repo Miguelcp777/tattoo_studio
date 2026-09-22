@@ -1,0 +1,125 @@
+{
+  "schema": "contracts/schemas/studio-job.schema.json",
+  "cases": [
+    {
+      "name": "minimal",
+      "file": "valid/minimal.json",
+      "valid": true,
+      "why": "minimal"
+    },
+    {
+      "name": "own-photo",
+      "file": "valid/own-photo.json",
+      "valid": true,
+      "why": "own-photo"
+    },
+    {
+      "name": "placement",
+      "file": "valid/placement.json",
+      "valid": true,
+      "why": "placement"
+    },
+    {
+      "name": "calibrated",
+      "file": "valid/calibrated.json",
+      "valid": true,
+      "why": "calibrated"
+    },
+    {
+      "name": "two-references",
+      "file": "valid/two-references.json",
+      "valid": true,
+      "why": "two-references"
+    },
+    {
+      "name": "missing-review",
+      "file": "invalid/missing-review.json",
+      "valid": false,
+      "why": "missing-review"
+    },
+    {
+      "name": "empty-refs",
+      "file": "invalid/empty-refs.json",
+      "valid": false,
+      "why": "empty-refs"
+    },
+    {
+      "name": "duplicate-refs",
+      "file": "invalid/duplicate-refs.json",
+      "valid": false,
+      "why": "duplicate-refs"
+    },
+    {
+      "name": "invalid-ref",
+      "file": "invalid/invalid-ref.json",
+      "valid": false,
+      "why": "invalid-ref"
+    },
+    {
+      "name": "too-many-refs",
+      "file": "invalid/too-many-refs.json",
+      "valid": false,
+      "why": "too-many-refs"
+    },
+    {
+      "name": "bad-key",
+      "file": "invalid/bad-key.json",
+      "valid": false,
+      "why": "bad-key"
+    },
+    {
+      "name": "bad-photo",
+      "file": "invalid/bad-photo.json",
+      "valid": false,
+      "why": "bad-photo"
+    },
+    {
+      "name": "unknown",
+      "file": "invalid/unknown.json",
+      "valid": false,
+      "why": "unknown"
+    },
+    {
+      "name": "bad-placement",
+      "file": "invalid/bad-placement.json",
+      "valid": false,
+      "why": "bad-placement"
+    },
+    {
+      "name": "missing-width",
+      "file": "invalid/missing-width.json",
+      "valid": false,
+      "why": "missing-width"
+    },
+    {
+      "name": "bad-scale",
+      "file": "invalid/bad-scale.json",
+      "valid": false,
+      "why": "bad-scale"
+    },
+    {
+      "name": "invalid-brief-size",
+      "file": "invalid/invalid-brief-size.json",
+      "valid": false,
+      "why": "invalid-brief-size"
+    },
+    {
+      "name": "edit-proposal",
+      "file": "valid/edit-proposal.json",
+      "valid": true,
+      "why": "TASK-0021 bounded edit request"
+    },
+    {
+      "name": "edit-empty",
+      "file": "invalid/edit-empty.json",
+      "valid": false,
+      "why": "TASK-0021 bounded edit request"
+    },
+    {
+      "name": "edit-too-long",
+      "file": "invalid/edit-too-long.json",
+      "valid": false,
+      "why": "TASK-0021 bounded edit request"
+    }
+  ]
+}

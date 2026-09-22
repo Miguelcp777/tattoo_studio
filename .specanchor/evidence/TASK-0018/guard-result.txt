@@ -1,0 +1,34 @@
+ERROR: Missing impact review: .specanchor/modules/consultation.spec.md
+ERROR: Missing impact review: .specanchor/modules/web.spec.md
+ERROR: Missing impact review: apps/web/package.json
+ERROR: Missing impact review: apps/web/src/app/api/consultation/route.test.ts
+ERROR: Missing impact review: apps/web/src/app/api/consultation/route.ts
+ERROR: Missing impact review: apps/web/src/app/api/generate/route.test.ts
+ERROR: Missing impact review: apps/web/src/app/api/generate/route.ts
+ERROR: Missing impact review: apps/web/src/app/globals.css
+ERROR: Missing impact review: apps/web/src/app/layout.tsx
+ERROR: Missing impact review: apps/web/src/app/page.tsx
+ERROR: Missing impact review: apps/web/src/components/BriefTracker.tsx
+ERROR: Missing impact review: apps/web/src/components/ReferenceUploader.tsx
+ERROR: Missing impact review: apps/web/src/components/TattooPreviewModal.tsx
+ERROR: Missing impact review: apps/web/src/content/disclaimers.ts
+ERROR: Missing impact review: apps/web/src/types/generation.ts
+ERROR: Missing impact review: packages/consultation/package.json
+ERROR: Missing impact review: packages/consultation/src/agents/creator.ts
+ERROR: Missing impact review: packages/consultation/src/agents/image-scout.ts
+ERROR: Missing impact review: packages/consultation/src/agents/orchestrator.ts
+ERROR: Missing impact review: packages/consultation/src/agents/researcher.ts
+ERROR: Missing impact review: packages/consultation/src/agents/types.ts
+ERROR: Missing impact review: packages/consultation/src/index.ts
+ERROR: Missing impact review: packages/consultation/src/providers/fixture-provider.ts
+ERROR: Missing impact review: packages/consultation/src/providers/openai-astra.ts
+ERROR: Missing impact review: packages/consultation/src/providers/types.ts
+ERROR: Missing impact review: packages/consultation/src/state-machine.ts
+ERROR: Missing impact review: packages/consultation/src/tests/agents.test.ts
+ERROR: Missing impact review: packages/consultation/src/tests/state-machine.test.ts
+ERROR: Missing impact review: packages/consultation/src/types.ts
+ERROR: Missing impact review: packages/consultation/tsconfig.json
+ERROR: Missing impact review: packages/consultation/vitest.config.ts
+ERROR: Missing impact review: services/worker/safety/openai_moderation.py
+Documentary coverage: FAIL
+Semantic alignment is NOT checked. Review the actual diff and evidence.

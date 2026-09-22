@@ -9,6 +9,9 @@ dependencies = [
     "httpx2>=0.28.0",
     "cryptography>=45.0.0",
     "pillow>=11.0.0",
+    "numpy>=2.0.0",
+    "scikit-image>=0.24.0",
+    "reportlab>=4.2.0",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.5.0",
     "uvicorn>=0.31.0",
@@ -20,6 +23,7 @@ dev = [
     "piexif>=1.1.3",
     "pytest>=8.3.0",
     "ruff>=0.6.0",
+    "types-reportlab>=4.2.0",
 ]
 
 [tool.uv.sources]
@@ -32,7 +36,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup"]
 
 [tool.ruff]
 line-length = 100
@@ -53,4 +57,4 @@ module = ["piexif.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["app", "generation", "flash", "media", "safety"]
+testpaths = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup"]

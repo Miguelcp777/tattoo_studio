@@ -101,7 +101,7 @@ class Colour(BaseModel):
     palette: Annotated[
         list[PaletteItem] | None,
         Field(
-            description='Only meaningful when ink is used. Forbidden on a pure black-and-grey brief, enforced below.',
+            description='Optional client colour preferences. Omit to leave colour selection to the design process using the idea and reviewed references. Forbidden for pure black-and-grey.',
             max_length=8,
             min_length=1,
         ),

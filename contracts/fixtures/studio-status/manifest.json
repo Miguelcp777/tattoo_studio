@@ -1,0 +1,107 @@
+{
+  "schema": "contracts/schemas/studio-status.schema.json",
+  "cases": [
+    {
+      "name": "queued",
+      "file": "valid/queued.json",
+      "valid": true,
+      "why": "queued"
+    },
+    {
+      "name": "failed",
+      "file": "valid/failed.json",
+      "valid": true,
+      "why": "failed"
+    },
+    {
+      "name": "succeeded",
+      "file": "valid/succeeded.json",
+      "valid": true,
+      "why": "succeeded"
+    },
+    {
+      "name": "fake-success",
+      "file": "invalid/fake-success.json",
+      "valid": false,
+      "why": "fake-success"
+    },
+    {
+      "name": "failure-with-artifact",
+      "file": "invalid/failure-with-artifact.json",
+      "valid": false,
+      "why": "failure-with-artifact"
+    },
+    {
+      "name": "missing-failure-error",
+      "file": "invalid/missing-failure-error.json",
+      "valid": false,
+      "why": "missing-failure-error"
+    },
+    {
+      "name": "unknown-state",
+      "file": "invalid/unknown-state.json",
+      "valid": false,
+      "why": "unknown-state"
+    },
+    {
+      "name": "unreviewed-certification",
+      "file": "invalid/unreviewed-certification.json",
+      "valid": false,
+      "why": "unreviewed-certification"
+    },
+    {
+      "name": "redrawn-geometry",
+      "file": "invalid/redrawn-geometry.json",
+      "valid": false,
+      "why": "redrawn-geometry"
+    },
+    {
+      "name": "invalid-scale",
+      "file": "invalid/invalid-scale.json",
+      "valid": false,
+      "why": "invalid-scale"
+    },
+    {
+      "name": "running",
+      "file": "valid/running.json",
+      "valid": true,
+      "why": "running"
+    },
+    {
+      "name": "cancelled",
+      "file": "valid/cancelled.json",
+      "valid": true,
+      "why": "cancelled"
+    },
+    {
+      "name": "invalid-job-id",
+      "file": "invalid/invalid-job-id.json",
+      "valid": false,
+      "why": "invalid-job-id"
+    },
+    {
+      "name": "missing-export",
+      "file": "invalid/missing-export.json",
+      "valid": false,
+      "why": "missing-export"
+    },
+    {
+      "name": "invalid-asset-id",
+      "file": "invalid/invalid-asset-id.json",
+      "valid": false,
+      "why": "invalid-asset-id"
+    },
+    {
+      "name": "negative-placement",
+      "file": "invalid/negative-placement.json",
+      "valid": false,
+      "why": "negative-placement"
+    },
+    {
+      "name": "unknown-field",
+      "file": "invalid/unknown-field.json",
+      "valid": false,
+      "why": "unknown-field"
+    }
+  ]
+}

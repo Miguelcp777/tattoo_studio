@@ -286,7 +286,7 @@ export interface TattooBrief {
   } & {
     mode: 'black_and_grey' | 'colour' | 'black_and_grey_with_accent';
     /**
-     * Only meaningful when ink is used. Forbidden on a pure black-and-grey brief, enforced below.
+     * Optional client colour preferences. Omit to leave colour selection to the design process using the idea and reviewed references. Forbidden for pure black-and-grey.
      *
      * @minItems 1
      * @maxItems 8

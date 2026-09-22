@@ -14,11 +14,9 @@
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
 | platform | root manifests, `scripts/*`, `infra/*`, `.github/*`, `services/worker/app/*` | `.specanchor/modules/platform.spec.md` | draft | 2026-09-19 |
 
-Every module is `draft`. `contracts`, `generation`, `flash`, `media` and `safety` are
-implemented and verified offline; `platform` and `web` have skeletons; `consultation`,
-`stencil`, `mockup` and `jobs` have no code.
-
-No module has produced a real image. The adapter has never called a provider.
+Every module remains `draft` at product level. All have source code. TASK-0019 connects
+the local studio and records current checks. A bounded live public-reference generation
+has produced artifacts; that is integration evidence, not a cultural/print-quality certification.
 
 No module is `verified` as a whole. `contracts` comes closest, but its remaining schemas do not
 exist and its field set is unproven against any consumer.
@@ -36,10 +34,16 @@ exist and its field set is unproven against any consumer.
 | Task | Title | Status |
 |---|---|---|
 | TASK-0001 | Repository skeleton, toolchain and CI | verified |
+| TASK-0019 | Audit remediation and common-master local studio | in_progress; product target PARTIAL |
 | TASK-0002 | TattooBrief contract and dual-runtime validation | verified |
+| TASK-0003 | Consultation state machine and OpenAI GPT-6 Astra engine | verified |
 | TASK-0004 | Generation provider adapter and the flash render path | verified |
 | TASK-0011 | Record first CI execution and the existence of a remote | verified |
 | TASK-0012 | Safe photo ingestion: media storage and the safety gate | verified |
+| TASK-0014 | Web Consultation Surface and Reference Image Ingestion | verified |
+| TASK-0015 | Client-Centric Generation of Stencil and Hyperrealistic Body Mockup | verified |
+| TASK-0016 | Multi-Agent Orchestrator with Specialized Research and Visual Creation Agents | verified |
+| TASK-0017 | Visual Internet Scout Agent and 3-Agent Triad for Historical Fidelity | verified |
 
 ## Findings
 

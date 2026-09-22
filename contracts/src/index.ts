@@ -16,6 +16,11 @@ import type { Design } from './generated/design';
 import type { TattooBrief } from './generated/tattoo-brief';
 
 export type { Design } from './generated/design';
+export type {
+  StudioJobStatus,
+  GeneratedTattooArtifact,
+  StudioAsset,
+} from './generated/studio-status';
 export type { TattooBrief } from './generated/tattoo-brief';
 export type { BodyPart, StyleName } from './generated/tattoo-brief';
 export { schemaNames, schemas } from './generated/schemas';
@@ -109,3 +114,5 @@ export function assertDesign(payload: unknown): Design {
   }
   return result.value;
 }
+
+export type { StudioJob } from './generated/studio-job';

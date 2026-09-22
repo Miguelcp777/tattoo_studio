@@ -1,0 +1,29 @@
+{
+  "pageid": 33609487,
+  "ns": 6,
+  "title": "File:Estàtua de la mare de Déu dels Desemparats a la seua basílica de València.JPG",
+  "index": 1,
+  "imagerepository": "local",
+  "imageinfo": [
+    {
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG/1280px-Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1200,
+      "thumbheight": 1576,
+      "responsiveUrls": {
+        "2": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+        "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG/1280px-Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "decoding": "async",
+        "loading": "lazy",
+        "width": 1200,
+        "height": 1576,
+        "srcset": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=33609487",
+      "mime": "image/jpeg"
+    }
+  ]
+}

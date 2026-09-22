@@ -9,6 +9,20 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0021: edit_artwork sends the selected flat master FIRST and original reference images
+to one image-edit request. The request asks to preserve unrequested details; no pixel-perfect
+preservation claim. User changes may override the original artistic treatment (including color),
+recorded in edit provenance; physical dimensions/placement remain from the parent brief.
+Body photographs and generated skin backgrounds are never edit inputs.
+
+TASK-0020/REQ-004: realistic monochrome briefs use a rendered/shaded master, then enforce
+grayscale locally. Style requests no longer silently become native contour-only output.
+Background prompt requests photographic pores, light and body volume for local composition.
+
+TASK-0019/REQ-011: colour/accent briefs generate one flat colour artwork conditioned on
+actual reference bytes. Absent palettes use the references and subject; no extra client question.
+Native black line-art retains its existing path. Provider errors remain explicit, no retry/fallback.
+
 ## Responsibility
 
 The single outbound integration point for hosted image models. Presents one stable interface to
@@ -134,3 +148,10 @@ assertion being vacuous.
 | Credentials absent from logs and errors | VERIFIED | Log-capture and message assertions | PASS |
 | fal behaves as documented | UNKNOWN | Never called; no credential | NOT_RUN |
 | Provider no-training terms satisfy SEC-INV-001 | UNKNOWN | Terms not read | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+generation/studio.py is the active paid-image adapter. It analyzes actual screened reference bytes, passes them in multipart image edits, requests native line art and a separate blank skin photograph. No user body photograph is sent to image generation. Missing credentials/errors cannot become placeholder success. Image/vision models are configurable; live smoke evidence uses public reference data.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

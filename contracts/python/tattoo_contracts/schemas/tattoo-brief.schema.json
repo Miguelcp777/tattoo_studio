@@ -42,7 +42,9 @@
       "description": "What the tattoo depicts.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["description"],
+      "required": [
+        "description"
+      ],
       "properties": {
         "description": {
           "type": "string",
@@ -52,7 +54,11 @@
         "elements": {
           "description": "Key motifs, kept structured so engines can weight them individually.",
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
           "maxItems": 20,
           "uniqueItems": true
         }
@@ -61,10 +67,16 @@
     "style": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["primary"],
+      "required": [
+        "primary"
+      ],
       "properties": {
-        "primary": { "$ref": "#/$defs/styleName" },
-        "secondary": { "$ref": "#/$defs/styleName" },
+        "primary": {
+          "$ref": "#/$defs/styleName"
+        },
+        "secondary": {
+          "$ref": "#/$defs/styleName"
+        },
         "notes": {
           "description": "Free text for nuance within a style. Never a route around the closed vocabulary, and never a place to name a living artist (PROD-INV-004, enforced by the safety module).",
           "type": "string",
@@ -75,36 +87,74 @@
     "linework": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["weight"],
+      "required": [
+        "weight"
+      ],
       "properties": {
         "weight": {
           "description": "Drives the stencil's single-weight linework as much as the flash render.",
-          "enum": ["fine", "medium", "bold", "mixed"]
+          "enum": [
+            "fine",
+            "medium",
+            "bold",
+            "mixed"
+          ]
         },
-        "notes": { "type": "string", "maxLength": 400 }
+        "notes": {
+          "type": "string",
+          "maxLength": 400
+        }
       }
     },
     "shading": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["technique", "intensity"],
+      "required": [
+        "technique",
+        "intensity"
+      ],
       "properties": {
         "technique": {
-          "enum": ["none", "whip", "dotwork", "smooth_blend", "solid_fill", "mixed"]
+          "enum": [
+            "none",
+            "whip",
+            "dotwork",
+            "smooth_blend",
+            "solid_fill",
+            "mixed"
+          ]
         },
-        "intensity": { "enum": ["light", "medium", "heavy"] }
+        "intensity": {
+          "enum": [
+            "light",
+            "medium",
+            "heavy"
+          ]
+        }
       }
     },
     "colour": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode"],
+      "required": [
+        "mode"
+      ],
       "properties": {
-        "mode": { "enum": ["black_and_grey", "colour", "black_and_grey_with_accent"] },
+        "mode": {
+          "enum": [
+            "black_and_grey",
+            "colour",
+            "black_and_grey_with_accent"
+          ]
+        },
         "palette": {
-          "description": "Only meaningful when ink is used. Forbidden on a pure black-and-grey brief, enforced below.",
+          "description": "Optional client colour preferences. Omit to leave colour selection to the design process using the idea and reviewed references. Forbidden for pure black-and-grey.",
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
           "minItems": 1,
           "maxItems": 8,
           "uniqueItems": true
@@ -114,18 +164,22 @@
         {
           "description": "A black-and-grey brief cannot carry a palette. This conditional is why validation runs through the schema in both runtimes rather than through generated models, which cannot express it.",
           "if": {
-            "properties": { "mode": { "const": "black_and_grey" } },
-            "required": ["mode"]
+            "properties": {
+              "mode": {
+                "const": "black_and_grey"
+              }
+            },
+            "required": [
+              "mode"
+            ]
           },
-          "then": { "not": { "required": ["palette"] } }
-        },
-        {
-          "description": "An accent brief is defined by having accent colours, so the palette is required.",
-          "if": {
-            "properties": { "mode": { "const": "black_and_grey_with_accent" } },
-            "required": ["mode"]
-          },
-          "then": { "required": ["palette"] }
+          "then": {
+            "not": {
+              "required": [
+                "palette"
+              ]
+            }
+          }
         }
       ]
     },
@@ -133,21 +187,46 @@
       "description": "Where on the body. Embedded rather than extracted into its own schema until a second consumer exists (TASK-0002/DEC-004).",
       "type": "object",
       "additionalProperties": false,
-      "required": ["bodyPart", "orientation"],
+      "required": [
+        "bodyPart",
+        "orientation"
+      ],
       "properties": {
-        "bodyPart": { "$ref": "#/$defs/bodyPart" },
-        "orientation": { "enum": ["vertical", "horizontal", "diagonal", "wrapping"] },
-        "side": { "enum": ["left", "right", "centre"] }
+        "bodyPart": {
+          "$ref": "#/$defs/bodyPart"
+        },
+        "orientation": {
+          "enum": [
+            "vertical",
+            "horizontal",
+            "diagonal",
+            "wrapping"
+          ]
+        },
+        "side": {
+          "enum": [
+            "left",
+            "right",
+            "centre"
+          ]
+        }
       }
     },
     "size": {
       "description": "Millimetres are authoritative. No pixel dimension appears anywhere in this contract (CONTRACTS-INV-001).",
       "type": "object",
       "additionalProperties": false,
-      "required": ["widthMm", "heightMm"],
+      "required": [
+        "widthMm",
+        "heightMm"
+      ],
       "properties": {
-        "widthMm": { "$ref": "#/$defs/millimetres" },
-        "heightMm": { "$ref": "#/$defs/millimetres" }
+        "widthMm": {
+          "$ref": "#/$defs/millimetres"
+        },
+        "heightMm": {
+          "$ref": "#/$defs/millimetres"
+        }
       }
     },
     "constraints": {
@@ -160,7 +239,11 @@
         },
         "avoid": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
           "maxItems": 20,
           "uniqueItems": true
         }

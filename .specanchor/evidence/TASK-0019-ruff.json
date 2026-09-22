@@ -1,0 +1,249 @@
+[
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 120,
+      "row": 42
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\app\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 42
+    },
+    "message": "Line too long (119 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 42,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 142,
+      "row": 105
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\app\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 105
+    },
+    "message": "Line too long (141 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 105,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 147,
+      "row": 155
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\app\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 155
+    },
+    "message": "Line too long (146 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 155,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 118,
+      "row": 60
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 60
+    },
+    "message": "Line too long (117 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 60,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 120,
+      "row": 61
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 61
+    },
+    "message": "Line too long (119 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 61,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 127,
+      "row": 97
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 97
+    },
+    "message": "Line too long (126 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 97,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 103
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 103
+    },
+    "message": "Line too long (109 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 103,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 105
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 105
+    },
+    "message": "Line too long (106 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 105,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 103,
+      "row": 106
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 106
+    },
+    "message": "Line too long (102 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 106,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 128,
+      "row": 107
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 107
+    },
+    "message": "Line too long (127 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 107,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 299,
+      "row": 134
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\generation\\studio.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 134
+    },
+    "message": "Line too long (298 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 134,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 180,
+      "row": 24
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\jobs\\queue.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 24
+    },
+    "message": "Line too long (179 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 24,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 147,
+      "row": 27
+    },
+    "filename": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\jobs\\queue.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 27
+    },
+    "message": "Line too long (146 > 100)",
+    "name": "line-too-long",
+    "noqa_row": 27,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  }
+]

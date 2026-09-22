@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: stencil
 
+TASK-0019/REQ-011: colour artwork has deterministic RGB boundary extraction, centerline tracing
+and physical fitting shared with its preview. The colour source digest joins the design identity.
+This is an approximate review stencil, not verified exact semantic contour selection. AC-008 stays open.
+
 ## Responsibility
 
 Produce the artifact a tattooer actually uses: clean, single-weight line art as vector, exportable
@@ -38,8 +42,9 @@ true physical dimensions.
   (PROD-INV-002).
 - STENCIL-INV-003: Export resolution is at least 300 DPI at the stated physical size.
 - STENCIL-INV-004: A mirrored variant is available for thermal transfer paper.
-- STENCIL-INV-005: Traced output is closed, single-weight paths — no double contours, no hairline
-  fragments below the stated minimum path length.
+- STENCIL-INV-005: Traced output is single-weight centerlines. Open strokes are valid;
+  forcibly closing them invents geometry (ADR-0007). Isolated fragments below 0.6 mm are
+  filtered, while short junction edges remain connected. Reject if discarded length exceeds 10%.
 
 ## Data / persistence
 
@@ -87,7 +92,11 @@ TASK-0005 and is human-run.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Implemented in `engine.py`: native line-art skeletonization and graph tracing, common master,
+SVG/PDF in mm, mirror exports and 50 mm PDF calibration bar. The PDF page adds margins;
+the stated design size is its canvas, not an assumption that ink fills every millimetre.
+SVG/PDF are vector; the 150-DPI PNG is a preview, not the print master. Real transfer-paper
+minimums and professional print acceptance remain NOT_VERIFIED.
 
 ## Change history
 
@@ -99,3 +108,10 @@ No implementation exists; nothing to align yet.
 | Native line-art pass, not edge detection | INTENT | ADR-0003 | NOT_RUN |
 | 1:1 physical export at >=300 DPI | INTENT | Planning session 2026-09-19 | NOT_RUN |
 | Tracing library suitability | UNKNOWN | Untested | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+engine.py skeletonizes dedicated native line art, retains graph junction connections, filters isolated paths under 0.6 mm, and rejects >10% discarded path length. SVG/PDF and the raster used by mockup share this authoritative geometry/hash. Fine/medium/bold widths are 0.25/0.35/0.6 mm proposals, not tattooer-approved thresholds. PDF page includes margins and a 50 mm calibration bar; physical printing remains NOT_VERIFIED.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

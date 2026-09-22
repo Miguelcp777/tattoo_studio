@@ -1,0 +1,1346 @@
+{
+  "revision": "4717d1df1c33673e50a3b52e509e39ae4fa624ec",
+  "task_spec": ".specanchor/tasks/TASK-0020.spec.md",
+  "files": [
+    {
+      "path": ".specanchor/global/architecture.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/global/product-behavior.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/global/quality-and-security.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/consultation.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/contracts.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/generation.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/jobs.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/media.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/mockup.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/platform.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/safety.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/stencil.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/web.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Reconcile observed local implementation with evidence, preserve pending original product targets and historical verification limits; see TASK-0019/AC-008.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "CLAUDE.md",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/api/consultation/route.test.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/api/consultation/route.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/api/generate/route.test.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/api/generate/route.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/api/media/route.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/globals.css",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/layout.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/BriefTracker.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ReferenceUploader.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/TattooPreviewModal.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/content/disclaimers.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/studio-server.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/types/generation.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/bad-key.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/bad-photo.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/bad-placement.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/bad-scale.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/duplicate-refs.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/empty-refs.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/invalid-brief-size.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/invalid-ref.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/missing-review.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/missing-width.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/too-many-refs.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/invalid/unknown.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/manifest.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/valid/calibrated.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/valid/minimal.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/valid/own-photo.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/valid/placement.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-job/valid/two-references.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/failure-with-artifact.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/fake-success.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/invalid-asset-id.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/invalid-job-id.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/invalid-scale.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/missing-export.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/missing-failure-error.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/negative-placement.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/redrawn-geometry.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/unknown-field.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/unknown-state.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/invalid/unreviewed-certification.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/manifest.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/valid/cancelled.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/valid/failed.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/valid/queued.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/valid/running.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/studio-status/valid/succeeded.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/generated/studio_job.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/generated/studio_status.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/schemas/studio-job.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/schemas/studio-status.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/validation.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/schemas/studio-job.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/schemas/studio-status.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/src/generated/schemas.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/src/generated/studio-job.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/src/generated/studio-status.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/src/index.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "eslint.config.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/agents/creator.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/agents/image-scout.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/agents/orchestrator.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/agents/researcher.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/agents/types.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/index.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/providers/fixture-provider.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/providers/openai-astra.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/providers/types.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/state-machine.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/tests/agents.test.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/tests/state-machine.test.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/src/types.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/tsconfig.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "packages/consultation/vitest.config.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/consultation.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "scripts/dev.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/app/main.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/app/settings.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/app/studio.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/app/tests/test_architecture.py",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/app/tests/test_studio.py",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/generation/studio.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/generation.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/generation/tests/test_studio_provider.py",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/generation.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/jobs/__init__.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/jobs.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/jobs/queue.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/jobs.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/mockup/__init__.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/mockup.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/mockup/engine.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/mockup.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/pyproject.toml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/platform.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/safety/gate.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/safety.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/safety/tests/test_gate.py",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/safety.spec.md"
+      ],
+      "rationale": "Acceptance/contract regression coverage, including shared corpora; does not change runtime behavior. Inspected against the active local studio and existing invariant suite.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/stencil/__init__.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/stencil.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "services/worker/stencil/engine.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/stencil.spec.md"
+      ],
+      "rationale": "Working-tree application boundary reviewed under TASK-0018/0019: cumulative consultation, truthful reference conditioning, shared validated contracts, owned media, queued contour rendering or local startup. Pre-existing legacy paths are preserved and not claimed as newly authored or product-verified.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/tattoo-brief/invalid/accent-without-palette.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 shared corpus accepts optional accent colours; old invalid case moved to valid.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/tattoo-brief/valid/accent-without-palette.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 shared corpus accepts optional accent colours; old invalid case moved to valid.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/fixtures/tattoo-brief/manifest.json",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 shared corpus accepts optional accent colours; old invalid case moved to valid.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/generated/tattoo_brief.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 optional accent palette; generated copies follow canonical schema. Verified by both runtime corpora.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/python/tattoo_contracts/schemas/tattoo-brief.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 optional accent palette; generated copies follow canonical schema. Verified by both runtime corpora.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/schemas/tattoo-brief.schema.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 optional accent palette; generated copies follow canonical schema. Verified by both runtime corpora.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "contracts/src/generated/tattoo-brief.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/contracts.spec.md"
+      ],
+      "rationale": "REQ-010 optional accent palette; generated copies follow canonical schema. Verified by both runtime corpora.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0019/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ImageDetail.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "TASK-0020 progress, detail inspection and official reference rasterization.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0020/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/GenerationProgress.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "TASK-0020 progress, detail inspection and official reference rasterization.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0020/verification.md"
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/reference-bytes.test.ts",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/web.spec.md"
+      ],
+      "rationale": "TASK-0020 progress, detail inspection and official reference rasterization.",
+      "evidence": [
+        ".specanchor/evidence/TASK-0020/verification.md"
+      ]
+    }
+  ],
+  "traceability": [
+    {
+      "requirement": "TASK-0020/REQ-001",
+      "acceptance": "TASK-0020/AC-001",
+      "verification": "Automated checks and rendered observations detailed in verification.md",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0020/verification.md"
+    },
+    {
+      "requirement": "TASK-0020/REQ-002",
+      "acceptance": "TASK-0020/AC-002",
+      "verification": "Automated checks and rendered observations detailed in verification.md",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0020/verification.md"
+    },
+    {
+      "requirement": "TASK-0020/REQ-003",
+      "acceptance": "TASK-0020/AC-003",
+      "verification": "Automated checks and rendered observations detailed in verification.md",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0020/verification.md"
+    },
+    {
+      "requirement": "TASK-0020/REQ-004",
+      "acceptance": "TASK-0020/AC-004",
+      "verification": "Automated checks and rendered observations detailed in verification.md",
+      "result": "not_run",
+      "evidence": ".specanchor/evidence/TASK-0020/verification.md"
+    }
+  ],
+  "semantic_alignment": {
+    "code_to_spec": "PARTIAL",
+    "spec_to_code": "PARTIAL"
+  },
+  "scope_note": "Rows inherited from TASK-0019 describe preserved pre-existing working-tree changes, not new authorship. Original exact-stencil target remains open. TASK-0020 visual hyperrealism acceptance is pending."
+}

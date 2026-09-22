@@ -81,7 +81,7 @@ class InputGate:
     def __init__(self, provider: ModerationProvider | None = None) -> None:
         self._provider = provider
 
-    def screen_upload(self, data: bytes) -> GateResult:
+    def screen_upload(self, data: bytes, *, own_body_consented: bool = False) -> GateResult:
         """Screen bytes and, on a pass, mint a clearance bound to them.
 
         Every failure mode below is a denial. There is no path through this method that
@@ -101,7 +101,7 @@ class InputGate:
 
         if outcome.explicit:
             return GateResult(Verdict.REJECT, ReasonCode.EXPLICIT)
-        if outcome.contains_person:
+        if outcome.contains_person and not own_body_consented:
             return GateResult(Verdict.REJECT, ReasonCode.CONTAINS_PERSON)
 
         return GateResult(

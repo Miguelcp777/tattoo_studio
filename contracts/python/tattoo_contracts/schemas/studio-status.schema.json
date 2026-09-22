@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inkcraft.local/schemas/studio-status.schema.json",
+  "title": "StudioJobStatus",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "jobId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "jobId",
+    "state",
+    "result",
+    "error"
+  ],
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "designId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "image/png",
+            "image/svg+xml",
+            "application/pdf"
+          ]
+        }
+      },
+      "required": [
+        "assetId",
+        "designId",
+        "mimeType"
+      ],
+      "title": "StudioAsset"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "designId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "briefId": {
+          "type": "string",
+          "pattern": "^[a-f0-9-]{36}$"
+        },
+        "briefRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "size": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widthMm": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 600
+            },
+            "heightMm": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 600
+            }
+          },
+          "required": [
+            "widthMm",
+            "heightMm"
+          ]
+        },
+        "master": {
+          "$ref": "#/$defs/asset"
+        },
+        "stencil": {
+          "$ref": "#/$defs/asset"
+        },
+        "stencilMirror": {
+          "$ref": "#/$defs/asset"
+        },
+        "pdf": {
+          "$ref": "#/$defs/asset"
+        },
+        "pdfMirror": {
+          "$ref": "#/$defs/asset"
+        },
+        "mockup": {
+          "$ref": "#/$defs/asset"
+        },
+        "referenceAnalysis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "reviewRequired": {
+          "const": true
+        },
+        "backgroundKind": {
+          "type": "string",
+          "enum": [
+            "own_photo",
+            "generated_anatomy"
+          ]
+        },
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "xPx": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "yPx": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "widthPx": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "heightPx": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "method": {
+              "enum": [
+                "geometric-multiply",
+                "fresh-ink-composite"
+              ]
+            },
+            "curvature": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1.2,
+              "description": "Approximate cylindrical warp in radians, not inferred anatomy."
+            },
+            "taper": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.35,
+              "description": "Illustrative narrowing towards the lower calf, not measured anatomy."
+            },
+            "scaleCalibrated": {
+              "type": "boolean"
+            },
+            "generativePostprocess": {
+              "const": false
+            },
+            "sourceCropPx": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "properties": {
+                "left": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "top": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "required": [
+            "xPx",
+            "yPx",
+            "widthPx",
+            "heightPx",
+            "method",
+            "scaleCalibrated",
+            "generativePostprocess"
+          ]
+        },
+        "notice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "background": {
+          "$ref": "#/$defs/asset"
+        },
+        "edit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "parentJobId",
+            "instruction"
+          ],
+          "properties": {
+            "parentJobId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 1000
+            },
+            "coverage": {
+              "enum": [
+                "larger",
+                "smaller",
+                "full"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "artwork",
+                "placement"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "designId",
+        "briefId",
+        "briefRevision",
+        "size",
+        "master",
+        "stencil",
+        "stencilMirror",
+        "pdf",
+        "pdfMirror",
+        "mockup",
+        "referenceAnalysis",
+        "reviewRequired",
+        "backgroundKind",
+        "transform",
+        "notice"
+      ],
+      "title": "GeneratedTattooArtifact"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "succeeded"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/artifact"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "result": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

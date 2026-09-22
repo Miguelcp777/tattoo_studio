@@ -1,0 +1,13 @@
+{
+  "publicQaOnly": true,
+  "state": "succeeded",
+  "automaticRetries": 0,
+  "designId": "95fc257b66a5fbd3887c2e7924037d5b1d35cc268d7db18b127d54c152127fe9",
+  "edit": {
+    "parentJobId": "28d6b02fba5248db83175501d16845a9",
+    "instruction": "Haz el escudo del Valencia CF un poco más pequeño. Conserva la Virgen, la Senyera y el resto de la composición."
+  },
+  "briefRevision": 2,
+  "previousStillAvailable": true,
+  "sharedIdentity": true
+}

@@ -64,6 +64,13 @@ class Settings(BaseSettings):
     ``.get_secret_value()``, which makes every such read visible in review.
     """
 
+    openai_api_key: SecretStr | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    worker_token: SecretStr | None = None
+    media_key: SecretStr | None = None
+    data_dir: str = ".artifacts/studio"
+    image_model: str = "gpt-image-2"
+    vision_model: str = "gpt-4.1-mini"
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"

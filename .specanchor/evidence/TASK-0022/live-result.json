@@ -1,0 +1,30 @@
+{
+  "state": "succeeded",
+  "sameArtworkStencilAndBackground": true,
+  "before": {
+    "xPx": 276,
+    "yPx": 307,
+    "widthPx": 471,
+    "heightPx": 706,
+    "method": "fresh-ink-composite",
+    "curvature": 1.05,
+    "taper": 0.25,
+    "scaleCalibrated": false,
+    "generativePostprocess": false
+  },
+  "after": {
+    "xPx": 92,
+    "yPx": 138,
+    "widthPx": 840,
+    "heightPx": 1260,
+    "method": "fresh-ink-composite",
+    "curvature": 1.05,
+    "taper": 0.25,
+    "scaleCalibrated": false,
+    "generativePostprocess": false
+  },
+  "size": {
+    "widthMm": 200,
+    "heightMm": 300
+  }
+}

@@ -9,6 +9,32 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0023: print preview labels refer to sheet format and disclose possible white margins
+when the mockup used a source crop. On reload restore the latest successful history result
+unless the current job is still active, avoiding stale-result display after correction.
+
+TASK-0022: preview offers smaller/larger/fill-zone controls explicitly labeled as visual
+coverage, leaving PDF millimetres unchanged. Initial submission omits untouched placement
+for generated anatomy; touching sliders or adding a body photo retains manual placement.
+
+TASK-0021: the preview accepts a bounded natural-language change request and an explicit
+create-version action, preserving prior results on failure. The session's latest 20 successful
+jobs can be reopened/branched while retained. BFF forwards only parent job ID, request and
+idempotency key for edits; worker resolves owned source data. Adult/processing consent remains
+required. Existing progress and zoom apply to revisions.
+
+TASK-0020/REQ-001..003: official crest is fetched only at the exact allowlisted HTTPS path,
+bounded and rasterized locally before worker moderation. Reject embedded external SVG resources.
+Missing-reference retry is explicit. Submission and queued/running jobs show indeterminate
+progress, phase and elapsed time. Both output previews offer keyboard-accessible 100..400%
+detail views with pan/scroll/reset. No invented completion percentage.
+
+TASK-0019/REQ-011: submit colour/accent briefs without the obsolete colour rejection.
+The action reads "Generar diseño y plantilla". Surface the worker's approximation notice.
+
+TASK-0019/REQ-009: preference errors identify the schema field that failed. A palette
+failure must not be presented as a size error; 200 x 300 mm is valid. Explicit invalid values still fail; optional colours follow REQ-010.
+
 ## Responsibility
 
 Presentation and backend-for-frontend. Renders the consultation, the design gallery, the placement
@@ -95,26 +121,34 @@ upload to deletion. Accessibility checks to WCAG 2.1 AA on the primary flows.
 
 ## Alignment notes
 
-Partially aligned as of TASK-0001. What exists is a shell: a root layout, one placeholder route,
-and the required disclaimer copy. None of the product surfaces listed under *Public interfaces*
-are built.
-
-The disclaimer strings in `src/content/disclaimers.ts` are the single source of the copy that
-WEB-INV-003 requires, with tests asserting their content. That makes the invariant checkable now,
-before there is any artifact to display. The invariant itself — that the UI never shows an
-artifact without the disclaimer — cannot be verified until artifacts exist.
+Partially aligned as of TASK-0014. The consultation turn exchange and real-time brief tracking
+surface are implemented in `apps/web` via the Next.js BFF route `/api/consultation`, backed by
+`@tattoo/consultation`. Image references are supported. Design gallery, placement editor and
+handoff sheet remain planned for future tasks.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0001): Next.js shell added, building under TypeScript strict mode. Disclaimer
   copy established with tests.
+- 2026-09-19 (TASK-0014): Added consultation turn exchange BFF route, reference image upload,
+  and real-time brief tracker UI.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| BFF with no domain logic | OBSERVED | Shell contains no domain logic | PASS |
+| BFF with no domain logic | OBSERVED | Delegated to @tattoo/consultation | PASS |
 | App builds under strict TypeScript | VERIFIED | `pnpm --filter web build`, `tsc --noEmit` exit 0 | PASS |
 | Disclaimer copy exists and is non-empty | VERIFIED | `src/content/disclaimers.test.ts`, 4 tests | PASS |
+| Consultation turn exchange route | VERIFIED | `src/app/api/consultation/route.test.ts` | PASS |
 | Disclaimer shown on every artifact | INTENT | WEB-INV-003; no artifacts exist yet | NOT_RUN |
 | Authentication approach | UNKNOWN | Undecided | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+The active page uses server-owned HttpOnly sessions, bounded input, same-origin checks and worker service authentication. Generation submits server brief revisions and owned references; uploads, job polling, restored current job, geometric placement, explicit mm, review-gated downloads and deletion are wired. Black contour limitations are visible; unsupported colour fails before generation. Desktop rendered checks and 390px overflow check are in TASK-0019 evidence.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.
+
+TASK-0019/REQ-010: Palette is optional for colour and accents. Missing palette delegates selection to the design process using the idea and reviewed references; it is not a missing client answer. Empty panel input is omitted. Explicit palettes remain bounded and validated. Colour rendering remains pending.

@@ -17,7 +17,9 @@ so this specification governs sensitive personal data from the first commit.
 
 ## Current behavior with evidence status
 
-No implementation exists. All statements are INTENT.
+TASK-0019 implements a local consented studio using existing encryption/sanitization and
+input moderation, with owned media access, deletion and 24-hour expiry. See its evidence.
+Provider retention guarantees, public deployment, backup policies and legal review remain UNKNOWN.
 
 ## Intended behavior
 
@@ -31,7 +33,8 @@ No implementation exists. All statements are INTENT.
 | Generated flash and stencil | Low — no personal likeness | Retained with the user's design history |
 
 Photos and mockups are deleted together. Deleting a photo must delete every artifact derived
-from it; a stencil, which contains no likeness, survives independently.
+from it. Independent long-term stencil history remains a target; the current local studio
+expires all session artifacts after 24 hours and removes them together (ADR-0007).
 
 ### Consent
 
@@ -66,7 +69,9 @@ Two gates, both mandatory:
 - SEC-INV-005: The service is not offered to users under 18. Age affirmation gates upload.
 - SEC-INV-006: Both the input and output moderation gates are active in every environment that
   handles real user data. Neither may be disabled by configuration in production.
-- SEC-INV-007: No photo is sent to an external provider before passing the input gate.
+- SEC-INV-007: No photo is sent to a generation provider before passing the input gate.
+  Sanitized bytes are sent to the moderation provider to perform that gate (ADR-0007).
+  The current studio keeps own-body photographs out of image generation entirely.
 - SEC-INV-008: Logs and error reports never contain image bytes, signed media URLs, or consent
   identifiers.
 

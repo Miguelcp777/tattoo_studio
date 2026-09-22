@@ -61,6 +61,6 @@ likely the right shape anyway. Nothing about choosing fal now forecloses it.
 
 ## Out-of-scope note
 
-The same catalogue lookup showed Astra is a reasoning model with a large context window. That is
-potentially relevant to the consultation module (TASK-0003), whose spec currently names Claude.
-Not pursued here, and not a reason to revisit that choice without a concrete problem.
+The same catalogue lookup showed Astra is a reasoning model with a large context window and
+multimodal vision input. As requested, Astra (`gpt-6-astra`) was adopted in **TASK-0003** as the
+reasoning and reference-image consultation engine for `packages/consultation/`.

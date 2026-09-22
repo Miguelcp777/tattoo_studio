@@ -1,0 +1,20 @@
+{
+  "personal_photos": false,
+  "automatic_retries": 0,
+  "reference_title": "File:Estàtua de la mare de Déu dels Desemparats a la seua basílica de València.JPG",
+  "state": "succeeded",
+  "error": null,
+  "designId": "820c19a87ff87acab156155c7ef662863b1420491842a247934bee09a1e1a48d",
+  "transform": {
+    "xPx": 328,
+    "yPx": 338,
+    "widthPx": 369,
+    "heightPx": 692,
+    "method": "geometric-multiply",
+    "scaleCalibrated": false,
+    "generativePostprocess": false
+  },
+  "output_path": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator\\services\\worker\\.artifacts\\live-smoke",
+  "pipeline_attempts": 1,
+  "image_generation_calls": 2
+}

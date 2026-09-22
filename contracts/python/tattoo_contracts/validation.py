@@ -23,7 +23,7 @@ from jsonschema import Draft202012Validator
 TATTOO_BRIEF = "tattoo-brief"
 DESIGN = "design"
 
-SCHEMA_NAMES: tuple[str, ...] = (TATTOO_BRIEF, DESIGN)
+SCHEMA_NAMES: tuple[str, ...] = (TATTOO_BRIEF, DESIGN, "studio-job", "studio-status")
 """Every schema the contracts module owns. The corpus iterates this."""
 
 

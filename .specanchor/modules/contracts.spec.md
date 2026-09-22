@@ -9,6 +9,21 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0023: transform optionally records sourceCropPx {left, top, width, height} for the
+uncalibrated mockup projection, in original master pixels; legacy results stay valid.
+
+TASK-0022: optional edit coverage enum larger/smaller/full and mode artwork/placement
+are shared by studio-job and artifact provenance. Existing edit requests remain valid.
+
+TASK-0020/REQ-004: studio-status adds fresh-ink-composite to the transform method enum
+and optional bounded curvature (0..1.2 radians) and taper (0..0.35). Existing geometric-multiply remains valid.
+Generated TS/Python copies and runtime validation share this canonical schema.
+
+TASK-0021: studio-job optionally carries edit {parentJobId, instruction}; instructions are
+3..1000 characters, trimmed at HTTP entry. Studio-status artifacts optionally carry edit
+provenance and a retained background asset. Legacy results without these fields stay valid.
+Parent brief revision increments per branch; design IDs continue to identify visual masters.
+
 ## Responsibility
 
 Own every schema that crosses a module boundary. `TattooBrief` is the system's central contract:
@@ -144,3 +159,12 @@ Arabic-Indic digits would validate in Python and fail in TypeScript.
 | Brief is the central contract | OBSERVED | Flash engine consumes every field | PASS |
 | Brief dimension bounds imply renderability | **FALSE** | FINDING-0002 | FAIL |
 | Design field set is the right field set | UNKNOWN | No consumer yet | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+studio-job.schema.json and studio-status.schema.json now own studio request and result boundaries. TS and Python run their canonical schemas; generated types do not decide validity. Shared positive/negative corpora include readiness, ownership ID shapes, physical size, status/result consistency and no automatic fidelity certification.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.
+
+TASK-0019/REQ-010: Palette is optional for colour and accents. Missing palette delegates selection to the design process using the idea and reviewed references; it is not a missing client answer. Empty panel input is omitted. Explicit palettes remain bounded and validated. Colour rendering remains pending.

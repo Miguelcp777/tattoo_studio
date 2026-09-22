@@ -5,10 +5,49 @@ Turn a tattoo idea into two things that matter: a **stencil a tattooer can actua
 
 ## Status
 
-**Specification phase.** No application code exists yet. The repository currently contains the
-contracts the code will be built and verified against.
+**Local prototype, partial implementation of the product goal.** TASK-0019 connects the real
+reference search, cumulative consultation, encrypted media, persistent queue and a common
+line-art master to SVG/PDF and a geometric skin preview. No placeholder image is returned
+as a successful provider result.
 
-## What it will do
+The current engine produces **black contour proposals**. Colour rendering, realistic shading,
+automatic anatomical curvature and guaranteed cultural fidelity are not implemented or certified.
+Colour requests fail visibly before image generation. A tattooer must review every stencil.
+Physical printing and final tattoo quality remain unverified; passing software tests is not that approval.
+
+## Run locally
+
+Requires Node 22+, pnpm, Python 3.11+ and uv.
+
+```powershell
+pnpm install
+uv sync --project services/worker
+```
+
+Set `OPENAI_API_KEY` in `services/worker/.env` (never commit it), then:
+
+```powershell
+pnpm dev
+```
+
+The launcher starts Next.js at `http://127.0.0.1:3000` and one worker at port 8000.
+It creates a random shared service token and a 32-byte media encryption key in ignored
+local environment files. Preserve the encryption key if you want to read existing local assets.
+Optional `STUDIO_WEB_PORT` / `STUDIO_WORKER_PORT` select alternate ports.
+`TATTOO_IMAGE_MODEL` and `TATTOO_VISION_MODEL` configure provider models in the worker.
+Generated work uses the configured paid API; there are no automatic generation retries.
+
+Use an explicit idea, style, placement, colour and dimensions, for example:
+"Mare de Déu dels Desamparats y Senyera Valenciana, línea fina en el gemelo derecho,
+solo negro, 8 x 15 cm". Review each reference before generating.
+The optional body-photo width calibrates a planar preview, not anatomical surface measurements.
+
+Local session ownership uses an HttpOnly cookie and in-memory web state; restarting the web
+expires consultations. A reload restores the brief, body-photo selection and latest submitted job
+while the web session exists. Media expires after 24 hours; cleanup runs while the worker is active.
+This single-worker prototype is not a multi-host public deployment.
+
+## Product target (partly pending)
 
 1. **Consultation.** A guided conversation that works like a real intake: style, subject, line
    weight, shading, placement, and size in millimetres. It produces a structured brief.
@@ -42,7 +81,7 @@ separately.
 
 ## Requirements
 
-Git, Python 3.10+, Node 22+.
+Git, Python 3.11+, Node 22+, pnpm and uv.
 
 ## A note on scope
 

@@ -13,14 +13,12 @@ studio-grade stencil and an on-body mockup, and which boundaries may not be cros
 
 ## Current behavior with evidence status
 
-Partially implemented. `contracts` (TASK-0002, TASK-0004), `generation` and `flash`
-(TASK-0004) exist and are verified offline. `web` and `platform` have skeletons
-(TASK-0001). The five other modules have no code, so statements about them are INTENT.
-
-Note that `generation` and `flash` declare dependencies on `media`, `safety` and `jobs`,
-none of which exist. Each consumer defines the narrow port it needs and the real module
-implements it later, so the dependency direction in the diagram holds even though the
-dependencies are not yet built.
+All eleven source modules now exist. TASK-0019 connects the browser and BFF to a local
+Python studio composition root. A validated studio-job payload reaches an authenticated
+SQLite queue. The worker analyzes references and requests native line art, centerline-traces
+an authoritative master, and derives SVG, PDF and the geometric skin preview from it.
+The old flash adapter remains isolated from this active route. The diagram below describes
+the broader target, not every currently available feature. ADR-0007 records the current path.
 
 ## Intended behavior
 
@@ -103,8 +101,10 @@ User idea
 
 ## Unknowns
 
-- Queue technology is not yet chosen (candidates: Redis/RQ, Celery, cloud-native queue).
-- Persistence engine for briefs, designs and job records is not yet chosen.
+- Local queue is SQLite with one worker. Multi-host scheduling remains undecided.
+- Brief state is in-memory; jobs are SQLite; media is AES-GCM encrypted filesystem storage.
+  Studio requests and job status/results are validated against canonical shared JSON schemas;
+  generated TS/Python types are conveniences, not the validation authority.
 - Deployment topology and region (relevant to GDPR data residency) is undecided.
 
 ## Change history

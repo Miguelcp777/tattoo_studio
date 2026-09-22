@@ -1,0 +1,3 @@
+ERROR: Affected acceptance criterion not passing
+Documentary coverage: FAIL
+Semantic alignment is NOT checked. Review the actual diff and evidence.

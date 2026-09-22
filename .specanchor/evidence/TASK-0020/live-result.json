@@ -1,0 +1,34 @@
+{
+  "publicReferencesOnly": true,
+  "automaticRetries": 0,
+  "state": "succeeded",
+  "references": [
+    {
+      "label": "File:Estàtua de la mare de Déu dels Desemparats a la seua basílica de València.JPG",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG/1280px-Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Est%C3%A0tua_de_la_mare_de_D%C3%A9u_dels_Desemparats_a_la_seua_bas%C3%ADlica_de_Val%C3%A8ncia.JPG"
+    },
+    {
+      "label": "File:Flag of the Valencian Community (2x3).svg",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Flag_of_the_Valencian_Community_%282x3%29.svg/1280px-Flag_of_the_Valencian_Community_%282x3%29.svg.png",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_the_Valencian_Community_(2x3).svg"
+    },
+    {
+      "label": "Escudo Valencia CF · web oficial",
+      "source": "https://www.valenciacf.com/svg/escudo.svg",
+      "sourcePage": "https://www.valenciacf.com/es/club/escudos"
+    }
+  ],
+  "transform": {
+    "xPx": 276,
+    "yPx": 307,
+    "widthPx": 471,
+    "heightPx": 706,
+    "method": "fresh-ink-composite",
+    "curvature": 0.5,
+    "scaleCalibrated": false,
+    "generativePostprocess": false
+  },
+  "notice": "Propuesta con acabado y sombreado. El stencil aproxima los contornos del mismo dibujo; el tatuador debe revisar y corregir los detalles antes de transferirlo. Simulación de tinta reciente; curvatura aproximada en extremidades, no reconstrucción anatómica. Visualización ilustrativa. Revisa los símbolos y el trazo con tu tatuador. Imprime el PDF al 100 %, sin ajustar a página.",
+  "designId": "54d479375eb2a990f65fccd4d928475ff0b41f2cbc1b1556f925737efc588429"
+}

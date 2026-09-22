@@ -1,0 +1,42 @@
+{
+  "revision": "4c2535b9f9fcaeb7f2b84133735d0fce1817bd14",
+  "task_spec": ".specanchor/tasks/TASK-0018.spec.md",
+  "files": [],
+  "traceability": [
+    {
+      "requirement": "TASK-0018/REQ-001",
+      "acceptance": "TASK-0018/AC-001",
+      "verification": "Offline probes and source review; existing quality checks for AC-005. Audit verdict delivered, not product conformity.",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0018/audit-report.md"
+    },
+    {
+      "requirement": "TASK-0018/REQ-002",
+      "acceptance": "TASK-0018/AC-002",
+      "verification": "Offline probes and source review; existing quality checks for AC-005. Audit verdict delivered, not product conformity.",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0018/audit-report.md"
+    },
+    {
+      "requirement": "TASK-0018/REQ-003",
+      "acceptance": "TASK-0018/AC-003",
+      "verification": "Offline probes and source review; existing quality checks for AC-005. Audit verdict delivered, not product conformity.",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0018/audit-report.md"
+    },
+    {
+      "requirement": "TASK-0018/REQ-004",
+      "acceptance": "TASK-0018/AC-004",
+      "verification": "Offline probes and source review; existing quality checks for AC-005. Audit verdict delivered, not product conformity.",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0018/audit-report.md"
+    },
+    {
+      "requirement": "TASK-0018/REQ-005",
+      "acceptance": "TASK-0018/AC-005",
+      "verification": "Offline probes and source review; existing quality checks for AC-005. Audit verdict delivered, not product conformity.",
+      "result": "pass",
+      "evidence": ".specanchor/evidence/TASK-0018/audit-report.md"
+    }
+  ]
+}

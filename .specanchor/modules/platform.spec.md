@@ -23,6 +23,21 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0023: initial full-calf text intent and placement revisions compute coverage from
+visible artwork bounds. Recomposition retains exact owned master/print/background assets.
+
+TASK-0022: pure coverage revisions bypass artwork generation and stencil tracing entirely,
+reuse the owned parent background/master/print assets and store only a new mockup. Legacy
+missing backgrounds may be generated. Repeated size operations use the parent result's
+actual pixel width, not the original request's stale placement. Initial generated calves
+without explicit placement use dimension-responsive illustrative coverage.
+
+TASK-0021 verification isolation: health tests disable .env loading and studio credentials
+explicitly; constructing the test app must not open/reset the running local job queue.
+The studio boundary resolves edit parents under the same owner, checks master availability,
+increments the parent brief revision, and queues the edit idempotently. It saves a background
+asset along with the edited master's outputs, with the existing encrypted 24-hour retention.
+
 ## Responsibility
 
 Everything that holds the system up rather than being part of it: manifests, workspace wiring, the
@@ -174,9 +189,9 @@ files caught by `--baseline`.
 | Checks pass on Linux | VERIFIED | CI runs on `ubuntu-latest` | PASS |
 | Hosting and region | UNKNOWN | Undecided | NOT_RUN |
 
+## TASK-0019 current implementation and remaining intent
 
-## TASK-0019 intended reconciliation
+scripts/dev.mjs starts local Next.js and one Python worker, generates/preserves ignored local service/encryption secrets, and closes owned child processes on shutdown. app/studio.py is the composition root; settings configure model/runtime/storage. Root commands and Python checks are recorded in TASK-0019 evidence. No commit, deployment or public exposure is part of this task.
 
-Implementation follows `.specanchor/tasks/TASK-0019.spec.md` and ADR-0007.
-Previous VERIFIED statements apply only to their cited historical checks, not the new studio path.
-Current acceptance is pending TASK-0019 evidence; no new product guarantee is verified yet.
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

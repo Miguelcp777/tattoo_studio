@@ -23,6 +23,12 @@ from safety import (
 IMAGE = b"pretend-these-are-image-bytes"
 
 
+def test_own_body_exception_requires_consent_and_still_rejects_explicit() -> None:
+    assert not InputGate(HasPerson()).screen_upload(IMAGE).passed
+    assert InputGate(HasPerson()).screen_upload(IMAGE, own_body_consented=True).passed
+    assert not InputGate(Explicit()).screen_upload(IMAGE, own_body_consented=True).passed
+
+
 class Passing:
     name = "test-passing"
 

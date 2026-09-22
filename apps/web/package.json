@@ -10,9 +10,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tattoo/consultation": "workspace:*",
+    "@tattoo/contracts": "workspace:*",
     "next": "^15.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

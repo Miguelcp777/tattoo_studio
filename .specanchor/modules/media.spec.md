@@ -133,3 +133,10 @@ those values do not reach captured logs (SEC-INV-008).
 | Imaging library does not log EXIF | VERIFIED | Log capture after silencing PIL | PASS |
 | Retention sweeps actually run | **NO** | Nothing schedules them | NOT_RUN |
 | Storage backend and residency | UNKNOWN | Local filesystem only | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+The studio composition root consumes EncryptedFileStore with owner checks, moderated/EXIF-stripped uploads, ten input images per session, encrypted artifacts and explicit deletion. For this local session product every artifact uses 24-hour expiry and is deleted with its source/session. Expiry cleanup runs at worker startup and every ~60 seconds between jobs; no offline service runs after shutdown. This overrides indefinite design-history retention for the studio path only.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.

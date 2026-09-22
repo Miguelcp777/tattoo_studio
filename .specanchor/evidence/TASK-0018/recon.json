@@ -1,0 +1,316 @@
+{
+  "proyecto": {
+    "ruta": "C:\\Users\\migue\\Documents\\Proyectos antigravity\\Tattoo_creator",
+    "nombre": "Tattoo_creator",
+    "ficheros_de_codigo": 161,
+    "lineas_totales": 17632,
+    "por_extension": {
+      ".json": {
+        "ficheros": 67,
+        "lineas": 3087
+      },
+      ".py": {
+        "ficheros": 48,
+        "lineas": 5851
+      },
+      ".ts": {
+        "ficheros": 29,
+        "lineas": 3723
+      },
+      ".tsx": {
+        "ficheros": 5,
+        "lineas": 1427
+      },
+      ".yaml": {
+        "ficheros": 3,
+        "lineas": 2556
+      },
+      ".mjs": {
+        "ficheros": 3,
+        "lineas": 156
+      },
+      ".md": {
+        "ficheros": 2,
+        "lineas": 129
+      },
+      ".toml": {
+        "ficheros": 2,
+        "lineas": 109
+      },
+      ".yml": {
+        "ficheros": 1,
+        "lineas": 139
+      },
+      ".css": {
+        "ficheros": 1,
+        "lineas": 455
+      }
+    },
+    "ficheros_mayores_500_lineas": [
+      {
+        "fichero": "pnpm-lock.yaml",
+        "lineas": 2518
+      },
+      {
+        "fichero": "apps/web/src/app/page.tsx",
+        "lineas": 575
+      },
+      {
+        "fichero": "contracts/src/generated/tattoo-brief.ts",
+        "lineas": 504
+      },
+      {
+        "fichero": "contracts/src/generated/schemas.ts",
+        "lineas": 503
+      }
+    ]
+  },
+  "stack": {
+    "lenguajes": [
+      "Node / JavaScript"
+    ],
+    "frameworks_y_servicios": [],
+    "dependencias_total": 5,
+    "scripts": {
+      "lint": "eslint . && prettier --check .",
+      "format": "prettier --write .",
+      "typecheck": "pnpm -r typecheck",
+      "test": "pnpm -r test",
+      "build": "pnpm -r build"
+    }
+  },
+  "configuracion_presente": [
+    ".env",
+    ".env.local",
+    ".gitignore",
+    "CLAUDE.md",
+    "README.md",
+    "eslint.config.mjs",
+    "manifest.json",
+    "next.config.mjs",
+    "pnpm-lock.yaml",
+    "tsconfig.json"
+  ],
+  "ausencias_a_verificar": [
+    "No se detecta framework de pruebas",
+    "No se detecta monitorización de errores en producción",
+    "No hay robots.txt (solo relevante si la app tiene parte pública)",
+    "No hay sitemap.xml (solo relevante si la app tiene parte pública)"
+  ],
+  "candidatos": {
+    "secreto_asignado": {
+      "pilar": "SEG",
+      "nota": "¿Valor real o marcador? ¿El fichero se despliega? ¿Está en .gitignore?",
+      "total": 5,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "services/worker/app/tests/test_settings.py",
+          "linea": 50,
+          "fragmento": "secret = \"sk-live-must-not-appear-in-logs\"",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/app/tests/test_settings.py",
+          "linea": 109,
+          "fragmento": "secret = \"fal-must-not-be-printed-4f2a\"",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/generation/tests/test_conformance.py",
+          "linea": 46,
+          "fragmento": "api_key=\"test-key-not-real\"",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/generation/tests/test_conformance.py",
+          "linea": 171,
+          "fragmento": "api_key=\"test-key-not-real\"",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/generation/tests/test_fal_provider.py",
+          "linea": 28,
+          "fragmento": "SECRET = \"fal-key-shhh-do-not-log-me-9f3c\"",
+          "pilar": "SEG",
+          "posible_ruido": true
+        }
+      ]
+    },
+    "dato_personal": {
+      "pilar": "SEG",
+      "nota": "Inventario de datos personales: mínimo necesario, retención, base legal.",
+      "total": 3,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "services/worker/media/tests/test_media.py",
+          "linea": 37,
+          "fragmento": "phone",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/media/tests/test_media.py",
+          "linea": 45,
+          "fragmento": "Phone",
+          "pilar": "SEG",
+          "posible_ruido": true
+        },
+        {
+          "fichero": "services/worker/media/tests/test_media.py",
+          "linea": 339,
+          "fragmento": "Phone",
+          "pilar": "SEG",
+          "posible_ruido": true
+        }
+      ]
+    },
+    "sql_concatenado": {
+      "pilar": "SEG",
+      "nota": "¿Consulta parametrizada o concatenación con datos del usuario?",
+      "total": 2,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "contracts/python/pyproject.toml",
+          "linea": 38,
+          "fragmento": "select = [\"E\", \"F\", \"I\", \"N\", \"UP\", \"B\", \"A\", \"C4\", \"SIM\", \"RUF\"",
+          "pilar": "SEG",
+          "posible_ruido": false
+        },
+        {
+          "fichero": "services/worker/pyproject.toml",
+          "linea": 42,
+          "fragmento": "select = [\"E\", \"F\", \"I\", \"N\", \"UP\", \"B\", \"A\", \"C4\", \"SIM\", \"RUF\"",
+          "pilar": "SEG",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "ejecucion_comandos": {
+      "pilar": "SEG",
+      "nota": "Si algún argumento viene del usuario, es inyección de comandos.",
+      "total": 2,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "contracts/python/scripts/generate.py",
+          "linea": 52,
+          "fragmento": "subprocess.run",
+          "pilar": "SEG",
+          "posible_ruido": false
+        },
+        {
+          "fichero": "scripts/check-spec-sync.py",
+          "linea": 7,
+          "fragmento": "subprocess.run",
+          "pilar": "SEG",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "http_plano": {
+      "pilar": "SEG",
+      "nota": "Petición en claro a un dominio externo.",
+      "total": 2,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "packages/consultation/src/agents/creator.ts",
+          "linea": 194,
+          "fragmento": "\"http://www.w3.org",
+          "pilar": "SEG",
+          "posible_ruido": false
+        },
+        {
+          "fichero": "packages/consultation/src/agents/creator.ts",
+          "linea": 206,
+          "fragmento": "\"http://www.w3.org",
+          "pilar": "SEG",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "clave_openai": {
+      "pilar": "SEG",
+      "nota": "Parece una clave de API. Rotar si es real.",
+      "total": 1,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "services/worker/app/tests/test_settings.py",
+          "linea": 50,
+          "fragmento": "sk-live-must-not-appear-in-logs",
+          "pilar": "SEG",
+          "posible_ruido": true
+        }
+      ]
+    },
+    "aleatorio_inseguro": {
+      "pilar": "SEG",
+      "nota": "Solo importa si genera tokens, códigos o identificadores de sesión.",
+      "total": 1,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "packages/consultation/src/agents/orchestrator.ts",
+          "linea": 21,
+          "fragmento": "Math.random()",
+          "pilar": "SEG",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "console_log": {
+      "pilar": "ARQ",
+      "nota": "Cuéntalos; agrúpalos en un solo hallazgo.",
+      "total": 1,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "contracts/scripts/generate.mjs",
+          "linea": 92,
+          "fragmento": "console.log(",
+          "pilar": "ARQ",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "await_en_bucle": {
+      "pilar": "REN",
+      "nota": "Candidato a N+1: una petición por elemento.",
+      "total": 1,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "contracts/scripts/generate.mjs",
+          "linea": 60,
+          "fragmento": "for (const file of files) {   const name = schemaName(file);   const schema = JSON.parse(readFileSync(resolve(schemaDir, file), 'utf8'));    const types = await",
+          "pilar": "REN",
+          "posible_ruido": false
+        }
+      ]
+    },
+    "outline_none": {
+      "pilar": "ACC",
+      "nota": "Si no hay indicador de foco alternativo, quien navega con teclado queda a ciegas.",
+      "total": 1,
+      "truncado": false,
+      "coincidencias": [
+        {
+          "fichero": "apps/web/src/app/globals.css",
+          "linea": 258,
+          "fragmento": "outline: none",
+          "pilar": "ACC",
+          "posible_ruido": false
+        }
+      ]
+    }
+  },
+  "aviso": "Estos son CANDIDATOS, no hallazgos. Cada uno debe leerse en su contexto antes de entrar en el informe."
+}

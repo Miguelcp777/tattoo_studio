@@ -27,9 +27,10 @@ Specifically:
 
 ## Current state
 
-No application code exists. All eleven modules are `draft`, and every behavioral statement in the
-specs is `INTENT` rather than `OBSERVED` or `VERIFIED`. Do not describe planned behavior as
-existing behavior.
+The local studio is implemented under TASK-0019; consult its evidence and ADR-0007.
+Modules remain `draft` because the full realistic-colour/anatomical product target is incomplete.
+Distinguish tested local contour delivery from professional tattoo readiness and from deployment.
+Historical task claims are not current evidence.
 
 ## Evidence discipline
 
@@ -51,9 +52,12 @@ approver.
 These come from the global specs and are not negotiable without an ADR:
 
 - Only `services/worker/generation/` may call an external image model.
-- The mockup's AI blend pass may not alter design geometry. The geometric warp is authoritative.
+- The shared vector master is authoritative. The current mockup uses geometric multiply only;
+  adding an AI redraw after placement would break ADR-0007 and must not be done silently.
 - Stencils are produced by a native line-art pass, never by edge-detecting the shaded render.
-- No user photograph is persisted or sent to any provider before passing the safety input gate.
+- No user photograph is persisted or sent to a generation provider before passing the safety
+  input gate. Sanitized bytes necessarily reach the moderation provider to run that gate.
+  Own-body uploads require adult consent; they never go to the image generator (ADR-0007).
 - EXIF is stripped before durable persistence; photos are encrypted at rest.
 - Deleting a photo deletes every artifact derived from it.
 - Aging and healing outputs are labeled illustrative, never predictive.

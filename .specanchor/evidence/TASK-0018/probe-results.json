@@ -1,0 +1,34 @@
+[
+  {
+    "id": "ARQ-01",
+    "detail": "Real Madrid crest request returns Valencia CF reference without network access."
+  },
+  {
+    "id": "ARQ-02",
+    "detail": "Changing reference pixels/URL and label does not change the generation prompt; no image is fetched."
+  },
+  {
+    "id": "ARQ-03",
+    "detail": "Two motifs complete immediately despite unspecified placement/style/colour; right inner forearm is invented."
+  },
+  {
+    "id": "ARQ-03-history",
+    "detail": {
+      "questionsAsked": 3,
+      "finalSubject": "Solo negro",
+      "lostInitialSubject": true
+    }
+  },
+  {
+    "id": "ARQ-04",
+    "detail": "No credentials: same generic SVG returned as mockup and thermal stencil, without an error."
+  },
+  {
+    "id": "ARQ-05",
+    "detail": "Mocked provider confirms text-only master generation, then generative image-to-image stencil with strength 0.78."
+  },
+  {
+    "id": "ARQ-06",
+    "detail": "Physical dimensions do not survive into dossier or master generation prompt."
+  }
+]

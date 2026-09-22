@@ -1,0 +1,186 @@
+[
+  {
+    "id": "ARQ-01",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P1",
+    "title": "Búsqueda simulada y sustitución de entidades",
+    "location": {
+      "file": "packages/consultation/src/agents/image-scout.ts",
+      "line_start": 107,
+      "line_end": 107
+    },
+    "evidence": "lower.includes('escudo')",
+    "impact": "Pedir Real Madrid devuelve Valencia CF",
+    "fix_strategy": "Resolver entidad y buscar referencias reales",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-02",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P1",
+    "title": "Referencias no condicionan la generación",
+    "location": {
+      "file": "packages/consultation/src/agents/researcher.ts",
+      "line_start": 299,
+      "line_end": 299
+    },
+    "evidence": "observations: references.map",
+    "impact": "Las fotos no se analizan ni entran al render",
+    "fix_strategy": "Conservar medios aprobados y usar análisis multimodal",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-03",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P1",
+    "title": "Preferencias inventadas y pérdida del tema",
+    "location": {
+      "file": "packages/consultation/src/agents/researcher.ts",
+      "line_start": 211,
+      "line_end": 211
+    },
+    "evidence": "description: userInput,",
+    "impact": "El león desaparece tras respuestas de preferencias",
+    "fix_strategy": "Extraer deltas y conservar el tema acumulado",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-04",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P1",
+    "title": "Stencil sin garantía geométrica",
+    "location": {
+      "file": "packages/consultation/src/agents/creator.ts",
+      "line_start": 177,
+      "line_end": 177
+    },
+    "evidence": "strength: 0.78,",
+    "impact": "Regenera geometría; interfaz aplica Sobel del mockup",
+    "fix_strategy": "Maestro plano con geometría autoritativa compartida",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-05",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P1",
+    "title": "Exportación sin escala física",
+    "location": {
+      "file": "apps/web/src/components/TattooPreviewModal.tsx",
+      "line_start": 104,
+      "line_end": 104
+    },
+    "evidence": "const widthMm = slots.size?.widthMm ?? 150;",
+    "impact": "Medidas mostradas no calibran el PNG",
+    "fix_strategy": "Exportar PDF/SVG en mm y verificar impresión",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "UX-01",
+    "phase": "SDD-reconciliation",
+    "category": "UX",
+    "severity": "P1",
+    "title": "Fallback genérico presentado como verificado",
+    "location": {
+      "file": "packages/consultation/src/agents/creator.ts",
+      "line_start": 38,
+      "line_end": 38
+    },
+    "evidence": "let stencilUrl = mockupResult.url;",
+    "impact": "Mockup y stencil genéricos se anuncian como válidos",
+    "fix_strategy": "Errores explícitos; retirar insignia no acreditada",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-06",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P2",
+    "title": "Generación fuera de límites y sin contrato validado",
+    "location": {
+      "file": "apps/web/src/app/api/generate/route.ts",
+      "line_start": 65,
+      "line_end": 65
+    },
+    "evidence": "const creationResult = await creator.generateTattoo({",
+    "impact": "El recorrido no usa el worker/cola previsto",
+    "fix_strategy": "Validar contrato y usar el worker",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  },
+  {
+    "id": "ARQ-07",
+    "phase": "SDD-reconciliation",
+    "category": "Architecture",
+    "severity": "P2",
+    "title": "Estado verified contradice controles y evidencia",
+    "location": {
+      "file": "packages/consultation/src/agents/orchestrator.ts",
+      "line_start": 52,
+      "line_end": 52
+    },
+    "evidence": "const userMessage: MultiAgentMessage = {",
+    "impact": "Tipos, build, lint, tests y revisión SDD fallan",
+    "fix_strategy": "Reconciliar estados y controles sin aceptar defectos",
+    "regression_risk": "medium",
+    "requires_user_decision": false,
+    "verified": true,
+    "evidence_status": "OBSERVED plus offline verification where detailed in report",
+    "references": [
+      "audit-report.md",
+      "probe-results.json"
+    ]
+  }
+]

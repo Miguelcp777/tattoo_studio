@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0020/REQ-001: retrieve Valencia CF's live official navigation crest with provenance,
+fall back to filtered Commons queries, isolate per-entity failures, and allow a bounded
+retry of missing references preserving the initial subject and existing references.
+
 ## Responsibility
 
 Act as an experienced tattoo artist taking a brief. Turn a vague idea into a complete, validated
@@ -20,14 +24,15 @@ Act as an experienced tattoo artist taking a brief. Turn a vague idea into a com
 
 ## Public interfaces
 
-- `start(idea) -> ConsultationState`
-- `advance(state, user_message) -> ConsultationState` — a state machine step
+- `start(idea, reference_images?) -> ConsultationState`
+- `advance(state, user_message, reference_images?) -> ConsultationState` — a state machine step
 - `brief(state) -> TattooBrief | Incomplete` — returns a brief only when every required slot is
   filled and valid
 
 ## Inputs and outputs
 
-Input: free-text user messages. Output: a progressively filled brief plus the next question to ask.
+Input: free-text user messages and optional reference images (sketches, photo references, motifs).
+Output: a progressively filled brief plus the next question to ask.
 
 ## Domain invariants
 
@@ -52,9 +57,9 @@ retention lifecycle, not the photo lifecycle.
 
 ## External integrations
 
-Claude API for structured extraction. `claude-opus-5` for the consultation reasoning,
-`claude-sonnet-5` for cheap classification such as style mapping. Structured output via tool use,
-so extraction returns typed data rather than parsed prose.
+OpenAI API targeting **GPT-6 Astra** (`gpt-6-astra`) for multimodal reasoning, reference image
+analysis, and structured tool extraction. Alternatively Claude API (`claude-opus-5`, `claude-sonnet-5`).
+Structured output via tool calling so extraction returns typed slot data rather than parsed prose.
 
 ## Error semantics
 
@@ -64,8 +69,9 @@ surfaces a clarifying question rather than guessing.
 
 ## Security and permissions
 
-No photographs. Transcripts may contain personal meaning behind a tattoo and are treated as
-personal data, though at lower sensitivity than imagery.
+Reference images (motifs, existing artwork references, sketches) are accepted for style and motif
+analysis. In accordance with SEC-INV-007, personal body photographs for mockup placement are
+handled by the safety module and do not enter the consultation prompt directly.
 
 ## Observability
 
@@ -79,27 +85,37 @@ choices. This is the one path in the system not routed through `jobs`.
 
 ## Tests / verification
 
-The state machine is tested deterministically with recorded model responses. A scripted corpus of
+The state machine is tested deterministically with recorded model responses (fixture provider). A scripted corpus of
 idea-to-brief conversations asserts that each reaches a valid brief. Style mapping is tested
 against a labeled fixture set including adversarial artist-name requests.
 
 ## Known uncertainties and debt
 
-- The question set and its ordering are undesigned; TASK-0003 owns this.
+- The question set and its ordering are designed in TASK-0003.
 - How many turns users tolerate before abandoning is unknown.
-- Whether consultation should propose reference imagery is undecided.
+- Offline fixture provider covers CI test execution.
 
 ## Alignment notes
 
-No implementation exists; nothing to align yet.
+Implementation initiated in TASK-0003.
 
 ## Change history
 
 - 2026-09-19: Created during SDD bootstrap.
+- 2026-09-19 (TASK-0003): Added OpenAI GPT-6 Astra integration and multimodal reference image support.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |
 |---|---|---|---|
-| Typed state machine, not an agent framework | INTENT | Planning session 2026-09-19 | NOT_RUN |
-| Claude API with tool-use structured output | INTENT | Planning session 2026-09-19 | NOT_RUN |
-| Question set design | UNKNOWN | TASK-0003 pending | NOT_RUN |
+| Typed state machine, not an agent framework | INTENT | TASK-0003 spec | NOT_RUN |
+| OpenAI GPT-6 Astra tool-use structured extraction | INTENT | TASK-0003 spec | NOT_RUN |
+| Question set design | INFERRED | TASK-0003 implementation | NOT_RUN |
+
+## TASK-0019 current implementation and remaining intent
+
+Active OrchestratorAgent uses cumulative explicit slot extraction, at most three questions, and the canonical TattooBrief validator. Commons search returns candidates with query, source and licence; missing entity references block readiness. The legacy fixture state machine remains test/legacy code, not the active web route. General-language extraction beyond the supported vocabulary remains limited.
+
+Evidence: `.specanchor/evidence/TASK-0019/verification.md`. Earlier VERIFIED rows are historical.
+The overall realistic-colour/anatomical product target remains PARTIAL; draft module status is retained.
+
+TASK-0019/REQ-010: Palette is optional for colour and accents. Missing palette delegates selection to the design process using the idea and reviewed references; it is not a missing client answer. Empty panel input is omitted. Explicit palettes remain bounded and validated. Colour rendering remains pending.

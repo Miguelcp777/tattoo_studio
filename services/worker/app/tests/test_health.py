@@ -9,7 +9,10 @@ from app.settings import Settings
 
 
 def _settings() -> Settings:
-    return Settings(environment="test", log_level="INFO")
+    # Never read the developer's .env or construct a studio against their live queue.
+    return Settings(  # type: ignore[call-arg]  # BaseSettings supports runtime _env_file override.
+        environment="test", log_level="INFO", _env_file=None, worker_token=None, media_key=None
+    )
 
 
 def test_health_reports_ok() -> None:

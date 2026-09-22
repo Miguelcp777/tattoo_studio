@@ -1,0 +1,30 @@
+{
+  "state": "succeeded",
+  "jobId": "e2631b1030654b7c9e953a916e8b7ff6",
+  "printSize": {
+    "widthMm": 150,
+    "heightMm": 500
+  },
+  "sameMasterStencilBackground": true,
+  "visiblePixelHeights": {
+    "before": 547,
+    "after": 1237
+  },
+  "transform": {
+    "xPx": 308,
+    "yPx": 138,
+    "widthPx": 408,
+    "heightPx": 1258,
+    "method": "fresh-ink-composite",
+    "curvature": 1.05,
+    "taper": 0.25,
+    "sourceCropPx": {
+      "left": 233,
+      "top": 819,
+      "width": 426,
+      "height": 1314
+    },
+    "scaleCalibrated": false,
+    "generativePostprocess": false
+  }
+}
