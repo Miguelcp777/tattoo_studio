@@ -9,6 +9,16 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0024 (ADR-0008): a coverage request naming a whole body zone is resolved in millimetres
+from `anatomy.ZONE_SPAN_MM`, declared reference adult anatomy covering every `bodyPart` enum
+member. The artwork's visible aspect is fitted inside the zone span, preserving aspect — which
+enlarges a design the zone can hold and shrinks one it cannot, because distorting the artwork
+would break MOCKUP-INV-001. `fit_coverage` no longer caps `auto` and `full` against a shared
+frame fraction: for both, the projection is a function of the resolved millimetres alone, so a
+zone request can no longer collapse onto `auto`. Nudge coverage stays visual-only and never
+touches the brief. The reference table is a stated convention, identical for every user
+regardless of build; a calibrated photograph supersedes it.
+
 TASK-0023 corrects TASK-0022's canvas-only coverage: automatic/full uncalibrated placement
 fits visible nonwhite artwork, preserving its aspect ratio. Exterior white padding is
 cropped only in the projection, with sourceCropPx recorded. Original master and print

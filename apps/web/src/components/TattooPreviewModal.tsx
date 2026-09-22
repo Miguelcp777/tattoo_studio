@@ -76,8 +76,10 @@ export function TattooPreviewModal({
           <div className="coverage-controls">
             <strong>Tamaño del tatuaje sobre la piel</strong>
             <p>
-              Amplía la cobertura sin volver a dibujar ni recalcular la plantilla. Las medidas del
-              PDF no cambian.
+              «Más pequeño» y «Más grande» cambian solo la vista: las medidas del PDF no cambian.
+              «Ocupar toda la zona» sí ajusta las medidas de impresión a la zona del cuerpo, con
+              anatomía de referencia adulta que debes confirmar con tu tatuador. Ninguna de las tres
+              vuelve a dibujar el tatuaje.
             </p>
             <div>
               <button
@@ -97,9 +99,9 @@ export function TattooPreviewModal({
               <button
                 type="button"
                 disabled={editingDisabled}
-                onClick={() => onEdit('Que ocupe casi toda la zona', 'full')}
+                onClick={() => onEdit('Que ocupe toda la zona', 'full')}
               >
-                Ocupar casi toda la zona
+                Ocupar toda la zona
               </button>
             </div>
           </div>

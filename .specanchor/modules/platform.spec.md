@@ -23,6 +23,16 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0024 (ADR-0008): `Studio` settles millimetres before anything is drawn at them. A whole-zone
+request sets `brief.size` from reference anatomy ahead of the provider call, so the artwork is
+composed for the zone rather than scaled into it afterwards. `reposition` re-exports the stencil
+and PDF by exact vector scale and makes no provider call, for both zone and nudge requests. The
+vector master is kept in an internal `design_vector` table, deliberately outside the
+studio-status contract: it is authoritative geometry, not a client artifact. A design stored
+before TASK-0024 has no vector, and then keeps its millimetres rather than letting the brief and
+the stencil disagree. Auto placement remains calf-only except under a zone request, which extends
+it to any zone with reference anatomy.
+
 TASK-0023: initial full-calf text intent and placement revisions compute coverage from
 visible artwork bounds. Recomposition retains exact owned master/print/background assets.
 

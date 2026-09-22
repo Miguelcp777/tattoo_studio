@@ -23,13 +23,18 @@ from generation.studio import StudioProvider
 from jobs.queue import JobQueue
 from media.sanitize import sanitize
 from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
-from mockup.engine import composite, visible_size
-from mockup.placement import coverage_request, fit_coverage
+from mockup.anatomy import ZONE_SPAN_MM, zone_size
+from mockup.engine import composite, visible_artwork, visible_size
+from mockup.placement import Coverage, coverage_request, fit_coverage
 from safety.gate import InputGate
 from stencil.engine import (
+    Master,
+    deserialize_master,
     export_pdf,
     export_svg,
     rasterize,
+    rescale,
+    serialize_master,
     trace_colour_artwork,
     trace_native_lineart,
 )
@@ -47,6 +52,12 @@ class Studio:
                 "CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, owner TEXT, kind TEXT)"
             )
             db.execute("CREATE TABLE IF NOT EXISTS revoked (owner TEXT PRIMARY KEY)")
+            # The authoritative vector geometry (ADR-0007). Internal: it is not a client
+            # artifact, so it stays out of the studio-status contract.
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS design_vector "
+                "(design_id TEXT PRIMARY KEY, owner TEXT, asset_id TEXT)"
+            )
             db.execute(
                 "CREATE TABLE IF NOT EXISTS consent (owner TEXT, version TEXT, created TEXT "
                 "DEFAULT CURRENT_TIMESTAMP)"
@@ -175,11 +186,16 @@ class Studio:
             raise ValueError("La propuesta original no está disponible.")
         if parent and parent.get("background") and background is None:
             background = self.owned(owner, parent["background"]["assetId"], "artifact")
-        coverage, placement_only = coverage_request(edit) if edit else (None, False)
-        if coverage and parent and placement_only:
+        coverage = coverage_request(edit) if edit else None
+        if coverage and parent and coverage.placement_only:
             if background is None:
                 background = self.provider.background(brief)
             return self.reposition(owner, payload, parent, background, coverage)
+        # A whole-zone request is a statement about the body, so it settles the millimetres
+        # before anything is drawn at them (ADR-0008, TASK-0024/REQ-004).
+        zone = self.zone_intent(brief, payload, coverage, bool(edit))
+        if zone:
+            brief["size"] = self.zone_millimetres(brief)
         analysis = (
             parent["referenceAnalysis"]
             if parent
@@ -215,11 +231,15 @@ class Studio:
             raster = rasterize(master)
         if background is None:
             background = self.provider.background(brief)
-        fit_visible = bool(coverage) or (
+        body_part = brief["placement"]["bodyPart"]
+        # Auto placement stays calf-only, as before; a zone request extends it to any zone
+        # with reference anatomy, which is the only widening TASK-0024 needs.
+        auto_placed = (
             not payload.get("placement")
             and not payload.get("bodyPhotoId")
-            and brief["placement"]["bodyPart"] == "calf"
+            and (body_part == "calf" or (zone and body_part in ZONE_SPAN_MM))
         )
+        fit_visible = bool(coverage) or auto_placed
         projection_size = visible_size(raster, brief["size"]) if fit_visible else brief["size"]
         if coverage:
             previous = dict(payload.get("placement") or {})
@@ -227,15 +247,12 @@ class Studio:
                 with Image.open(io.BytesIO(background)) as photo:
                     photo.thumbnail((2048, 2048))
                     previous["width"] = parent["transform"]["widthPx"] / photo.width
-            payload["placement"] = fit_coverage(background, projection_size, coverage, previous)
-        elif (
-            not payload.get("placement")
-            and not payload.get("bodyPhotoId")
-            and brief["placement"]["bodyPart"] == "calf"
-        ):
-            initial_coverage, _ = coverage_request({"instruction": brief["subject"]["description"]})
             payload["placement"] = fit_coverage(
-                background, projection_size, initial_coverage or "auto"
+                background, projection_size, coverage.kind, previous, body_part=body_part
+            )
+        elif auto_placed:
+            payload["placement"] = fit_coverage(
+                background, projection_size, "full" if zone else "auto", body_part=body_part
             )
         curved = brief["placement"]["bodyPart"] in {
             "calf",
@@ -255,7 +272,7 @@ class Studio:
             fresh=True,
             fit_visible=fit_visible,
             curvature=1.05 if curved else 0,
-            taper=0.25 if brief["placement"]["bodyPart"] == "calf" else 0,
+            taper=0.25 if body_part == "calf" else 0,
         )
         preview = io.BytesIO()
         raster.save(preview, format="PNG")
@@ -291,6 +308,7 @@ class Studio:
         }
         with self.lock:
             self.active(owner)
+            self.store_vector(owner, master, payload)
             if edit:
                 result["edit"] = edit
             for asset_id in payload["referenceIds"]:
@@ -315,25 +333,105 @@ class Studio:
                 }
         return result
 
+    def store_vector(self, owner: str, master: Master, payload: dict[str, Any]) -> None:
+        """Keep the authoritative geometry so a later resize is an exact scale, not a retrace."""
+        asset = self.media.store_artifact(
+            serialize_master(master),
+            media_type="application/json",
+            width_px=0,
+            height_px=0,
+            retention=RetentionClass.PHOTO,
+            parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
+        )
+        with self.db() as db:
+            db.execute(
+                "INSERT OR REPLACE INTO design_vector VALUES (?, ?, ?)",
+                (master.design_hash, owner, self.register(owner, asset.asset_id, "artifact")),
+            )
+
+    def load_vector(self, owner: str, design_id: str) -> bytes | None:
+        """A design created before TASK-0024 has no stored vector; the caller must cope."""
+        with self.db() as db:
+            row = db.execute(
+                "SELECT asset_id FROM design_vector WHERE design_id = ? AND owner = ?",
+                (design_id, owner),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            return self.owned(owner, row[0], "artifact")
+        except (AssetNotFoundError, HTTPException):
+            return None
+
+    def zone_intent(
+        self,
+        brief: dict[str, Any],
+        payload: dict[str, Any],
+        coverage: Coverage | None,
+        is_edit: bool,
+    ) -> bool:
+        """Whether this request asks for a whole body zone to be covered (ADR-0008)."""
+        if (payload.get("placement") or {}).get("photoWidthMm"):
+            # A calibrated photograph carries real millimetres; it supersedes the table.
+            return False
+        if brief["placement"]["bodyPart"] not in ZONE_SPAN_MM:
+            return False
+        if coverage:
+            return coverage.resizes_zone
+        if is_edit:
+            return False
+        initial = coverage_request({"instruction": brief["subject"]["description"]})
+        return bool(initial and initial.resizes_zone)
+
+    def zone_millimetres(self, brief: dict[str, Any]) -> dict[str, float]:
+        """The zone's own span, which is what the artwork is then composed to fill."""
+        body_part = brief["placement"]["bodyPart"]
+        span_width, span_height = ZONE_SPAN_MM[body_part]
+        return zone_size(body_part, span_height / span_width)
+
     def reposition(
         self,
         owner: str,
         payload: dict[str, Any],
         parent: dict[str, Any],
         background: bytes,
-        coverage: str,
+        coverage: Coverage,
     ) -> dict[str, Any]:
-        """Reuse the accepted artwork and all print assets, without retracing or AI editing."""
+        """Reuse the accepted artwork, with no retracing, no AI editing and no provider call.
+
+        A nudge changes the projection alone. A whole-zone request also resolves the millimetres
+        from reference anatomy and re-exports the print assets by exact vector scale (ADR-0008).
+        A parent stored before TASK-0024 has no vector master, so it keeps its millimetres rather
+        than letting the brief and the stencil disagree.
+        """
         brief = payload["brief"]
+        body_part = brief["placement"]["bodyPart"]
         previous = dict(payload.get("placement") or {})
         with Image.open(io.BytesIO(background)) as image:
             image.thumbnail((2048, 2048))
             previous["width"] = parent["transform"]["widthPx"] / image.width
+        stored_vector = (
+            self.load_vector(owner, parent["designId"])
+            if coverage.resizes_zone and not previous.get("photoWidthMm")
+            else None
+        )
+        resize = stored_vector is not None and body_part in ZONE_SPAN_MM
+        files: dict[str, tuple[bytes, str]] = {}
+        design_id = parent["designId"]
+        result_master = parent["master"]
         with Image.open(
             io.BytesIO(self.owned(owner, parent["master"]["assetId"], "artifact"))
         ) as source:
+            artwork_size = source.size
+            if resize:
+                _, bounds = visible_artwork(source)
+                brief["size"] = zone_size(body_part, bounds["height"] / bounds["width"])
             placement = fit_coverage(
-                background, visible_size(source, brief["size"]), coverage, previous
+                background,
+                visible_size(source, brief["size"]),
+                coverage.kind,
+                previous,
+                body_part=body_part,
             )
             mockup, transform = composite(
                 source.convert("RGB"),
@@ -342,40 +440,78 @@ class Studio:
                 placement,
                 fresh=True,
                 fit_visible=True,
-                curvature=parent["transform"].get(
-                    "curvature", 1.05 if brief["placement"]["bodyPart"] == "calf" else 0
-                ),
-                taper=parent["transform"].get(
-                    "taper", 0.25 if brief["placement"]["bodyPart"] == "calf" else 0
-                ),
+                curvature=parent["transform"].get("curvature", 1.05 if body_part == "calf" else 0),
+                taper=parent["transform"].get("taper", 0.25 if body_part == "calf" else 0),
+            )
+        if resize:
+            assert stored_vector is not None
+            master = rescale(
+                deserialize_master(stored_vector),
+                brief["size"]["widthMm"],
+                brief["size"]["heightMm"],
+            )
+            design_id = master.design_hash
+            self.store_vector(owner, master, payload)
+            # The artwork bytes are reused, but their physical identity changed with the size.
+            result_master = {**parent["master"], "designId": design_id}
+            files = {
+                "stencil": (export_svg(master), "image/svg+xml"),
+                "stencilMirror": (export_svg(master, True), "image/svg+xml"),
+                "pdf": (export_pdf(master), "application/pdf"),
+                "pdfMirror": (export_pdf(master, True), "application/pdf"),
+            }
+        if resize:
+            notice = (
+                f"Tamaño ajustado a la zona: {brief['size']['widthMm']:.0f} x "
+                f"{brief['size']['heightMm']:.0f} mm. Plantilla y PDF reexportados a esa medida; "
+                "el dibujo no se ha modificado. La medida procede de anatomía de referencia "
+                "adulta, no de tu cuerpo: confírmala con tu tatuador. "
+            )
+        elif coverage.resizes_zone:
+            notice = (
+                "Cobertura visual ampliada. No he podido cambiar las medidas de impresión de "
+                "esta propuesta, así que el PDF conserva las originales. "
+            )
+        else:
+            notice = (
+                "Tamaño sobre piel actualizado. Dibujo y plantilla conservados sin cambios. "
+                "Cobertura visual orientativa; las medidas del PDF siguen siendo las originales. "
             )
         result = {
             **parent,
+            **({"master": result_master} if resize else {}),
+            "designId": design_id,
+            "size": brief["size"],
             "briefRevision": brief["revision"],
             "transform": transform,
             "edit": payload["edit"],
-            "notice": "Tamaño sobre piel actualizado. Dibujo y plantilla conservados sin cambios. "
-            "Cobertura visual orientativa; las medidas del PDF siguen siendo las originales. "
-            "La curvatura no es una reconstrucción anatómica.",
+            "notice": notice + "La curvatura no es una reconstrucción anatómica.",
         }
         with self.lock:
             self.active(owner)
-            for name, data in [("mockup", mockup), ("background", background)]:
-                if name == "background" and parent.get("background"):
-                    continue
-                with Image.open(io.BytesIO(data)) as image:
-                    asset = self.media.store_artifact(
-                        data,
-                        media_type="image/png",
-                        width_px=image.width,
-                        height_px=image.height,
-                        retention=RetentionClass.PHOTO,
-                        parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
-                    )
+            reused = [("mockup", mockup, "image/png")]
+            if not parent.get("background"):
+                reused.append(("background", background, "image/png"))
+            for name, data, mime in reused:
+                files[name] = (data, mime)
+            for name, (data, mime) in files.items():
+                if mime == "image/png":
+                    with Image.open(io.BytesIO(data)) as image:
+                        dimensions = image.size
+                else:
+                    dimensions = artwork_size
+                asset = self.media.store_artifact(
+                    data,
+                    media_type=mime,
+                    width_px=dimensions[0],
+                    height_px=dimensions[1],
+                    retention=RetentionClass.PHOTO,
+                    parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
+                )
                 result[name] = {
                     "assetId": self.register(owner, asset.asset_id, "artifact"),
-                    "designId": parent["designId"],
-                    "mimeType": "image/png",
+                    "designId": design_id,
+                    "mimeType": mime,
                 }
         return result
 

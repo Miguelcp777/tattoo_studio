@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0024 (ADR-0008): the coverage controls no longer describe themselves as uniformly visual.
+Smaller/larger remain view-only; "Ocupar toda la zona" states that it changes the print
+millimetres and that the figure comes from reference adult anatomy to be confirmed with a
+tattooer. The displayed sheet size follows the returned brief, so it changes on a zone revision
+and not on a nudge. No business rule moved here (WEB-INV-001).
+
 TASK-0023: print preview labels refer to sheet format and disclose possible white margins
 when the mockup used a source crop. On reload restore the latest successful history result
 unless the current job is still active, avoiding stale-result display after correction.

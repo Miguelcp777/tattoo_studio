@@ -19,8 +19,9 @@ from PIL import Image, ImageDraw
 from app.studio import Studio, router
 from generation.studio import StudioProvider
 from jobs.queue import JobQueue
+from mockup.anatomy import ZONE_SPAN_MM
 from mockup.engine import composite, visible_size
-from mockup.placement import coverage_request, fit_coverage
+from mockup.placement import Coverage, coverage_request, fit_coverage
 from safety.gate import ModerationOutcome
 from stencil.engine import (
     Master,
@@ -424,9 +425,14 @@ def test_edit_versions_are_owned_idempotent_and_keep_previous(tmp_path: Path) ->
         "casi envolviendo el gemelo",
     ],
 )
-def test_whole_calf_request_reuses_art_and_stencil_without_generation(
+def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
     tmp_path: Path, instruction: str
 ) -> None:
+    """ADR-0008: a whole-zone request settles millimetres, so the print assets change too.
+
+    The instructions say «gemelo» while the brief declares `inner_forearm`. The brief wins:
+    the Spanish noun is never mapped onto the enum (TASK-0024/REQ-003).
+    """
     provider = FakeProvider()
     studio = Studio(tmp_path, b"x" * 32, provider)
     owner = "11111111-1111-4111-8111-111111111111"
@@ -455,12 +461,27 @@ def test_whole_calf_request_reuses_art_and_stencil_without_generation(
     status = studio.jobs.get(owner, response.json()["jobId"])
     assert status["state"] == "succeeded", status
     result = status["result"]
-    assert result["transform"]["widthPx"] > parent["transform"]["widthPx"] * 1.5
-    assert result["transform"]["heightPx"] > parent["transform"]["heightPx"] * 1.5
-    for name in ("master", "stencil", "stencilMirror", "pdf", "pdfMirror", "background"):
-        assert result[name] == parent[name]
-    assert result["size"] == parent["size"]
+    assert result["transform"]["widthPx"] > parent["transform"]["widthPx"]
+    assert result["transform"]["heightPx"] > parent["transform"]["heightPx"]
+    # TASK-0024/AC-004: the size fills the reference span on its binding dimension.
+    span_width, span_height = ZONE_SPAN_MM[original["brief"]["placement"]["bodyPart"]]
+    size = result["size"]
+    assert size != parent["size"]
+    assert size["widthMm"] <= span_width + 0.01
+    assert size["heightMm"] <= span_height + 0.01
+    assert max(size["widthMm"] / span_width, size["heightMm"] / span_height) == pytest.approx(1.0)
+    # TASK-0024/AC-005: the stencil follows the new millimetres; the artwork itself does not move.
+    for name in ("stencil", "stencilMirror", "pdf", "pdfMirror"):
+        assert result[name]["assetId"] != parent[name]["assetId"]
+    assert result["master"]["assetId"] == parent["master"]["assetId"]
+    assert result["background"] == parent["background"]
     assert result["mockup"]["assetId"] != parent["mockup"]["assetId"]
+    for name in ("master", "stencil", "pdf", "mockup"):
+        assert result[name]["designId"] == result["designId"]
+    stencil = studio.owned(owner, result["stencil"]["assetId"]).decode()
+    assert f'width="{size["widthMm"]}mm"' in stencil
+    assert f"{size['widthMm']:.0f} x {size['heightMm']:.0f} mm" in result["notice"]
+    # TASK-0024/AC-006: resizing never costs a generation call.
     assert provider.calls == 1
 
 
@@ -473,14 +494,13 @@ def test_visual_coverage_bounds_calibration_and_mixed_requests() -> None:
         fit_coverage(
             picture(False), {"widthMm": 200.0, "heightMm": 300.0}, "full", {"photoWidthMm": 400.0}
         )
-    assert coverage_request({"instruction": "Haz el escudo más pequeño"}) == (None, False)
-    assert coverage_request({"instruction": "Que ocupe casi todo el gemelo y añade flores"}) == (
-        "full",
-        False,
-    )
+    assert coverage_request({"instruction": "Haz el escudo más pequeño"}) is None
+    assert coverage_request(
+        {"instruction": "Que ocupe casi todo el gemelo y añade flores"}
+    ) == Coverage("full", False)
     assert coverage_request(
         {"instruction": "Ampliar", "coverage": "larger", "mode": "placement"}
-    ) == ("larger", True)
+    ) == Coverage("larger", True)
 
 
 def test_tall_print_canvas_fills_visible_ink_not_white_padding() -> None:
@@ -525,3 +545,48 @@ def test_initial_full_calf_prompt_uses_visible_bounds(tmp_path: Path) -> None:
     result = studio.generate("owner", request)
     assert result["transform"]["sourceCropPx"]["height"] > 0
     assert result["transform"]["heightPx"] >= 240
+
+
+def test_a_nudge_changes_the_view_and_nothing_that_gets_printed(tmp_path: Path) -> None:
+    """TASK-0024/AC-007 and AC-006: nudges stay visual, and neither path calls the provider."""
+    provider = FakeProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    owner = "11111111-1111-4111-8111-111111111111"
+    ref = studio.ingest(
+        owner, {"data": base64.b64encode(picture()).decode(), "adult": True, "consent": True}
+    )
+    original = payload()
+    original["referenceIds"] = [ref["assetId"]]
+    original["placement"] = {"x": 0.32, "y": 0.22, "width": 0.36}
+    parent_id = studio.jobs.enqueue(owner, original)["jobId"]
+    assert studio.jobs.tick()
+    parent = studio.jobs.get(owner, parent_id)["result"]
+
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    response = client.post(
+        "/studio/jobs",
+        json={
+            "edit": {
+                "parentJobId": parent_id,
+                "instruction": "Ampliar la cobertura",
+                "coverage": "larger",
+                "mode": "placement",
+            },
+            "idempotencyKey": "33333333-3333-4333-8333-333333333333",
+        },
+        headers={"Authorization": "Bearer test-only-token", "X-Session-Id": owner},
+    )
+    assert response.status_code == 202
+    assert studio.jobs.tick()
+    status = studio.jobs.get(owner, response.json()["jobId"])
+    assert status["state"] == "succeeded", status
+    result = status["result"]
+    assert result["size"] == parent["size"]
+    for name in ("master", "stencil", "stencilMirror", "pdf", "pdfMirror", "background"):
+        assert result[name] == parent[name]
+    assert result["mockup"]["assetId"] != parent["mockup"]["assetId"]
+    assert result["transform"]["widthPx"] > parent["transform"]["widthPx"]
+    assert "las medidas del PDF siguen siendo las originales" in result["notice"]
+    assert provider.calls == 1

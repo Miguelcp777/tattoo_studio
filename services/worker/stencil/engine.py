@@ -204,3 +204,50 @@ def rasterize(master: Master, dpi: int = 150) -> Image.Image:
             joint="curve",
         )
     return image
+
+
+def serialize_master(master: Master) -> bytes:
+    """Persist the authoritative vector geometry (ADR-0007), not only a raster of it."""
+    return json.dumps(
+        {
+            "version": 1,
+            "paths": master.paths,
+            "widthMm": master.width_mm,
+            "heightMm": master.height_mm,
+            "strokeMm": master.stroke_mm,
+            "sourceHash": master.source_hash,
+        },
+        separators=(",", ":"),
+    ).encode()
+
+
+def deserialize_master(data: bytes) -> Master:
+    document = json.loads(data.decode())
+    if document.get("version") != 1:
+        raise ValueError("Formato de master vectorial no reconocido.")
+    return Master(
+        [[(float(x), float(y)) for x, y in path] for path in document["paths"]],
+        float(document["widthMm"]),
+        float(document["heightMm"]),
+        float(document["strokeMm"]),
+        document.get("sourceHash"),
+    )
+
+
+def rescale(master: Master, width_mm: float, height_mm: float) -> Master:
+    """Exact uniform vector scale. Never re-traces already-traced output (ADR-0003)."""
+    if width_mm <= 0 or height_mm <= 0:
+        raise ValueError("Las medidas deben ser positivas.")
+    factor = min(width_mm / master.width_mm, height_mm / master.height_mm)
+    offset_x = (width_mm - master.width_mm * factor) / 2
+    offset_y = (height_mm - master.height_mm * factor) / 2
+    return Master(
+        [
+            [(x * factor + offset_x, y * factor + offset_y) for x, y in path]
+            for path in master.paths
+        ],
+        width_mm,
+        height_mm,
+        master.stroke_mm * factor,
+        master.source_hash,
+    )

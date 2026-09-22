@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: stencil
 
+TASK-0024 (ADR-0008): the `Master` is persisted as a vector via `serialize_master` /
+`deserialize_master`, and `rescale` performs an exact uniform scale to new millimetres. ADR-0007
+makes the vector master authoritative, but only a 150 dpi raster of it was stored, so a resize
+had no exact path. Re-tracing an already-traced raster is refused: it would re-apply
+skeletonisation to lines that are already thin, which is the defect ADR-0003 rejected edge
+detection for.
+
 TASK-0019/REQ-011: colour artwork has deterministic RGB boundary extraction, centerline tracing
 and physical fitting shared with its preview. The colour source digest joins the design identity.
 This is an approximate review stencil, not verified exact semantic contour selection. AC-008 stays open.
