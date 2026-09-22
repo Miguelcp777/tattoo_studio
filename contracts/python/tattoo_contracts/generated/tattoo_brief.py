@@ -140,7 +140,7 @@ class Constraints(BaseModel):
 
 class StyleName(Enum):
     """
-    The closed curated vocabulary from product-behavior.spec.md (CONTRACTS-INV-002). Free-text style input is mapped onto this list by the consultation, never passed through raw.
+    Curated anatomical placements' counterpart for style. Closed vocabulary: free-text style requests are mapped onto it, and anything unmapped prompts a clarifying question rather than passing through raw (CONSULT-INV-003). Extended by TASK-0027 (ADR-0011) with six styles clients ask for that were previously rejected; `tribal` was the repository's own example of an out-of-vocabulary style.
     """
 
     american_traditional = 'american_traditional'
@@ -153,6 +153,12 @@ class StyleName(Enum):
     ornamental = 'ornamental'
     lettering = 'lettering'
     surrealism = 'surrealism'
+    tribal = 'tribal'
+    geometric = 'geometric'
+    watercolour = 'watercolour'
+    new_school = 'new_school'
+    chicano = 'chicano'
+    biomechanical = 'biomechanical'
 
 
 class BodyPart(Enum):

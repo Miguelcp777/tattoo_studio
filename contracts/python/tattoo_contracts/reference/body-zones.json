@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "description": "Reference adult anatomy (ADR-0008), promoted to a shared contract by TASK-0027 so the consultation and the worker resolve a size from the same numbers. Illustrative: these are not any individual's measurements, and a calibrated photograph supersedes them.",
+  "zones": {
+    "ankle": {
+      "widthMm": 90.0,
+      "heightMm": 110.0
+    },
+    "behind_ear": {
+      "widthMm": 35.0,
+      "heightMm": 50.0
+    },
+    "calf": {
+      "widthMm": 140.0,
+      "heightMm": 380.0
+    },
+    "chest": {
+      "widthMm": 300.0,
+      "heightMm": 220.0
+    },
+    "collarbone": {
+      "widthMm": 180.0,
+      "heightMm": 60.0
+    },
+    "finger": {
+      "widthMm": 18.0,
+      "heightMm": 60.0
+    },
+    "foot": {
+      "widthMm": 100.0,
+      "heightMm": 200.0
+    },
+    "hand": {
+      "widthMm": 90.0,
+      "heightMm": 140.0
+    },
+    "hip": {
+      "widthMm": 160.0,
+      "heightMm": 200.0
+    },
+    "inner_forearm": {
+      "widthMm": 110.0,
+      "heightMm": 260.0
+    },
+    "lower_back": {
+      "widthMm": 300.0,
+      "heightMm": 180.0
+    },
+    "neck": {
+      "widthMm": 110.0,
+      "heightMm": 130.0
+    },
+    "outer_forearm": {
+      "widthMm": 120.0,
+      "heightMm": 270.0
+    },
+    "ribs": {
+      "widthMm": 200.0,
+      "heightMm": 300.0
+    },
+    "shin": {
+      "widthMm": 110.0,
+      "heightMm": 360.0
+    },
+    "shoulder": {
+      "widthMm": 180.0,
+      "heightMm": 170.0
+    },
+    "spine": {
+      "widthMm": 90.0,
+      "heightMm": 450.0
+    },
+    "sternum": {
+      "widthMm": 90.0,
+      "heightMm": 220.0
+    },
+    "stomach": {
+      "widthMm": 250.0,
+      "heightMm": 220.0
+    },
+    "thigh_front": {
+      "widthMm": 190.0,
+      "heightMm": 400.0
+    },
+    "thigh_outer": {
+      "widthMm": 180.0,
+      "heightMm": 420.0
+    },
+    "upper_arm_inner": {
+      "widthMm": 110.0,
+      "heightMm": 220.0
+    },
+    "upper_arm_outer": {
+      "widthMm": 130.0,
+      "heightMm": 230.0
+    },
+    "upper_back": {
+      "widthMm": 340.0,
+      "heightMm": 300.0
+    },
+    "wrist_inner": {
+      "widthMm": 60.0,
+      "heightMm": 70.0
+    },
+    "wrist_outer": {
+      "widthMm": 60.0,
+      "heightMm": 70.0
+    }
+  },
+  "scales": {
+    "small": 0.4,
+    "medium": 0.68,
+    "large": 1.0
+  },
+  "scaleNotes": "Fraction of the zone span a qualitative size claims. 'large' fills the zone, which is what a whole-zone request already resolves to (ADR-0008)."
+}

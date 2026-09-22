@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0027 (ADR-0011): `anatomy.py` no longer declares the reference spans. They are canonical in
+`contracts/reference/body-zones.json` and read from the packaged copy, so the consultation and
+this module resolve a size from the same numbers rather than two tables that can drift. The
+module gains `SIZE_SCALES`, the fraction of a zone a qualitative size claims.
+
 TASK-0024 (ADR-0008): a coverage request naming a whole body zone is resolved in millimetres
 from `anatomy.ZONE_SPAN_MM`, declared reference adult anatomy covering every `bodyPart` enum
 member. The artwork's visible aspect is fitted inside the zone span, preserving aspect — which

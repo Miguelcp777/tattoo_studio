@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0027 (ADR-0011): free-text extraction recognises the six added styles, and a qualitative
+size (`grande`, `mediano`, `pequeño` and their variants) resolves to millimetres as a fraction
+of the named zone, read from the shared contract. No size is proposed when the zone is unknown,
+because it would be a guess about a body part the client has not named. An explicit measurement
+always wins.
+
 TASK-0026 (ADR-0010): size is no longer pushed into `missingFields`. The provider prompt already
 recommends a size per anatomy, and `missingPreferences` never gated on it, so reporting it as
 outstanding asked the client to settle a decision that had already been taken for them.

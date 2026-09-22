@@ -180,3 +180,35 @@ def test_pattern_rejects_non_ascii_digits(name: str, fixture: str) -> None:
     in TypeScript — silent drift of exactly the kind ADR-0004 exists to prevent.
     """
     assert not is_valid(name, _load(name, fixture))
+
+
+# TASK-0027: shared reference data follows the same discipline as the schemas. The worker and
+# the consultation both resolve a size from it, so the two copies must be the same bytes.
+CANONICAL_REFERENCE = CONTRACTS_ROOT / "reference"
+PACKAGED_REFERENCE = Path(__file__).resolve().parents[1] / "tattoo_contracts" / "reference"
+
+
+@pytest.mark.parametrize(
+    "filename", sorted(p.name for p in (CONTRACTS_ROOT / "reference").glob("*.json"))
+)
+def test_packaged_reference_is_byte_identical_to_canonical(filename: str) -> None:
+    assert (PACKAGED_REFERENCE / filename).read_bytes() == (
+        CANONICAL_REFERENCE / filename
+    ).read_bytes()
+
+
+def test_every_body_part_in_the_contract_has_a_reference_span() -> None:
+    """A zone without a span cannot resolve a qualitative size, and would fail silently."""
+    zones = json.loads((CANONICAL_REFERENCE / "body-zones.json").read_text(encoding="utf-8"))
+    declared = set(schema("tattoo-brief")["$defs"]["bodyPart"]["enum"])
+    assert declared == set(zones["zones"]), declared.symmetric_difference(zones["zones"])
+
+
+def test_reference_spans_respect_the_contract_bounds() -> None:
+    document = json.loads((CANONICAL_REFERENCE / "body-zones.json").read_text(encoding="utf-8"))
+    bounds = schema("tattoo-brief")["$defs"]["millimetres"]
+    for zone, span in document["zones"].items():
+        for axis in ("widthMm", "heightMm"):
+            assert bounds["minimum"] <= span[axis] <= bounds["maximum"], (zone, axis)
+    # A scale above 1 would claim more of the zone than the zone has.
+    assert all(0 < value <= 1 for value in document["scales"].values())

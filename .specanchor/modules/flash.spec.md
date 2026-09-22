@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: flash
 
+TASK-0027 (ADR-0011): six style phrases added, describing visual characteristics rather than
+naming the style, following the TASK-0004 finding that naming one yields a generic render. The
+existing vocabulary-coverage test caught all six the moment the contract widened. None of the
+six has been verified against a real generation.
+
 ## Responsibility
 
 Turn a `TattooBrief` into the shaded reference render — the coloured or black-and-grey artwork a

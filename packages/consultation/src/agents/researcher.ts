@@ -1,4 +1,4 @@
-import type { BodyPart, StyleName } from '@tattoo/contracts';
+import { BODY_ZONE_SPANS, SIZE_SCALES, type BodyPart, type StyleName } from '@tattoo/contracts';
 import type { ConsultationSlots } from '../types';
 
 const normal = (text: string) =>
@@ -17,6 +17,12 @@ export const STYLE_OPTIONS: Record<StyleName, string> = {
   ornamental: 'Ornamental',
   lettering: 'Lettering',
   surrealism: 'Surrealismo',
+  tribal: 'Tribal',
+  geometric: 'Geométrico',
+  watercolour: 'Acuarela',
+  new_school: 'New school',
+  chicano: 'Chicano',
+  biomechanical: 'Biomecánico',
 };
 export const BODY_OPTIONS: Partial<Record<BodyPart, string>> = {
   inner_forearm: 'Antebrazo interior',
@@ -58,6 +64,12 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
     [/lettering|caligrafia/, 'lettering'],
     [/surrealis/, 'surrealism'],
     [/ilustrativ|illustrative/, 'illustrative'],
+    [/tribal|maori|polinesi|polynesian|samoan/, 'tribal'],
+    [/geometric|geometri/, 'geometric'],
+    [/acuarela|watercolou?r/, 'watercolour'],
+    [/new.?school/, 'new_school'],
+    [/chicano|chicana/, 'chicano'],
+    [/biomecanic|biomechanic/, 'biomechanical'],
   ];
   for (const [pattern, style] of styles)
     if (pattern.test(text)) {
@@ -101,9 +113,45 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
       widthMm: Number(size[1]!.replace(',', '.')) * (size[3] === 'cm' ? 10 : 1),
       heightMm: Number(size[2]!.replace(',', '.')) * (size[3] === 'cm' ? 10 : 1),
     };
+  else {
+    // TASK-0027: a qualitative size resolves against the zone, because "grande" on a wrist and
+    // "grande" on a back are not the same tattoo. An explicit measurement always wins.
+    const scaled = qualitativeSize(text, slots.placement?.bodyPart);
+    if (scaled) slots.size = scaled;
+  }
   if (slots.colour?.palette?.length === 0) delete slots.colour.palette;
   return slots;
 }
+const SIZE_WORDS: [RegExp, keyof typeof SIZE_SCALES][] = [
+  [/\b(?:muy grande|enorme|gigante|extra grande)\b/, 'large'],
+  [/\b(?:grande|amplio|cubriendo|cobertura)\b/, 'large'],
+  [/\b(?:mediano|mediana|intermedio|moderado)\b/, 'medium'],
+  [/\b(?:pequeno|pequena|peque|mini|discreto|diminuto|sutil)\b/, 'small'],
+];
+
+/**
+ * Resolve "grande" / "mediano" / "pequeño" into millimetres for the stated zone.
+ *
+ * Returns nothing when the zone is unknown: the size would be a guess about a body part the
+ * client has not named yet, and the consultation asks for the zone anyway.
+ */
+export function qualitativeSize(
+  text: string,
+  bodyPart: BodyPart | undefined,
+): { widthMm: number; heightMm: number } | undefined {
+  if (!bodyPart) return undefined;
+  const span = BODY_ZONE_SPANS[bodyPart];
+  if (!span) return undefined;
+  const hit = SIZE_WORDS.find(([pattern]) => pattern.test(text));
+  if (!hit) return undefined;
+  const scale = SIZE_SCALES[hit[1]];
+  if (!scale) return undefined;
+  return {
+    widthMm: Math.round(span.widthMm * scale),
+    heightMm: Math.round(span.heightMm * scale),
+  };
+}
+
 function colours(text: string): string[] {
   const palette = ['rojo', 'azul', 'verde', 'amarillo', 'naranja', 'violeta', 'dorado'].filter(
     (c) => text.includes(c),

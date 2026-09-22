@@ -116,3 +116,20 @@ export function assertDesign(payload: unknown): Design {
 }
 
 export type { StudioJob } from './generated/studio-job';
+
+/**
+ * Shared reference anatomy (TASK-0027, ADR-0008). The same document the worker reads, copied
+ * byte-identically into the Python package by its generator, so a size resolved during the
+ * consultation and one resolved in the worker cannot come from different numbers.
+ */
+import bodyZones from '../reference/body-zones.json';
+
+export interface BodyZoneSpan {
+  widthMm: number;
+  heightMm: number;
+}
+
+export const BODY_ZONE_SPANS: Readonly<Record<string, BodyZoneSpan>> = bodyZones.zones;
+
+/** Fraction of a zone a qualitative size claims. `large` fills it. */
+export const SIZE_SCALES: Readonly<Record<string, number>> = bodyZones.scales;

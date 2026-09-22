@@ -26,6 +26,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PACKAGE = HERE.parent / "tattoo_contracts"
 SCHEMA_DIR = HERE.parents[1] / "schemas"
+REFERENCE_DIR = HERE.parents[1] / "reference"
 
 BANNER = """\
 # GENERATED FILE - DO NOT EDIT.
@@ -103,6 +104,17 @@ def main() -> int:
         code = _generate_one(canonical, generated_dir)
         if code != 0:
             return code
+
+    # Shared reference data (TASK-0027): copied byte-identically like the schemas, so the
+    # consultation and the worker cannot resolve a size from different numbers.
+    reference_dir = PACKAGE / "reference"
+    reference_dir.mkdir(parents=True, exist_ok=True)
+    (reference_dir / "__init__.py").write_text(
+        '"""Copied reference data. Do not edit by hand."""\n', encoding="utf-8"
+    )
+    for canonical in sorted(REFERENCE_DIR.glob("*.json")):
+        shutil.copyfile(canonical, reference_dir / canonical.name)
+        print(f"copied:    {(reference_dir / canonical.name).relative_to(PACKAGE.parent)}")
     return 0
 
 

@@ -1156,7 +1156,7 @@ export const schemas: Record<string, Record<string, unknown>> = {
   },
   "$defs": {
     "styleName": {
-      "description": "The closed curated vocabulary from product-behavior.spec.md (CONTRACTS-INV-002). Free-text style input is mapped onto this list by the consultation, never passed through raw.",
+      "description": "Curated anatomical placements' counterpart for style. Closed vocabulary: free-text style requests are mapped onto it, and anything unmapped prompts a clarifying question rather than passing through raw (CONSULT-INV-003). Extended by TASK-0027 (ADR-0011) with six styles clients ask for that were previously rejected; `tribal` was the repository's own example of an out-of-vocabulary style.",
       "enum": [
         "american_traditional",
         "fine_line",
@@ -1167,7 +1167,13 @@ export const schemas: Record<string, Record<string, unknown>> = {
         "illustrative",
         "ornamental",
         "lettering",
-        "surrealism"
+        "surrealism",
+        "tribal",
+        "geometric",
+        "watercolour",
+        "new_school",
+        "chicano",
+        "biomechanical"
       ]
     },
     "bodyPart": {

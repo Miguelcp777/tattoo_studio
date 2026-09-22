@@ -33,3 +33,8 @@ contracts/schemas/
 
 # pnpm rewrites this file itself (approve-builds), so formatting it starts a fight.
 pnpm-workspace.yaml
+
+# Shared reference data (TASK-0027). Byte identity with the copy in the Python package is
+# asserted by a test, so formatting it here would break that copy until it is regenerated.
+contracts/reference/
+contracts/python/tattoo_contracts/reference/

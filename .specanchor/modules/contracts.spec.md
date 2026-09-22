@@ -9,6 +9,15 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0027 (ADR-0011): `styleName` grows from ten entries to sixteen with `tribal`, `geometric`,
+`watercolour`, `new_school`, `chicano` and `biomechanical`. The vocabulary stays closed;
+`tribal_freehand` remains the out-of-vocabulary fixture. `contracts/reference/body-zones.json`
+is new canonical data — the reference spans of ADR-0008 plus the fractions a qualitative size
+claims — copied byte-identically into the Python package by its generator and imported by
+TypeScript, so the consultation and the worker cannot resolve a size from different numbers.
+Three tests cover it: byte identity, one span per `bodyPart`, and spans within the contract's
+millimetre bounds.
+
 TASK-0023: transform optionally records sourceCropPx {left, top, width, height} for the
 uncalibrated mockup projection, in original master pixels; legacy results stay valid.
 

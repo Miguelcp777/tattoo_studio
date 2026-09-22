@@ -71,6 +71,30 @@ STYLE_PHRASES: dict[str, str] = {
     "illustrative": "illustrative tattoo design, drawn quality, clear silhouette",
     "ornamental": "ornamental tattoo, symmetrical geometric patterning, decorative detail",
     "lettering": "tattoo lettering, clean legible letterforms, consistent stroke weight",
+    "tribal": (
+        "bold solid black curvilinear bands, tapering points and interlocking negative space, "
+        "flowing with the limb"
+    ),
+    "geometric": (
+        "precise hard-edged geometry, repeated polygons and concentric construction lines, "
+        "exact symmetry"
+    ),
+    "watercolour": (
+        "loose translucent colour washes with soft bleeding edges and visible pigment pooling, "
+        "over restrained linework"
+    ),
+    "new_school": (
+        "exaggerated cartoon proportions, heavy dark outlines and saturated high-contrast colour, "
+        "strong depth"
+    ),
+    "chicano": (
+        "fine black and grey single-needle shading, smooth soft gradients, script and "
+        "photographic portraiture"
+    ),
+    "biomechanical": (
+        "interlocking mechanical forms beneath torn organic surfaces, metallic highlights and "
+        "deep recessed shadow"
+    ),
     "surrealism": "surrealist tattoo design, dreamlike composition, unexpected juxtaposition",
 }
 
