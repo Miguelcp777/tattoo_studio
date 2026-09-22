@@ -18,7 +18,8 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from PIL import Image
 from tattoo_contracts.validation import validate
 
-from app.settings import Settings
+from app.settings import Settings, SettingsError
+from generation.bfl_studio import BflStudioProvider
 from generation.studio import StudioProvider
 from jobs.queue import JobQueue
 from media.sanitize import sanitize
@@ -643,7 +644,27 @@ def build_studio(settings: Settings) -> Studio | None:
     return Studio(
         Path(settings.data_dir),
         bytes.fromhex(settings.media_key.get_secret_value()),
-        StudioProvider(
-            settings.openai_api_key.get_secret_value(), settings.image_model, settings.vision_model
-        ),
+        build_provider(settings),
     )
+
+
+def build_provider(settings: Settings) -> StudioProvider:
+    """Select the image backend by configuration (TASK-0025), never by caller."""
+    if settings.openai_api_key is None:
+        raise SettingsError("OPENAI_API_KEY is required for vision and moderation.")
+    openai_key = settings.openai_api_key.get_secret_value()
+    if settings.image_backend == "bfl":
+        if settings.bfl_api_key is None:
+            # Fail loudly: silently falling back to OpenAI would bill the wrong vendor.
+            raise SettingsError(
+                "TATTOO_IMAGE_BACKEND=bfl requires BFL_API_KEY. Values are redacted."
+            )
+        return BflStudioProvider(
+            openai_key,
+            settings.bfl_api_key.get_secret_value(),
+            image_model=settings.image_model,
+            vision_model=settings.vision_model,
+            base_url=settings.bfl_base_url,
+            background_model=settings.bfl_background_model,
+        )
+    return StudioProvider(openai_key, settings.image_model, settings.vision_model)

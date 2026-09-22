@@ -9,6 +9,17 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0025 (ADR-0009): `generation/bfl_studio.py` (`BflStudioProvider`) renders the blank
+skin background on BFL FLUX.2 (`flux-2-pro`, EU cluster default), selected by configuration.
+Artwork, edits, reference analysis and output moderation stay on OpenAI and are inherited
+unchanged, so `image_model` remains an OpenAI model name. FLUX.2 is not eligible for artwork:
+asked for a flat master on white it returns a photograph of the tattoo already applied to a
+limb, and holds that against explicit instruction. The pipeline reads any non-white pixel as
+ink, so such a master corrupts the visible-ink crop, the zone sizing and the stencil trace.
+Prompts are shared static helpers on `StudioProvider`, unchanged for either vendor. No body
+photograph is an input (ADR-0007): the background call is text-only and only runs when the
+client supplied no photograph.
+
 TASK-0021: edit_artwork sends the selected flat master FIRST and original reference images
 to one image-edit request. The request asks to preserve unrequested details; no pixel-perfect
 preservation claim. User changes may override the original artistic treatment (including color),
@@ -134,6 +145,8 @@ assertion being vacuous.
 - 2026-09-19 (TASK-0012): `SafetyClearance` relocated to the `safety` module, which now
   exists and is its proper owner (FINDING-0003). Re-exported here so call sites are
   unchanged. No behaviour change.
+- 2026-09-22 (TASK-0025): FLUX.2 background backend (ADR-0009), shared prompt helpers,
+  13 adapter tests + 3 settings tests. Artwork deliberately left on OpenAI.
 - 2026-09-19 (TASK-0004): Provider protocol, typed errors, retry policy, registry,
   deterministic fixture provider, fal adapter and conformance suite. 52 tests.
 
@@ -148,6 +161,11 @@ assertion being vacuous.
 | Credentials absent from logs and errors | VERIFIED | Log-capture and message assertions | PASS |
 | fal behaves as documented | UNKNOWN | Never called; no credential | NOT_RUN |
 | Provider no-training terms satisfy SEC-INV-001 | UNKNOWN | Terms not read | NOT_RUN |
+| FLUX.2 adapter request/poll/error handling (TASK-0025) | VERIFIED | `test_bfl_studio_provider.py`, scripted transport | PASS |
+| FLUX.2 background path behaves as documented live | VERIFIED | Live call 2026-09-22, 23.3s, 1024x1536, 87% skin pixels | PASS |
+| FLUX.2 returns flat artwork on white | VERIFIED | Two live calls; both returned a tattooed limb. Rejected for artwork (ADR-0009) | FAIL |
+| Artwork and edits never reach FLUX.2 | VERIFIED | `test_artwork_and_edits_never_reach_flux`, `test_openai_image_model_is_not_overwritten_by_the_flux_model` | PASS |
+| BFL no-training / retention terms | UNKNOWN | Not stated in docs read 2026-09-22 | NOT_RUN |
 
 ## TASK-0019 current implementation and remaining intent
 

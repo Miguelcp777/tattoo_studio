@@ -151,6 +151,14 @@ repositories without touching this one.
   tooling. It is typed `SecretStr`, so reading it requires an explicit
   `get_secret_value()` call that is visible in review.
 
+- TASK-0025 (ADR-0009): `TATTOO_IMAGE_BACKEND` (`openai`|`bfl`, default `openai`),
+  `BFL_API_KEY` (unprefixed, `SecretStr`), `TATTOO_BFL_BASE_URL` (default EU cluster),
+  `TATTOO_BFL_BACKGROUND_MODEL`. `build_provider` selects the backend; `bfl` without a key
+  raises `SettingsError` rather than silently billing another vendor. `bfl` changes the skin
+  background only: `image_model` is still passed through as OpenAI's, because the artwork and
+  edit paths are inherited and post to api.openai.com. Two tests pin that, since overwriting
+  it with a FLUX model name breaks every design and is invisible until a live call.
+
 ## Alignment notes
 
 Aligned as of TASK-0001. The manifests, workspace wiring, worker application shell and CI

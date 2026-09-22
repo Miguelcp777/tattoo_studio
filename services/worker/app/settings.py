@@ -71,6 +71,20 @@ class Settings(BaseSettings):
     image_model: str = "gpt-image-2"
     vision_model: str = "gpt-4.1-mini"
 
+    image_backend: Literal["openai", "bfl"] = "openai"
+    """TASK-0025: which vendor renders studio artwork (TATTOO_IMAGE_BACKEND). Vision
+    analysis and output moderation stay on OpenAI in both cases."""
+
+    bfl_api_key: SecretStr | None = Field(default=None, validation_alias="BFL_API_KEY")
+    """Black Forest Labs credential, read from the plain ``BFL_API_KEY`` variable."""
+
+    bfl_base_url: str = "https://api.eu.bfl.ai"
+    """EU cluster by default: requests and results stay in the EU region."""
+
+    bfl_background_model: str = "flux-2-pro"
+    """TASK-0025: FLUX.2 renders the blank skin plate only. Artwork and edits stay on
+    OpenAI, which is the vendor that will actually return flat art on white (ADR-0009)."""
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"

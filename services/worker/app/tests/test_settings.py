@@ -115,3 +115,48 @@ def test_fal_key_does_not_appear_in_repr(monkeypatch: pytest.MonkeyPatch) -> Non
     assert secret not in repr(settings)
     assert secret not in str(settings)
     assert secret not in repr(settings.fal_key)
+
+
+# TASK-0025: image backend selection -------------------------------------------------
+
+
+def _backend_settings(monkeypatch: pytest.MonkeyPatch, **env: str) -> Settings:
+    monkeypatch.delenv("BFL_API_KEY", raising=False)
+    monkeypatch.setenv("TATTOO_ENVIRONMENT", "local")
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-not-a-secret")
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    return load_settings()
+
+
+def test_default_backend_is_openai(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.studio import build_provider
+    from generation.bfl_studio import BflStudioProvider
+
+    provider = build_provider(_backend_settings(monkeypatch))
+    assert not isinstance(provider, BflStudioProvider)
+    provider.close()
+
+
+def test_bfl_backend_selected_by_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.studio import build_provider
+    from generation.bfl_studio import BflStudioProvider
+
+    settings = _backend_settings(
+        monkeypatch, TATTOO_IMAGE_BACKEND="bfl", BFL_API_KEY="bfl-test-not-a-secret"
+    )
+    provider = build_provider(settings)
+    assert isinstance(provider, BflStudioProvider)
+    assert provider.base_url == "https://api.eu.bfl.ai"
+    assert provider.background_model == "flux-2-pro"
+    # ADR-0009: artwork stays on OpenAI, so the inherited image model must remain OpenAI's.
+    assert provider.image_model == settings.image_model == "gpt-image-2"
+    assert "bfl-test-not-a-secret" not in repr(settings)
+    provider.close()
+
+
+def test_bfl_backend_without_key_fails_loudly(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.studio import build_provider
+
+    with pytest.raises(SettingsError, match="BFL_API_KEY"):
+        build_provider(_backend_settings(monkeypatch, TATTOO_IMAGE_BACKEND="bfl"))
