@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { type ConsultationSlots } from '@tattoo/consultation';
+import { findOffer, offerAsReference, type ConsultationSlots } from '@tattoo/consultation';
 
 import { validateTattooBrief } from '@tattoo/contracts';
 
@@ -43,6 +43,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         'preferences',
         'references',
         'retry_references',
+        'style_variant',
       ].includes(String(body['action']))
     )
       throw new RequestError('Acción inválida.');
@@ -62,7 +63,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (
       !text.trim() &&
-      !['preferences', 'references', 'retry_references'].includes(String(body['action']))
+      !['preferences', 'references', 'retry_references', 'style_variant'].includes(
+        String(body['action']),
+      )
     )
       throw new RequestError('Escribe tu idea.');
 
@@ -142,6 +145,20 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
 
       preferences = patch as ConsultationSlots;
+    }
+
+    // TASK-0028: a catalogue pick is resolved here, never taken from the request. The client
+    // sends an identifier; anything that does not resolve against the catalogue is refused, so
+    // no caller can inject an arbitrary image as a studio reference.
+    if (body['action'] === 'style_variant') {
+      const offer = findOffer(String(body['variantId'] ?? ''));
+      if (!offer) throw new RequestError('Esa referencia de estilo no existe.');
+      current.state.references = [
+        ...current.state.references.filter((r) => r.verification !== 'style_library'),
+        offerAsReference(offer),
+      ];
+      if (current.state.slots.style?.primary !== offer.style)
+        current.state.slots.style = { ...current.state.slots.style, primary: offer.style };
     }
 
     if (body['removeReference'] !== undefined)

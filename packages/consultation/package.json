@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./preferences": "./src/agents/researcher.ts"
+    "./preferences": "./src/agents/researcher.ts",
+    "./style-library": "./src/agents/style-library.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

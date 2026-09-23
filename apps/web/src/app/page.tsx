@@ -6,9 +6,12 @@ import type { OrchestrationSession } from '@tattoo/consultation';
 
 import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
+import { styleOffers } from '@tattoo/consultation/style-library';
+
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { StepFlow } from '@/components/StepFlow';
+import { StylePicker } from '@/components/StylePicker';
 
 import { buildSteps } from '@/lib/steps';
 
@@ -415,6 +418,18 @@ export default function ConsultationPage(): ReactNode {
   const hasBrief = Boolean(
     slots?.style?.primary && slots?.placement?.bodyPart && slots?.colour?.mode,
   );
+  // TASK-0028: offer catalogue variants once a style is known, so the client chooses by
+  // looking rather than by imagining.
+  const offers = styleOffers(slots?.style?.primary);
+  const chosenVariant = session?.references.find((r) => r.verification === 'style_library');
+  const chosenOfferId = offers.find((o) => o.image === chosenVariant?.source)?.id;
+
+  async function chooseStyleVariant(variantId: string) {
+    await run(async () =>
+      accept((await call('/api/consultation', { action: 'style_variant', variantId })).session),
+    );
+  }
+
   const steps = buildSteps({
     hasIdea: Boolean(slots?.subject?.description),
     hasBrief,
@@ -654,6 +669,13 @@ export default function ConsultationPage(): ReactNode {
             curvatura y el tamaño son orientativos. El tatuador debe revisar los símbolos y los
             contornos de la plantilla.
           </p>
+
+          <StylePicker
+            offers={offers}
+            selected={chosenOfferId}
+            disabled={disabled}
+            onSelect={(id) => void chooseStyleVariant(id)}
+          />
 
           <h3 id="step-referencias">Referencias</h3>
           {session?.missingFields.some((field) => field.startsWith('referencia')) && (

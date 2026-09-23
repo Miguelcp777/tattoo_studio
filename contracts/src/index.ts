@@ -133,3 +133,25 @@ export const BODY_ZONE_SPANS: Readonly<Record<string, BodyZoneSpan>> = bodyZones
 
 /** Fraction of a zone a qualitative size claims. `large` fills it. */
 export const SIZE_SCALES: Readonly<Record<string, number>> = bodyZones.scales;
+
+/**
+ * Style catalogue (TASK-0028, ADR-0012). `phrase` is the visual-characteristics string used both
+ * to generate the catalogue image and to describe the style to a client, held once so the two
+ * cannot drift. Variants describe what a sub-family looks like, never who makes it.
+ */
+import styleLibrary from '../reference/style-library.json';
+
+export interface StyleCatalogueVariant {
+  id: string;
+  label: string;
+  characteristics: string;
+}
+
+export interface StyleCatalogueEntry {
+  label: string;
+  phrase: string;
+  variants: StyleCatalogueVariant[];
+}
+
+export const STYLE_CATALOGUE: Readonly<Record<string, StyleCatalogueEntry>> =
+  styleLibrary.styles as unknown as Record<string, StyleCatalogueEntry>;

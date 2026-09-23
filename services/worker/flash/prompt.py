@@ -23,8 +23,10 @@ and must be described as such.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
+from importlib import resources
 from math import gcd
 from typing import Any, Protocol
 
@@ -55,47 +57,16 @@ class UnrenderableAspectError(ValueError):
     """
 
 
+# TASK-0028: the phrases live in the shared style catalogue, so the string shown to a client
+# and the string sent to the image model are the same one. A second copy here would drift.
+_CATALOGUE = json.loads(
+    resources.files("tattoo_contracts.reference").joinpath("style-library.json").read_text("utf-8")
+)
+
+#: Visual characteristics per style. Describes what it looks like, never who makes it: naming a
+#: style yields a generic render (TASK-0004), and naming an artist is forbidden (PROD-INV-004).
 STYLE_PHRASES: dict[str, str] = {
-    "american_traditional": (
-        "American traditional tattoo flash, bold even outlines, limited flat palette"
-    ),
-    "fine_line": "fine-line tattoo design, delicate single-weight linework, minimal shading",
-    "black_and_grey_realism": (
-        "black and grey realism tattoo, smooth gradients, photographic depth"
-    ),
-    "neo_traditional": (
-        "neo-traditional tattoo, illustrative forms, varied line weight, rich colour"
-    ),
-    "irezumi": "Japanese irezumi tattoo composition, traditional motifs, bold outlines",
-    "blackwork": "blackwork tattoo, solid black fills, strong negative space",
-    "illustrative": "illustrative tattoo design, drawn quality, clear silhouette",
-    "ornamental": "ornamental tattoo, symmetrical geometric patterning, decorative detail",
-    "lettering": "tattoo lettering, clean legible letterforms, consistent stroke weight",
-    "tribal": (
-        "bold solid black curvilinear bands, tapering points and interlocking negative space, "
-        "flowing with the limb"
-    ),
-    "geometric": (
-        "precise hard-edged geometry, repeated polygons and concentric construction lines, "
-        "exact symmetry"
-    ),
-    "watercolour": (
-        "loose translucent colour washes with soft bleeding edges and visible pigment pooling, "
-        "over restrained linework"
-    ),
-    "new_school": (
-        "exaggerated cartoon proportions, heavy dark outlines and saturated high-contrast colour, "
-        "strong depth"
-    ),
-    "chicano": (
-        "fine black and grey single-needle shading, smooth soft gradients, script and "
-        "photographic portraiture"
-    ),
-    "biomechanical": (
-        "interlocking mechanical forms beneath torn organic surfaces, metallic highlights and "
-        "deep recessed shadow"
-    ),
-    "surrealism": "surrealist tattoo design, dreamlike composition, unexpected juxtaposition",
+    name: entry["phrase"] for name, entry in _CATALOGUE["styles"].items()
 }
 
 LINEWORK_PHRASES: dict[str, str] = {

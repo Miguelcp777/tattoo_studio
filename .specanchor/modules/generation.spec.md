@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0028 (ADR-0012): `generation/style_library.py` builds the catalogue images. It lives here
+because ARCH-INV-001 confines outbound model calls to this module and `safety`; the provider is
+injected rather than constructed, since `generation` may not import `app` without closing a
+cycle. Failures are collected rather than raised on the first, and generation is resumable, so a
+provider refusal partway through does not re-spend on what already succeeded.
+
 TASK-0025 (ADR-0009): `generation/bfl_studio.py` (`BflStudioProvider`) renders the blank
 skin background on BFL FLUX.2 (`flux-2-pro`, EU cluster default), selected by configuration.
 Artwork, edits, reference analysis and output moderation stay on OpenAI and are inherited

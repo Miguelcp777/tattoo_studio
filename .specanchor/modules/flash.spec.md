@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: flash
 
+TASK-0028 (ADR-0012): `STYLE_PHRASES` is read from the shared style catalogue instead of being
+declared here. A second copy would let the description a client chose from drift away from the
+description their tattoo is generated from.
+
 TASK-0027 (ADR-0011): six style phrases added, describing visual characteristics rather than
 naming the style, following the TASK-0004 finding that naming one yields a generic render. The
 existing vocabulary-coverage test caught all six the moment the contract widened. None of the

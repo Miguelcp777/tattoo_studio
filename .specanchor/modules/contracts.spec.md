@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0028 (ADR-0012): `contracts/reference/style-library.json` holds the style catalogue — one
+visual-characteristics phrase per style and three described variants — copied byte-identically
+into the Python package and exported to TypeScript as `STYLE_CATALOGUE`. The phrase is held here
+rather than in `flash/prompt.py` so the string shown to a client, the string that generated the
+catalogue image, and the string sent for their tattoo are the same one.
+
 TASK-0027 (ADR-0011): `styleName` grows from ten entries to sixteen with `tribal`, `geometric`,
 `watercolour`, `new_school`, `chicano` and `biomechanical`. The vocabulary stays closed;
 `tribal_freehand` remains the out-of-vocabulary fixture. `contracts/reference/body-zones.json`

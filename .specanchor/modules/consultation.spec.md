@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0028 (ADR-0012): `agents/style-library.ts` turns a style into three catalogue offers and a
+chosen offer into a `ReferenceImage` marked `style_library` — never `user_supplied`, because it
+is an illustrative render the studio generated rather than the client's own material. Exported
+on the `./style-library` subpath so a client bundle can import it without pulling the
+orchestrator, which drags `node:crypto` through the build.
+
 TASK-0027 (ADR-0011): free-text extraction recognises the six added styles, and a qualitative
 size (`grande`, `mediano`, `pequeño` and their variants) resolves to millimetres as a fraction
 of the named zone, read from the shared contract. No size is proposed when the zone is unknown,

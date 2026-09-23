@@ -1117,3 +1117,96 @@ body::after {
   color: var(--text-muted);
   margin-left: 0.35rem;
 }
+
+/* ── TASK-0028: style catalogue picker ────────────────────────────────────────────────── */
+
+.style-picker {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+}
+
+.style-picker h3 {
+  margin-bottom: 0.35rem;
+}
+
+.style-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  list-style: none;
+  margin-top: 0.75rem;
+}
+
+.style-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.35rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.style-option:hover:not(:disabled) {
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+}
+
+.style-option:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.style-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.style-option.is-selected {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px var(--accent-gold-glow);
+}
+
+.style-option img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  display: block;
+  background: var(--bg-surface);
+}
+
+.style-option-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.style-option-hint {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+@media (max-width: 560px) {
+  .style-options {
+    grid-template-columns: 1fr;
+  }
+
+  .style-option {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .style-option img {
+    width: 84px;
+    flex: 0 0 auto;
+  }
+}

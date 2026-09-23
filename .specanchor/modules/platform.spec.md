@@ -23,6 +23,12 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0028 (ADR-0012): `app/build_style_library.py` is the catalogue runner. It lives here, not in
+`scripts/` and not in `generation`, because ARCH-INV-001 confines outbound model calls to
+`generation` while `generation` may not import `app` without closing a cycle — so the composition
+root constructs the provider and hands it over. It is run by hand, never per request, and each
+image is a paid call, so it skips anything already on disk unless forced.
+
 TASK-0024 (ADR-0008): `Studio` settles millimetres before anything is drawn at them. A whole-zone
 request sets `brief.size` from reference anatomy ahead of the provider call, so the artwork is
 composed for the zone rather than scaled into it afterwards. `reposition` re-exports the stencil

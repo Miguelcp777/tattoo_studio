@@ -12,7 +12,8 @@ export interface ReferenceImage {
   referenceQuery?: string;
   license?: string;
   retrievedAt?: string;
-  verification?: 'candidate' | 'user_supplied';
+  /** `style_library` is an illustrative render the studio generated, not real work and not the client's own (TASK-0028). */
+  verification?: 'candidate' | 'user_supplied' | 'style_library';
   mimeType: ReferenceImageMimeType;
   /** Optional caption or user label describing what they like about this reference */
   label?: string | undefined;

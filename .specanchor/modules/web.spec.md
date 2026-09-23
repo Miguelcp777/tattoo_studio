@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0028 (ADR-0012): the preferences panel offers three catalogue variants once a style is
+known, labelled as illustrative renders rather than photographs of real work. The pick travels
+as an identifier and is resolved against the catalogue by the BFF route, which refuses anything
+that does not resolve, so no caller can introduce an arbitrary image as a studio reference. The
+48 catalogue images are static assets under `public/style-library/`.
+
 TASK-0026 (ADR-0010): a persistent progress rail names the five steps and marks each completed,
 current or pending, with optional steps labelled. It is derived from the session the page already
 holds and gates nothing (WEB-INV-001); its conditions read the same values the panel gates on, so

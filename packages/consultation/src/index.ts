@@ -8,3 +8,4 @@ export * from './agents/image-scout';
 export * from './agents/researcher';
 export * from './agents/creator';
 export * from './agents/orchestrator';
+export * from './agents/style-library';

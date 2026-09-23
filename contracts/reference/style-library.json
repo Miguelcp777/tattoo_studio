@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "description": "Style catalogue (TASK-0028, ADR-0012). `phrase` is the visual-characteristics string sent to the image model and shown to the client, held once so the two cannot drift. Variants are recognisable sub-families described by what they look like, never by who makes them (PROD-INV-004). Catalogue images are generated from these strings and are illustrative renders, not photographs of real work.",
+  "styles": {
+    "american_traditional": {
+      "label": "Tradicional americano",
+      "phrase": "American traditional tattoo flash, bold even outlines, limited flat palette",
+      "variants": [
+        {
+          "id": "classic",
+          "label": "Clásico",
+          "characteristics": "nautical anchor and rose motifs, heavy black keyline, flat red and green"
+        },
+        {
+          "id": "dark",
+          "label": "Oscuro",
+          "characteristics": "black-heavy shading with sparse colour, weathered hand-drawn feel"
+        },
+        {
+          "id": "bold_modern",
+          "label": "Moderno",
+          "characteristics": "thicker outlines and simplified shapes, brighter saturated fills"
+        }
+      ]
+    },
+    "biomechanical": {
+      "label": "Biomecánico",
+      "phrase": "interlocking mechanical forms beneath torn organic surfaces, metallic highlights and deep recessed shadow",
+      "variants": [
+        {
+          "id": "mechanical",
+          "label": "Mecánico",
+          "characteristics": "pistons, cables and plating under torn skin"
+        },
+        {
+          "id": "organic",
+          "label": "Orgánico",
+          "characteristics": "ribbed bone-like structures, alien and wet"
+        },
+        {
+          "id": "cyber",
+          "label": "Cyber",
+          "characteristics": "circuit traces and panel seams, cold metallic sheen"
+        }
+      ]
+    },
+    "black_and_grey_realism": {
+      "label": "Realismo",
+      "phrase": "black and grey realism tattoo, smooth gradients, photographic depth",
+      "variants": [
+        {
+          "id": "portrait",
+          "label": "Retrato",
+          "characteristics": "human or animal face, photographic tonal range, sharp focal detail"
+        },
+        {
+          "id": "textured",
+          "label": "Texturas",
+          "characteristics": "fur, stone or fabric surfaces, emphasis on material detail"
+        },
+        {
+          "id": "high_contrast",
+          "label": "Alto contraste",
+          "characteristics": "deep blacks against bare skin highlights, dramatic lighting"
+        }
+      ]
+    },
+    "blackwork": {
+      "label": "Blackwork",
+      "phrase": "blackwork tattoo, solid black fills, strong negative space",
+      "variants": [
+        {
+          "id": "solid",
+          "label": "Macizo",
+          "characteristics": "large uninterrupted black areas, silhouette read at distance"
+        },
+        {
+          "id": "negative",
+          "label": "Negativo",
+          "characteristics": "the motif carried by bare skin inside a black field"
+        },
+        {
+          "id": "etching",
+          "label": "Grabado",
+          "characteristics": "dense parallel hatching in the manner of an engraving"
+        }
+      ]
+    },
+    "chicano": {
+      "label": "Chicano",
+      "phrase": "fine black and grey single-needle shading, smooth soft gradients, script and photographic portraiture",
+      "variants": [
+        {
+          "id": "script",
+          "label": "Script",
+          "characteristics": "elaborate connected lettering with fine drop shadow"
+        },
+        {
+          "id": "portrait",
+          "label": "Retrato",
+          "characteristics": "soft-shaded face with photographic tonal transitions"
+        },
+        {
+          "id": "religious",
+          "label": "Religioso",
+          "characteristics": "praying hands, rosary and sacred heart, smoke and light rays"
+        }
+      ]
+    },
+    "fine_line": {
+      "label": "Línea fina",
+      "phrase": "fine-line tattoo design, delicate single-weight linework, minimal shading",
+      "variants": [
+        {
+          "id": "micro",
+          "label": "Micro",
+          "characteristics": "very small scale, hairline strokes, large empty space around the motif"
+        },
+        {
+          "id": "botanical",
+          "label": "Botánico",
+          "characteristics": "continuous delicate stems and leaves, single unbroken contour"
+        },
+        {
+          "id": "dotted",
+          "label": "Punteado",
+          "characteristics": "fine stippled shading between thin contours, soft gradient by dot density"
+        }
+      ]
+    },
+    "geometric": {
+      "label": "Geométrico",
+      "phrase": "precise hard-edged geometry, repeated polygons and concentric construction lines, exact symmetry",
+      "variants": [
+        {
+          "id": "sacred",
+          "label": "Geometría sagrada",
+          "characteristics": "interlocking circles and polygons, compass-drawn construction"
+        },
+        {
+          "id": "linework",
+          "label": "Lineal",
+          "characteristics": "long straight rules and thin arcs, sparse and open"
+        },
+        {
+          "id": "tessellation",
+          "label": "Teselado",
+          "characteristics": "a repeating tile filling the shape without gaps"
+        }
+      ]
+    },
+    "illustrative": {
+      "label": "Ilustrativo",
+      "phrase": "illustrative tattoo design, drawn quality, clear silhouette",
+      "variants": [
+        {
+          "id": "sketch",
+          "label": "Boceto",
+          "characteristics": "visible construction lines and loose overdrawn contours"
+        },
+        {
+          "id": "engraving",
+          "label": "Grabado",
+          "characteristics": "cross-hatched volume, woodcut character"
+        },
+        {
+          "id": "storybook",
+          "label": "Ilustración",
+          "characteristics": "fairy-tale illustration line and flat colour, warm rounded shapes"
+        }
+      ]
+    },
+    "irezumi": {
+      "label": "Irezumi",
+      "phrase": "Japanese irezumi tattoo composition, traditional motifs, bold outlines",
+      "variants": [
+        {
+          "id": "dragon",
+          "label": "Dragón",
+          "characteristics": "coiled dragon with scale detail, wind bars and cloud fill"
+        },
+        {
+          "id": "koi",
+          "label": "Koi",
+          "characteristics": "koi against stylised water, wave crests and falling petals"
+        },
+        {
+          "id": "hannya",
+          "label": "Hannya",
+          "characteristics": "mask motif with maple leaves, strong black and red contrast"
+        }
+      ]
+    },
+    "lettering": {
+      "label": "Lettering",
+      "phrase": "tattoo lettering, clean legible letterforms, consistent stroke weight",
+      "variants": [
+        {
+          "id": "script",
+          "label": "Script",
+          "characteristics": "flowing connected cursive with thick-thin modulation"
+        },
+        {
+          "id": "blackletter",
+          "label": "Gótica",
+          "characteristics": "angular blackletter, heavy vertical stems"
+        },
+        {
+          "id": "sans",
+          "label": "Sans",
+          "characteristics": "geometric uppercase sans-serif, even weight, wide spacing"
+        }
+      ]
+    },
+    "neo_traditional": {
+      "label": "Neotradicional",
+      "phrase": "neo-traditional tattoo, illustrative forms, varied line weight, rich colour",
+      "variants": [
+        {
+          "id": "floral",
+          "label": "Floral",
+          "characteristics": "layered petals and foliage, jewel tones, decorative framing"
+        },
+        {
+          "id": "animal",
+          "label": "Animal",
+          "characteristics": "stylised animal portrait with ornament, strong outline hierarchy"
+        },
+        {
+          "id": "art_nouveau",
+          "label": "Art nouveau",
+          "characteristics": "sinuous whiplash curves, muted palette, ornamental border"
+        }
+      ]
+    },
+    "new_school": {
+      "label": "New school",
+      "phrase": "exaggerated cartoon proportions, heavy dark outlines and saturated high-contrast colour, strong depth",
+      "variants": [
+        {
+          "id": "cartoon",
+          "label": "Cartoon",
+          "characteristics": "bouncy rounded forms, thick outline, primary colours"
+        },
+        {
+          "id": "graffiti",
+          "label": "Graffiti",
+          "characteristics": "spray-can gradients and hard drop shadow, lettering influence"
+        },
+        {
+          "id": "horror",
+          "label": "Horror",
+          "characteristics": "grotesque exaggeration, acid greens and purples"
+        }
+      ]
+    },
+    "ornamental": {
+      "label": "Ornamental",
+      "phrase": "ornamental tattoo, symmetrical geometric patterning, decorative detail",
+      "variants": [
+        {
+          "id": "mandala",
+          "label": "Mandala",
+          "characteristics": "concentric radial symmetry, repeated petal rings"
+        },
+        {
+          "id": "filigree",
+          "label": "Filigrana",
+          "characteristics": "fine scrollwork and beading, jewellery-like detail"
+        },
+        {
+          "id": "armband",
+          "label": "Brazalete",
+          "characteristics": "continuous band wrapping the limb, repeating motif"
+        }
+      ]
+    },
+    "surrealism": {
+      "label": "Surrealismo",
+      "phrase": "surrealist tattoo design, dreamlike composition, unexpected juxtaposition",
+      "variants": [
+        {
+          "id": "melting",
+          "label": "Fundido",
+          "characteristics": "forms sagging and dissolving into one another"
+        },
+        {
+          "id": "collage",
+          "label": "Collage",
+          "characteristics": "unrelated objects fused into one impossible body"
+        },
+        {
+          "id": "cosmic",
+          "label": "Cósmico",
+          "characteristics": "figures opening onto starfields and planets"
+        }
+      ]
+    },
+    "tribal": {
+      "label": "Tribal",
+      "phrase": "bold solid black curvilinear bands, tapering points and interlocking negative space, flowing with the limb",
+      "variants": [
+        {
+          "id": "polynesian",
+          "label": "Polinesio",
+          "characteristics": "dense rows of small repeated symbols in banded panels"
+        },
+        {
+          "id": "maori",
+          "label": "Maorí",
+          "characteristics": "spiral koru forms and smooth flowing curves, heavy black"
+        },
+        {
+          "id": "neotribal",
+          "label": "Neotribal",
+          "characteristics": "sharp tapering blades and hooks, wide negative space, graphic"
+        }
+      ]
+    },
+    "watercolour": {
+      "label": "Acuarela",
+      "phrase": "loose translucent colour washes with soft bleeding edges and visible pigment pooling, over restrained linework",
+      "variants": [
+        {
+          "id": "splash",
+          "label": "Salpicadura",
+          "characteristics": "colour flung outward from the motif in droplets and streaks"
+        },
+        {
+          "id": "gradient",
+          "label": "Degradado",
+          "characteristics": "two or three colours bleeding smoothly into each other"
+        },
+        {
+          "id": "inkwash",
+          "label": "Aguada",
+          "characteristics": "single-colour wash with dark ink accents, sumi-e character"
+        }
+      ]
+    }
+  }
+}
