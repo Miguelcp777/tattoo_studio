@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0031 (ADR-0014): the studio-status `transform` records `freshness` and `surface` beside
+`curvature` and `taper`, for the same reason those are recorded: a render should say what was
+done to it. `surface` is an attenuation in 0..1, explicitly not a displacement.
+
 TASK-0028 (ADR-0012): `contracts/reference/style-library.json` holds the style catalogue — one
 visual-characteristics phrase per style and three described variants — copied byte-identically
 into the Python package and exported to TypeScript as `STYLE_CATALOGUE`. The phrase is held here

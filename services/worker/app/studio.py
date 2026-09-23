@@ -25,7 +25,7 @@ from jobs.queue import JobQueue
 from media.sanitize import sanitize
 from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM, zone_size
-from mockup.engine import composite, visible_artwork, visible_size
+from mockup.engine import DEFAULT_SURFACE, composite, visible_artwork, visible_size
 from mockup.placement import Coverage, coverage_request, fit_coverage
 from safety.gate import InputGate
 from stencil.engine import (
@@ -274,6 +274,9 @@ class Studio:
             fit_visible=fit_visible,
             curvature=1.05 if curved else 0,
             taper=0.25 if body_part == "calf" else 0,
+            # Unlike the cylinder, this is read from the photograph, so it suits a back or a
+            # chest as readily as a limb and is not restricted to the curved zones.
+            surface=DEFAULT_SURFACE,
         )
         preview = io.BytesIO()
         raster.save(preview, format="PNG")
@@ -443,6 +446,7 @@ class Studio:
                 fit_visible=True,
                 curvature=parent["transform"].get("curvature", 1.05 if body_part == "calf" else 0),
                 taper=parent["transform"].get("taper", 0.25 if body_part == "calf" else 0),
+                surface=parent["transform"].get("surface", DEFAULT_SURFACE),
             )
         if resize:
             assert stored_vector is not None

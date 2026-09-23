@@ -71,7 +71,8 @@ export function offerAsReference(offer: StyleVariantOffer): ReferenceImage {
     mimeType: 'image/webp',
     verification: 'style_library',
     referenceQuery: `${offer.styleLabel} · ${offer.label}`,
-    label: offer.characteristics,
+    // Shown on the reference card, so it is the Spanish name, not the English prompt text.
+    label: `${offer.styleLabel} · ${offer.label}`,
     license: 'Render ilustrativo generado por el estudio',
   };
 }

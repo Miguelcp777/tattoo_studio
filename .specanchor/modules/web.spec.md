@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0030: a catalogue pick is read from disk by `catalogueBytes`, not fetched. Its identifier
+must resolve in the catalogue and the path is rebuilt from the resolved entry, so traversal fails
+at resolution rather than at the filesystem. `referenceBytes` and its allowlist are untouched:
+that allowlist is the SSRF control, and widening it to read a file already on disk would be a
+poor trade. Introduced by TASK-0028, which wrote a web-relative `source` into a field
+`referenceBytes` parses with `new URL`, throwing before the worker was ever reached.
+
 TASK-0029 (ADR-0013): generation is gated on the client accepting the master brief. Acceptance is
 stored as a signature of the lines they read, so any later change withdraws it on its own rather
 than leaving a stale flag. The technical disclosure shows the brief the studio receives, not the

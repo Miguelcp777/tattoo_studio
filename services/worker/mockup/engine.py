@@ -9,6 +9,48 @@ from typing import Any
 import numpy as np
 from PIL import Image, ImageFilter
 
+#: Strength of the fresh-ink ring (TASK-0031). At 1.0 the reddening was measurable but not
+#: visible; 2.0 reads as recent without tinting the design. Illustrative, not clinical.
+DEFAULT_FRESHNESS = 2.0
+
+#: Strongest ink attenuation the surface term may apply, where 1.0 would erase it entirely.
+SURFACE_LIMIT = 1.0
+
+#: Default attenuation. Chosen on a real render: the design stays intact and the ink grades
+#: with the body's own light. Above roughly 0.5 it reads as faded rather than curved.
+DEFAULT_SURFACE = 0.35
+
+
+def surface_falloff(patch: np.ndarray, strength: float) -> np.ndarray:
+    """How much to attenuate the ink at each pixel, read from the photograph (ADR-0014).
+
+    Where a body turns away from the light it darkens, so the skin's own luminance already
+    carries its gross form. Blurring pores and hair away leaves that form; ink on a surface
+    angled away reads lighter and lower in contrast, and scaling its opacity says so.
+
+    Deliberately not a displacement. A displacement large enough to read as curvature also
+    deforms the subject — measured on a real render, where the animal's muzzle and ears warped
+    visibly — and MOCKUP-INV-001 makes the artwork's shape authoritative. This moves nothing.
+
+    It is not recovered depth. It is an illustrative approximation, with the difference from the
+    cylinder that it is read from the photograph rather than assumed, so it suits a back or a
+    chest as readily as a limb.
+    """
+    height, width = patch.shape[:2]
+    luminance = patch @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    form = np.asarray(
+        Image.fromarray(np.clip(luminance, 0, 255).astype(np.uint8)).filter(
+            ImageFilter.GaussianBlur(max(4.0, min(width, height) / 12))
+        ),
+        dtype=np.float32,
+    )
+    brightest = float(form.max())
+    if brightest < 1e-6:
+        return np.ones((height, width), dtype=np.float32)
+    lit = form / brightest
+    falloff: np.ndarray = 1 - min(strength, SURFACE_LIMIT) * np.clip(1 - lit, 0, 1)
+    return falloff
+
 
 def visible_artwork(master: Image.Image) -> tuple[Image.Image, dict[str, int]]:
     """Remove only exterior white padding for uncalibrated projection; never edit the master."""
@@ -46,6 +88,8 @@ def composite(
     curvature: float = 0.0,
     taper: float = 0.0,
     fit_visible: bool = False,
+    freshness: float = DEFAULT_FRESHNESS,
+    surface: float = 0.0,
 ) -> tuple[bytes, dict[str, Any]]:
     with Image.open(io.BytesIO(background)) as source:
         photo = source.convert("RGB")
@@ -72,6 +116,8 @@ def composite(
     ink_image = master.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
     if not 0 <= curvature <= 1.2 or not 0 <= taper <= 0.35:
         raise ValueError("Curvatura fuera del rango admitido.")
+    if not 0 <= surface <= SURFACE_LIMIT:
+        raise ValueError("Ajuste de superficie fuera del rango admitido.")
     if curvature:
         # Tapered cylindrical approximation. The source artwork remains untouched.
         mesh = []
@@ -110,6 +156,9 @@ def composite(
     ink = np.asarray(ink_image, dtype=np.float32) / 255
     pixels = np.asarray(photo, dtype=np.float32).copy()
     patch = pixels[y : y + height, x : x + width]
+    if surface:
+        # Attenuate, never displace: the artwork's geometry is authoritative (MOCKUP-INV-001).
+        ink = 1 - (1 - ink) * surface_falloff(patch, surface)[:, :, None]
     if fresh:
         coverage = 1 - ink.min(axis=2)
         # Dilate before blurring: redness must surround ink, not disappear beneath it.
@@ -123,6 +172,10 @@ def composite(
             )
             / 255
         )
+        # Then subtract the ink itself, leaving a ring. Fresh ink irritates the skin *around*
+        # the strokes; a solid black stroke hides the tint anyway, but mid-grey shading lets it
+        # through, and without this the whole design goes warm instead of its border.
+        halo = np.clip(halo - coverage, 0, 1) * freshness
         warm = patch.copy()
         warm[:, :, 0] += (255 - warm[:, :, 0]) * halo * 0.14
         warm[:, :, 1] *= 1 - halo * 0.095
@@ -143,6 +196,8 @@ def composite(
         "method": "fresh-ink-composite" if fresh else "geometric-multiply",
         **({"curvature": curvature} if curvature else {}),
         **({"taper": taper} if taper else {}),
+        **({"surface": surface} if surface else {}),
+        "freshness": freshness if fresh else 0.0,
         **({"sourceCropPx": crop} if crop else {}),
         "scaleCalibrated": bool(p.get("photoWidthMm")),
         "generativePostprocess": False,

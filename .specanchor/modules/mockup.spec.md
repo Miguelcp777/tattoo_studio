@@ -9,6 +9,18 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0031 (ADR-0014): the fresh-ink halo is a ring — the ink coverage is subtracted from the
+dilated mask — because the warmth belongs on skin, not pigment. Without it, mid-grey shading
+lets the tint through and the whole design goes warm. `DEFAULT_FRESHNESS = 2.0`.
+
+Surface form is expressed as **attenuation, never displacement**: where the photograph's own
+blurred luminance says the body turns away, the ink's opacity is reduced. `DEFAULT_SURFACE =
+0.35`, applied to every zone rather than only the cylinder's limbs, because it is read from the
+photograph rather than assumed. A displacement field was built and measured first and is
+rejected: any strength that reads as curvature also deforms the subject, which MOCKUP-INV-001
+forbids. This is not recovered depth, and a flatly lit photograph yields no form and therefore
+no effect.
+
 TASK-0027 (ADR-0011): `anatomy.py` no longer declares the reference spans. They are canonical in
 `contracts/reference/body-zones.json` and read from the packaged copy, so the consultation and
 this module resolve a size from the same numbers rather than two tables that can drift. The

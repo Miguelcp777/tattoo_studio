@@ -8,6 +8,8 @@ import {
   session,
   worker,
   referenceBytes,
+  catalogueBytes,
+  isCatalogueSource,
   jobStatus,
 } from '../../../lib/studio-server';
 export async function POST(request: Request): Promise<NextResponse> {
@@ -47,7 +49,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     for (const reference of current.state.references) {
       if (!reference.assetId) {
         const res = await worker(current.state.sessionId, '/media', 'POST', {
-          data: await referenceBytes(reference.source),
+          data: isCatalogueSource(reference.source)
+            ? await catalogueBytes(reference.source)
+            : await referenceBytes(reference.source),
           kind: 'reference',
           consent: body['consent'] === true,
           adult: body['adult'] === true,

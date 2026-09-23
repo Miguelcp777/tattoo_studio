@@ -784,6 +784,18 @@ export const schemas: Record<string, Record<string, unknown>> = {
                   "minimum": 1
                 }
               }
+            },
+            "surface": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How strongly the ink is attenuated where the photograph's own shading says the body turns away. An illustrative approximation of surface form, not recovered depth, and never a displacement: the artwork's geometry is authoritative (ADR-0014, MOCKUP-INV-001)."
+            },
+            "freshness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "Strength of the fresh-ink reddening around the strokes. 0 when the render is a plain multiply. Illustrative, never a clinical prediction of healing (PROD-INV-003)."
             }
           },
           "required": [

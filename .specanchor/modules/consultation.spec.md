@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0030: a catalogue reference's `label` is the Spanish style and variant name. TASK-0028 put
+the English prompt text there, which the interface then showed to the client.
+
 TASK-0029 (ADR-0013): `agents/master-prompt.ts` projects the brief a client accepts from the same
 slots and references that are sent for generation, so it cannot drift from what is actually made.
 It marks studio decisions as proposals — a size exactly filling the zone span, the technical

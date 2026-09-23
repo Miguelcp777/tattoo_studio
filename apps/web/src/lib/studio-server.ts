@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import sharp from 'sharp';
 import { NextResponse } from 'next/server';
-import { OrchestratorAgent, type OrchestrationSession } from '@tattoo/consultation';
+import { findOffer, OrchestratorAgent, type OrchestrationSession } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 
 interface Session {
@@ -104,6 +106,35 @@ export function errorResponse(error: unknown): NextResponse {
   );
 }
 /** Bounded server-side fetch of a search candidate; never accept arbitrary hosts/redirects. */
+/** Path shape of a catalogue image, as `offerAsReference` writes it (TASK-0028). */
+const CATALOGUE_SOURCE = /^\/style-library\/([a-z_]+)\/([a-z_]+)\.webp$/;
+
+/**
+ * Bytes of a chosen catalogue image (TASK-0030).
+ *
+ * These are our own static assets, so they are read from disk rather than fetched: sending them
+ * through `referenceBytes` would mean either widening its allowlist to our own origin or
+ * pointing the server at itself, and neither is worth doing for a file already on disk.
+ *
+ * Traversal is impossible because the identifier has to resolve in the catalogue; the path is
+ * rebuilt from what the catalogue returns, never from what arrived.
+ */
+export async function catalogueBytes(source: string): Promise<string> {
+  const match = CATALOGUE_SOURCE.exec(source);
+  const offer = match ? findOffer(`${match[1]}:${match[2]}`) : undefined;
+  if (!offer) throw new RequestError('Esa referencia de estilo no existe.', 422);
+  const file = join(process.cwd(), 'public', 'style-library', offer.style, `${offer.variant}.webp`);
+  try {
+    return (await readFile(file)).toString('base64');
+  } catch {
+    throw new RequestError('Falta la imagen del catálogo de estilos.', 500);
+  }
+}
+
+export function isCatalogueSource(source: string): boolean {
+  return CATALOGUE_SOURCE.test(source);
+}
+
 export async function referenceBytes(source: string): Promise<string> {
   const url = new URL(source);
   const officialCrest = url.href === 'https://www.valenciacf.com/svg/escudo.svg';

@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0031 (ADR-0014): the studio applies the surface attenuation to every body part, not only
+the zones the cylinder covers, because the term is read from the photograph rather than assumed.
+A revision inherits the parent's value so a re-render does not silently change finish.
+
 TASK-0028 (ADR-0012): `app/build_style_library.py` is the catalogue runner. It lives here, not in
 `scripts/` and not in `generation`, because ARCH-INV-001 confines outbound model calls to
 `generation` while `generation` may not import `app` without closing a cycle — so the composition
