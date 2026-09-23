@@ -8,10 +8,13 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
 import { styleOffers } from '@tattoo/consultation/style-library';
 
+import { buildMasterPrompt } from '@tattoo/consultation/master-prompt';
+
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { StepFlow } from '@/components/StepFlow';
 import { StylePicker } from '@/components/StylePicker';
+import { MasterBrief } from '@/components/MasterBrief';
 
 import { buildSteps } from '@/lib/steps';
 
@@ -68,6 +71,11 @@ export default function ConsultationPage(): ReactNode {
   const [consent, setConsent] = useState(false);
 
   const [referencesReviewed, setReferencesReviewed] = useState(false);
+
+  // TASK-0029: nothing is generated until the client has read the brief and said yes.
+  // Storing what they accepted, rather than that they accepted, means any later change
+  // invalidates it on its own: they agreed to what they read, not to whatever it becomes.
+  const [acceptedSignature, setAcceptedSignature] = useState('');
 
   const [bodyPhotoId, setBodyPhotoId] = useState('');
 
@@ -418,6 +426,12 @@ export default function ConsultationPage(): ReactNode {
   const hasBrief = Boolean(
     slots?.style?.primary && slots?.placement?.bodyPart && slots?.colour?.mode,
   );
+  // TASK-0029: a reading of the brief that will be sent, not a second description of it.
+  const masterPrompt = buildMasterPrompt(slots ?? {}, session?.references ?? []);
+
+  const briefSignature = JSON.stringify(masterPrompt.lines);
+  const briefAccepted = masterPrompt.complete && briefSignature === acceptedSignature;
+
   // TASK-0028: offer catalogue variants once a style is known, so the client chooses by
   // looking rather than by imagining.
   const offers = styleOffers(slots?.style?.primary);
@@ -677,6 +691,15 @@ export default function ConsultationPage(): ReactNode {
             onSelect={(id) => void chooseStyleVariant(id)}
           />
 
+          <MasterBrief
+            prompt={masterPrompt}
+            brief={session?.brief}
+            accepted={briefAccepted}
+            disabled={disabled}
+            onAccept={() => setAcceptedSignature(briefSignature)}
+            onReopen={() => setAcceptedSignature('')}
+          />
+
           <h3 id="step-referencias">Referencias</h3>
           {session?.missingFields.some((field) => field.startsWith('referencia')) && (
             <button
@@ -889,7 +912,8 @@ export default function ConsultationPage(): ReactNode {
               session?.phase !== 'ready_to_generate' ||
               !adult ||
               !consent ||
-              !referencesReviewed
+              !referencesReviewed ||
+              !briefAccepted
             }
 
             onClick={() => void generate()}

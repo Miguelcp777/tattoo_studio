@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./preferences": "./src/agents/researcher.ts",
-    "./style-library": "./src/agents/style-library.ts"
+    "./style-library": "./src/agents/style-library.ts",
+    "./master-prompt": "./src/agents/master-prompt.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

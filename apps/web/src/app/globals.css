@@ -1210,3 +1210,97 @@ body::after {
     flex: 0 0 auto;
   }
 }
+
+/* ── TASK-0029: the master brief and its acceptance gate ──────────────────────────────── */
+
+.master-brief {
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: var(--bg-surface-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.master-brief-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.master-brief-line {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.master-brief-line dt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.master-brief-line dd {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.master-brief-proposed {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  border: 1px solid var(--border-active);
+  border-radius: 99px;
+  padding: 0.05rem 0.4rem;
+  vertical-align: middle;
+}
+
+.master-brief-missing {
+  font-size: 0.78rem;
+  color: var(--accent-rose);
+}
+
+.master-brief-accepted {
+  font-size: 0.82rem;
+  color: var(--accent-emerald);
+}
+
+.master-brief-json {
+  margin-top: 0.4rem;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0.6rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

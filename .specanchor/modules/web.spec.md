@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0029 (ADR-0013): generation is gated on the client accepting the master brief. Acceptance is
+stored as a signature of the lines they read, so any later change withdraws it on its own rather
+than leaving a stale flag. The technical disclosure shows the brief the studio receives, not the
+assembled prompt string, which embeds anti-injection framing. **The gate is presentational**: a
+caller bypassing the interface can still submit a job. It is a usability control, not a security
+one, and server-side enforcement remains open.
+
 TASK-0028 (ADR-0012): the preferences panel offers three catalogue variants once a style is
 known, labelled as illustrative renders rather than photographs of real work. The pick travels
 as an identifier and is resolved against the catalogue by the BFF route, which refuses anything

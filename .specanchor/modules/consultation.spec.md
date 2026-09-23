@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0029 (ADR-0013): `agents/master-prompt.ts` projects the brief a client accepts from the same
+slots and references that are sent for generation, so it cannot drift from what is actually made.
+It marks studio decisions as proposals — a size exactly filling the zone span, the technical
+linework weight — and names what is still missing rather than presenting an incomplete brief as
+ready. Exported on the `./master-prompt` subpath so a client bundle can use it without pulling the
+orchestrator.
+
 TASK-0028 (ADR-0012): `agents/style-library.ts` turns a style into three catalogue offers and a
 chosen offer into a `ReferenceImage` marked `style_library` — never `user_supplied`, because it
 is an illustrative render the studio generated rather than the client's own material. Exported
