@@ -9,6 +9,7 @@
 | flash | `services/worker/flash/*` | `.specanchor/modules/flash.spec.md` | draft | 2026-09-19 |
 | stencil | `services/worker/stencil/*` | `.specanchor/modules/stencil.spec.md` | draft | 2026-09-19 |
 | mockup | `services/worker/mockup/*` | `.specanchor/modules/mockup.spec.md` | draft | 2026-09-19 |
+| orchestration | `services/worker/orchestration/*` | `.specanchor/modules/orchestration.spec.md` | draft | 2026-09-26 |
 | media | `services/worker/media/*` | `.specanchor/modules/media.spec.md` | draft | 2026-09-19 |
 | safety | `services/worker/safety/*` | `.specanchor/modules/safety.spec.md` | draft | 2026-09-19 |
 | jobs | `services/worker/jobs/*` | `.specanchor/modules/jobs.spec.md` | draft | 2026-09-19 |
@@ -44,6 +45,12 @@ exist and its field set is unproven against any consumer.
 | TASK-0015 | Client-Centric Generation of Stencil and Hyperrealistic Body Mockup | verified |
 | TASK-0016 | Multi-Agent Orchestrator with Specialized Research and Visual Creation Agents | verified |
 | TASK-0017 | Visual Internet Scout Agent and 3-Agent Triad for Historical Fidelity | verified |
+| TASK-0032 | Model-backed agent triad, worker LangGraph pipeline and the AI blend | in_progress; all but the real blend landed (blocked on TASK-0008) |
+| TASK-0033 | Claude architect and scout on the live consultation route | verified (local checks) |
+| TASK-0034 | Proposed size, relevant references (vision judge), clear next step | verified (live + local checks) |
+| TASK-0035 | Misspelt whole-zone request left the tattoo the same size | verified (local checks) |
+| TASK-0036 | Attach photos to a change request; an edit keeps a resized size | in_progress (local checks pass; live check pending) |
+| TASK-0008 | Mockup blend spike: geometry tolerance and provider selection | blocked (method + harness ready; needs credentials, corpus, terms review) |
 
 ## Findings
 
@@ -52,6 +59,7 @@ exist and its field set is unproven against any consumer.
 | FINDING-0001 | OpenAI's image model offers editing, relevant to the ADR-0002 mockup blend | open |
 | FINDING-0002 | The brief contract permits size combinations flash cannot render | open |
 | FINDING-0003 | `media` and `safety` declared a circular dependency | resolved (TASK-0012) |
+| FINDING-0004 | Live consultation route bypasses `ConsultationProvider`; Claude agents not yet active | resolved (TASK-0033) |
 
 ## Decisions
 
@@ -63,6 +71,8 @@ exist and its field set is unproven against any consumer.
 | ADR-0004 | One JSON Schema as the source of truth for both runtimes | accepted (validated TASK-0002) |
 | ADR-0005 | Next.js BFF and Python worker separated by a job queue | proposed |
 | ADR-0006 | Privacy posture for body photographs | proposed |
+| ADR-0015 | Two-tier agent orchestration: TS triad + worker LangGraph pipeline | proposed |
+| ADR-0016 | Activate the constrained AI blend for the mockup (supersedes an ADR-0007 clause) | proposed |
 
 ## Invariant ownership
 

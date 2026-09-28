@@ -50,6 +50,13 @@
       "spec": ".specanchor/modules/mockup.spec.md"
     },
     {
+      "name": "orchestration",
+      "paths": [
+        "services/worker/orchestration/*"
+      ],
+      "spec": ".specanchor/modules/orchestration.spec.md"
+    },
+    {
       "name": "media",
       "paths": [
         "services/worker/media/*"
@@ -73,6 +80,7 @@
     {
       "name": "platform",
       "paths": [
+        ".claude/launch.json",
         ".gitattributes",
         ".github/*",
         ".npmrc",

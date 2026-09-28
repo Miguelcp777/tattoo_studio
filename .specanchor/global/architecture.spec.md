@@ -38,9 +38,15 @@ User idea
 ```
 
 - `contracts` owns `TattooBrief` and every other cross-boundary schema. It depends on nothing.
-- `consultation` produces a brief; it never generates imagery.
+- `consultation` produces a brief; it never generates imagery. It owns the interactive agent tier
+  (prompt architect on Claude Opus 5.5, visual scout on Claude Sonnet 5), and is the only place a
+  reasoning-LLM call is made (ADR-0015).
 - `flash`, `stencil` and `mockup` consume a brief; they never converse with the user.
 - `generation` is the only module permitted to call an external image model.
+- `orchestration` sequences the worker creation pipeline (master artwork → stencil → surface →
+  warp → AI blend → geometry check → output gate → assemble) as a LangGraph graph inside one
+  `jobs` job. It adds no outbound egress: image models only via `generation`, moderation only via
+  `safety` (ADR-0015, TASK-0032).
 - `media`, `safety` and `jobs` are cross-cutting services consumed by the engines.
 - `web` is a presentation and BFF layer; it holds no domain logic.
 
@@ -54,8 +60,11 @@ User idea
 ## Invariants
 
 - ARCH-INV-001: Outbound model calls are confined to two modules and no others.
-  `generation` owns image-model calls; `safety` owns moderation calls. Amended in
-  TASK-0013: the original wording assumed image generation was the only outbound concern.
+  `generation` owns image-model calls; `safety` owns moderation calls. Clarified in TASK-0032:
+  reasoning-LLM calls belong to the interactive `consultation` tier (a TypeScript package outside
+  the worker); the worker adds no new egress, and `orchestration` in particular makes none — a
+  production HTTP client anywhere but `generation` and `safety` fails the source-scan test.
+  Amended in TASK-0013: the original wording assumed image generation was the only outbound concern.
   Routing moderation through `generation` was considered and rejected, because it would
   make the gate's integrity depend on the availability and correctness of the module the
   gate exists to constrain — a bug or outage there could then disable moderation. A test
@@ -109,6 +118,9 @@ User idea
 
 ## Change history
 
+- 2026-09-26 (TASK-0032): Added the `orchestration` worker module (LangGraph creation pipeline,
+  ADR-0015) and clarified ARCH-INV-001 — reasoning-LLM egress is owned by the `consultation` tier
+  and the worker adds none. No loosening: the two named worker egress points are unchanged.
 - 2026-09-19 (TASK-0013): ARCH-INV-001 amended to permit `safety` its own moderation
   egress, with the reasoning recorded above. Tightening rather than loosening: the
   invariant now names exactly two modules and the test enforces both.

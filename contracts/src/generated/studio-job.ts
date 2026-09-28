@@ -524,6 +524,13 @@ export interface StudioJob {
   edit?: {
     parentJobId: string;
     instruction: string;
+    /**
+     * TASK-0036: reference images the client attached to this change request, already screened and owned. They guide the edit and join the design's references.
+     *
+     * @minItems 1
+     * @maxItems 3
+     */
+    referenceIds?: [string] | [string, string] | [string, string, string];
     coverage?: 'larger' | 'smaller' | 'full';
     mode?: 'artwork' | 'placement';
   };

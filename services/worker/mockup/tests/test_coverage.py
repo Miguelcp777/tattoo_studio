@@ -58,6 +58,10 @@ def test_zone_size_rejects_an_unknown_zone() -> None:
         "que ocupe todo el brazo",
         "Que me llene la espalda completa",
         "rellenar el antebrazo enterito",
+        # TASK-0035: the live request that was misread, a misspelt zone, and no zone noun at all.
+        "que ocupe todo el gemlo",
+        "que ocupe todo el atebrazo",
+        "quiero que el tatuaje ocupe todo el modelo",
     ],
 )
 def test_whole_zone_phrases_resolve(phrase: str) -> None:
@@ -74,6 +78,10 @@ def test_whole_zone_phrases_resolve(phrase: str) -> None:
         ("añade una flor", None),
         ("no quiero que ocupe todo el gemelo", None),
         ("que ocupe todo el gemelo y añade un león", Coverage("full", False)),
+        # TASK-0035: the looser forms must not swallow artwork edits.
+        ("rellena todo de color", None),
+        ("que el escudo cubra todo el lobo", None),
+        ("pon todo el texto en negro", None),
     ],
 )
 def test_other_instructions_keep_their_meaning(phrase: str, expected: Coverage | None) -> None:

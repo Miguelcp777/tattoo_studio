@@ -23,6 +23,11 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0036: studio job submission checks ownership of `edit.referenceIds`, puts them first in the
+design's references (cap 5), re-analyses them, and never short-circuits a change with photos to a
+reposition. An edit now takes its millimetres from the parent's **result**: the stored payload
+predates a whole-zone resize, so an edit of a resized version had silently shrunk back.
+
 TASK-0031 (ADR-0014): the studio applies the surface attenuation to every body part, not only
 the zones the cylinder covers, because the term is read from the photograph rather than assumed.
 A revision inherits the parent's value so a re-render does not silently change finish.
@@ -183,6 +188,8 @@ files caught by `--baseline`.
 
 ## Change history
 
+- 2026-09-27 (TASK-0033): `.claude/launch.json` lets the Claude desktop browser pane start the
+  local stack through `scripts/dev.mjs` (web on 3000, worker on 8000). Tooling only; no secrets.
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0001): pnpm workspace, uv-managed worker, FastAPI shell with validated
   settings, GitHub Actions workflow with three independent jobs. Module map extended with five

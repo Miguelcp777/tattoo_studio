@@ -353,6 +353,7 @@ def test_edit_versions_are_owned_idempotent_and_keep_previous(tmp_path: Path) ->
             instruction: str,
             *,
             rendered: bool,
+            attached: int = 0,
         ) -> bytes:
             self.edit_input = master
             if self.fail:
@@ -415,6 +416,148 @@ def test_edit_versions_are_owned_idempotent_and_keep_previous(tmp_path: Path) ->
     assert studio.jobs.get(owner, failed_id)["state"] == "failed"
     assert studio.jobs.get(owner, parent_id)["result"] == parent
     assert len(studio.jobs.history(owner)) == 2
+
+
+def test_a_change_can_attach_reference_photos(tmp_path: Path) -> None:
+    """TASK-0036: photos sent with a change lead the edit and stay with the design."""
+
+    class AttachingProvider(FakeProvider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.seen: tuple[list[bytes], int] = ([], 0)
+            self.analysed: list[str] = []
+
+        def analyze(self, references: list[bytes], subject: str) -> str:
+            self.analysed.append(subject)
+            return super().analyze(references, subject)
+
+        def edit_artwork(
+            self,
+            brief: dict[str, Any],
+            master: bytes,
+            references: list[bytes],
+            instruction: str,
+            *,
+            rendered: bool,
+            attached: int = 0,
+        ) -> bytes:
+            self.seen = (references, attached)
+            return colour_picture("blue")
+
+    provider = AttachingProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    owner = "11111111-1111-4111-8111-111111111111"
+
+    def upload(image: bytes) -> str:
+        return studio.ingest(
+            owner,
+            {"data": base64.b64encode(image).decode(), "adult": True, "consent": True},
+        )["assetId"]
+
+    original = payload()
+    original["referenceIds"] = [upload(picture())]
+    parent_id = studio.jobs.enqueue(owner, original)["jobId"]
+    assert studio.jobs.tick()
+    virgin = upload(colour_picture("gold"))
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-only-token", "X-Session-Id": owner}
+    # "todo el gemelo" alone would only reposition; an attached photo means a redraw.
+    edit = {
+        "parentJobId": parent_id,
+        "instruction": "Quiero una virgen como en la foto, que ocupe todo el gemelo",
+        "referenceIds": [virgin],
+    }
+    response = client.post(
+        "/studio/jobs",
+        json={"edit": edit, "idempotencyKey": "22222222-2222-4222-8222-222222222222"},
+        headers=headers,
+    )
+    assert response.status_code == 202, response.text
+    assert studio.jobs.tick()
+    status = studio.jobs.get(owner, response.json()["jobId"])
+    assert status["state"] == "succeeded", status
+    references, attached = provider.seen
+    assert attached == 1
+    assert references[0] == studio.owned(owner, virgin)
+    assert references[1] == studio.owned(owner, original["referenceIds"][0])
+    assert provider.analysed[-1] == edit["instruction"]
+    assert "Fotos añadidas con el cambio" in status["result"]["referenceAnalysis"]
+    assert status["result"]["edit"] == edit
+    # A photo the session does not own is refused before anything runs.
+    foreign = Studio(tmp_path / "other", b"x" * 32, FakeProvider()).ingest(
+        owner, {"data": base64.b64encode(picture()).decode(), "adult": True, "consent": True}
+    )["assetId"]
+    refused = client.post(
+        "/studio/jobs",
+        json={
+            "edit": {**edit, "referenceIds": [foreign]},
+            "idempotencyKey": "33333333-3333-4333-8333-333333333333",
+        },
+        headers=headers,
+    )
+    assert refused.status_code == 422
+
+
+def test_an_edit_of_a_resized_version_keeps_its_size(tmp_path: Path) -> None:
+    """TASK-0036: live, a zone resize to 140 x 380 mm reverted to 140 x 260 on the next edit."""
+
+    class EditingProvider(FakeProvider):
+        def edit_artwork(
+            self,
+            brief: dict[str, Any],
+            master: bytes,
+            references: list[bytes],
+            instruction: str,
+            *,
+            rendered: bool,
+            attached: int = 0,
+        ) -> bytes:
+            return colour_picture("blue")
+
+    studio = Studio(tmp_path, b"x" * 32, EditingProvider())
+    owner = "11111111-1111-4111-8111-111111111111"
+    ref = studio.ingest(
+        owner, {"data": base64.b64encode(picture()).decode(), "adult": True, "consent": True}
+    )
+    original = payload()
+    original["referenceIds"] = [ref["assetId"]]
+    first = studio.jobs.enqueue(owner, original)["jobId"]
+    assert studio.jobs.tick()
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-only-token", "X-Session-Id": owner}
+
+    def edit(parent: str, instruction: str, key: str) -> dict[str, Any]:
+        response = client.post(
+            "/studio/jobs",
+            json={
+                "edit": {"parentJobId": parent, "instruction": instruction},
+                "idempotencyKey": key,
+            },
+            headers=headers,
+        )
+        assert response.status_code == 202, response.text
+        assert studio.jobs.tick()
+        status = studio.jobs.get(owner, response.json()["jobId"])
+        assert status["state"] == "succeeded", status
+        return {"id": response.json()["jobId"], **status["result"]}
+
+    resized = edit(first, "que ocupe todo el antebrazo", "22222222-2222-4222-8222-222222222222")
+    assert resized["size"] != studio.jobs.get(owner, first)["result"]["size"]
+    redrawn = edit(resized["id"], "Añade azul", "33333333-3333-4333-8333-333333333333")
+    assert redrawn["size"] == resized["size"]
+
+
+def test_edit_prompt_points_at_the_attached_photos() -> None:
+    plain = StudioProvider.edit_prompt("Añade azul", rendered=True)
+    assert "image 2" not in plain and "identity references" in plain
+    one = StudioProvider.edit_prompt("Una virgen como en la foto", rendered=True, attached=1)
+    assert "attached image 2 " in one
+    two = StudioProvider.edit_prompt("Una virgen como en la foto", rendered=True, attached=2)
+    assert "images 2 to 3" in two
 
 
 @pytest.mark.parametrize(

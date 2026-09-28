@@ -27,6 +27,7 @@ from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM, zone_size
 from mockup.engine import DEFAULT_SURFACE, composite, visible_artwork, visible_size
 from mockup.placement import Coverage, coverage_request, fit_coverage
+from orchestration import PipelineState, build_generation_graph
 from safety.gate import InputGate
 from stencil.engine import (
     Master,
@@ -39,6 +40,141 @@ from stencil.engine import (
     trace_colour_artwork,
     trace_native_lineart,
 )
+
+
+class _StudioGenerationDeps:
+    """Per-call `GenerationDeps` for the `orchestration` graph (TASK-0032).
+
+    Each method runs exactly what `Studio.generate` used to run inline; the graph only fixes the
+    order. It closes over the request context (edit/parent, coverage, zone, payload) so placement
+    and artwork decisions stay identical, which is what makes this delegation behaviour-preserving.
+    Image-model calls still go through the injected provider (ARCH-INV-001); this adapter opens no
+    socket of its own.
+    """
+
+    def __init__(
+        self,
+        studio: Studio,
+        owner: str,
+        edit: dict[str, Any] | None,
+        parent: dict[str, Any] | None,
+        coverage: Coverage | None,
+        zone: bool,
+        payload: dict[str, Any],
+    ) -> None:
+        self.studio = studio
+        self.owner = owner
+        self.edit = edit
+        self.parent = parent
+        self.coverage = coverage
+        self.zone = zone
+        self.payload = payload
+
+    def make_artwork(self, state: PipelineState) -> bytes:
+        brief = state.brief
+        edited_native = (
+            self.studio.provider.edit_artwork(
+                brief,
+                self.studio.owned(self.owner, self.parent["master"]["assetId"], "artifact"),
+                state.references,
+                self.edit["instruction"],
+                rendered=state.rendered,
+                attached=len(self.edit.get("referenceIds") or []),
+            )
+            if self.parent and self.edit
+            else None
+        )
+        if state.rendered:
+            native = edited_native or self.studio.provider.colour_artwork(
+                brief, state.references, state.analysis
+            )
+            if not state.colour and not self.edit:
+                with Image.open(io.BytesIO(native)) as source:
+                    monochrome = io.BytesIO()
+                    source.convert("L").convert("RGB").save(monochrome, format="PNG")
+                    native = monochrome.getvalue()
+        else:
+            native = edited_native or self.studio.provider.lineart(
+                brief, state.references, state.analysis
+            )
+        return native
+
+    def trace(self, state: PipelineState, native: bytes) -> tuple[Any, Any]:
+        brief = state.brief
+        width, height = brief["size"]["widthMm"], brief["size"]["heightMm"]
+        if state.rendered:
+            return trace_colour_artwork(native, width, height, state.weight)
+        master = trace_native_lineart(native, width, height, state.weight)
+        return master, rasterize(master)
+
+    def master_preview(self, raster: Any) -> bytes:
+        preview = io.BytesIO()
+        raster.save(preview, format="PNG")
+        return preview.getvalue()
+
+    def stencil_files(self, master: Any) -> dict[str, tuple[bytes, str]]:
+        return {
+            "stencil": (export_svg(master), "image/svg+xml"),
+            "stencilMirror": (export_svg(master, True), "image/svg+xml"),
+            "pdf": (export_pdf(master), "application/pdf"),
+            "pdfMirror": (export_pdf(master, True), "application/pdf"),
+        }
+
+    def ensure_background(self, state: PipelineState) -> bytes:
+        if state.background is not None:
+            return state.background
+        return self.studio.provider.background(state.brief)
+
+    def compose(
+        self, state: PipelineState, raster: Any, background: bytes
+    ) -> tuple[bytes, dict[str, Any]]:
+        payload, brief = self.payload, state.brief
+        body_part = brief["placement"]["bodyPart"]
+        auto_placed = (
+            not payload.get("placement")
+            and not payload.get("bodyPhotoId")
+            and (body_part == "calf" or (self.zone and body_part in ZONE_SPAN_MM))
+        )
+        fit_visible = bool(self.coverage) or auto_placed
+        projection_size = visible_size(raster, brief["size"]) if fit_visible else brief["size"]
+        if self.coverage:
+            previous = dict(payload.get("placement") or {})
+            if self.parent:
+                with Image.open(io.BytesIO(background)) as photo:
+                    photo.thumbnail((2048, 2048))
+                    previous["width"] = self.parent["transform"]["widthPx"] / photo.width
+            payload["placement"] = fit_coverage(
+                background, projection_size, self.coverage.kind, previous, body_part=body_part
+            )
+        elif auto_placed:
+            payload["placement"] = fit_coverage(
+                background,
+                projection_size,
+                "full" if self.zone else "auto",
+                body_part=body_part,
+            )
+        curved = body_part in {
+            "calf",
+            "shin",
+            "inner_forearm",
+            "outer_forearm",
+            "upper_arm_inner",
+            "upper_arm_outer",
+            "thigh_front",
+            "thigh_outer",
+        }
+        return composite(
+            raster,
+            background,
+            brief["size"],
+            payload.get("placement"),
+            fresh=True,
+            fit_visible=fit_visible,
+            curvature=1.05 if curved else 0,
+            taper=0.25 if body_part == "calf" else 0,
+            # Read from the photograph, so it suits a back or a chest as readily as a limb.
+            surface=DEFAULT_SURFACE,
+        )
 
 
 class Studio:
@@ -188,7 +324,9 @@ class Studio:
         if parent and parent.get("background") and background is None:
             background = self.owned(owner, parent["background"]["assetId"], "artifact")
         coverage = coverage_request(edit) if edit else None
-        if coverage and parent and coverage.placement_only:
+        attached = len(edit.get("referenceIds") or []) if edit else 0
+        # Attached photos always mean the drawing changes, whatever else the sentence says.
+        if coverage and parent and coverage.placement_only and not attached:
             if background is None:
                 background = self.provider.background(brief)
             return self.reposition(owner, payload, parent, background, coverage)
@@ -202,93 +340,33 @@ class Studio:
             if parent
             else self.provider.analyze(references, brief["subject"]["description"])
         )
-        edited_native = (
-            self.provider.edit_artwork(
-                brief,
-                self.owned(owner, parent["master"]["assetId"], "artifact"),
-                references,
-                edit["instruction"],
+        if edit and attached:
+            # The new photos lead the reference list; record what they show for traceability.
+            added = self.provider.analyze(references[:attached], edit["instruction"])
+            analysis = f"{analysis}\n\nFotos añadidas con el cambio: {added}"[:3000]
+        # The creation sequence (artwork -> stencil -> compose) runs through the orchestration
+        # graph (TASK-0032, ADR-0015). The adapter reproduces the previous inline behaviour; the
+        # graph fixes the order and hosts the future AI-blend / output-gate nodes.
+        deps = _StudioGenerationDeps(self, owner, edit, parent, coverage, zone, payload)
+        state = build_generation_graph(deps).invoke(
+            PipelineState(
+                brief=brief,
+                references=references,
+                analysis=analysis,
                 rendered=rendered,
+                colour=colour,
+                weight={"fine": 0.25, "medium": 0.35, "bold": 0.6}.get(
+                    brief["linework"]["weight"], 0.35
+                ),
+                background=background,
             )
-            if parent and edit
-            else None
         )
-        weight = {"fine": 0.25, "medium": 0.35, "bold": 0.6}.get(brief["linework"]["weight"], 0.35)
-        if rendered:
-            native = edited_native or self.provider.colour_artwork(brief, references, analysis)
-            if not colour and not edit:
-                with Image.open(io.BytesIO(native)) as source:
-                    monochrome = io.BytesIO()
-                    source.convert("L").convert("RGB").save(monochrome, format="PNG")
-                    native = monochrome.getvalue()
-            master, raster = trace_colour_artwork(
-                native, brief["size"]["widthMm"], brief["size"]["heightMm"], weight
-            )
-        else:
-            native = edited_native or self.provider.lineart(brief, references, analysis)
-            master = trace_native_lineart(
-                native, brief["size"]["widthMm"], brief["size"]["heightMm"], weight
-            )
-            raster = rasterize(master)
-        if background is None:
-            background = self.provider.background(brief)
-        body_part = brief["placement"]["bodyPart"]
-        # Auto placement stays calf-only, as before; a zone request extends it to any zone
-        # with reference anatomy, which is the only widening TASK-0024 needs.
-        auto_placed = (
-            not payload.get("placement")
-            and not payload.get("bodyPhotoId")
-            and (body_part == "calf" or (zone and body_part in ZONE_SPAN_MM))
-        )
-        fit_visible = bool(coverage) or auto_placed
-        projection_size = visible_size(raster, brief["size"]) if fit_visible else brief["size"]
-        if coverage:
-            previous = dict(payload.get("placement") or {})
-            if parent:
-                with Image.open(io.BytesIO(background)) as photo:
-                    photo.thumbnail((2048, 2048))
-                    previous["width"] = parent["transform"]["widthPx"] / photo.width
-            payload["placement"] = fit_coverage(
-                background, projection_size, coverage.kind, previous, body_part=body_part
-            )
-        elif auto_placed:
-            payload["placement"] = fit_coverage(
-                background, projection_size, "full" if zone else "auto", body_part=body_part
-            )
-        curved = brief["placement"]["bodyPart"] in {
-            "calf",
-            "shin",
-            "inner_forearm",
-            "outer_forearm",
-            "upper_arm_inner",
-            "upper_arm_outer",
-            "thigh_front",
-            "thigh_outer",
-        }
-        mockup, transform = composite(
-            raster,
-            background,
-            brief["size"],
-            payload.get("placement"),
-            fresh=True,
-            fit_visible=fit_visible,
-            curvature=1.05 if curved else 0,
-            taper=0.25 if body_part == "calf" else 0,
-            # Unlike the cylinder, this is read from the photograph, so it suits a back or a
-            # chest as readily as a limb and is not restricted to the curved zones.
-            surface=DEFAULT_SURFACE,
-        )
-        preview = io.BytesIO()
-        raster.save(preview, format="PNG")
-        files = {
-            "master": (preview.getvalue(), "image/png"),
-            "stencil": (export_svg(master), "image/svg+xml"),
-            "stencilMirror": (export_svg(master, True), "image/svg+xml"),
-            "pdf": (export_pdf(master), "application/pdf"),
-            "pdfMirror": (export_pdf(master, True), "application/pdf"),
-            "mockup": (mockup, "image/png"),
-            "background": (background, "image/png"),
-        }
+        # The graph always fills these on the success path; assert to narrow the optional state
+        # fields and to fail loudly rather than storing a half-built result.
+        assert state.mockup is not None and state.background is not None
+        assert state.transform is not None
+        master, raster, mockup = state.master, state.raster, state.mockup
+        transform, background, files = state.transform, state.background, state.files
         result: dict[str, Any] = {
             "designId": master.design_hash,
             "briefId": brief["briefId"],
@@ -613,8 +691,17 @@ def router(studio: Studio, token: str) -> APIRouter:
                 body["brief"]["revision"] += 1
                 parent = studio.jobs.get(who, body["edit"]["parentJobId"])["result"]
                 studio.owned(who, parent["master"]["assetId"], "artifact")
+                # TASK-0036: the stored payload predates any whole-zone resize, so the parent's
+                # result is where its millimetres live. Without this an edit of a resized
+                # version silently shrank back to the original size.
+                body["brief"]["size"] = dict(parent["size"])
             if validate("studio-job", body):
                 raise ValueError("Revisa la petición de cambios (entre 3 y 1000 caracteres).")
+            attached = (body.get("edit") or {}).get("referenceIds") or []
+            if attached:
+                # TASK-0036: photos attached to a change guide it first and stay with the design
+                # for later versions. The contract caps a design at five references.
+                body["referenceIds"] = list(dict.fromkeys([*attached, *body["referenceIds"]]))[:5]
             for asset_id in body["referenceIds"]:
                 studio.owned(who, asset_id, "reference")
             if body.get("bodyPhotoId"):

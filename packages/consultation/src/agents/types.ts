@@ -16,6 +16,16 @@ export interface OrchestrationSession {
   maxQuestions: 3;
   slots: ConsultationSlots;
   references: ReferenceImage[];
+  /**
+   * The queries the scout actually searched for the current subject (TASK-0033). Missing
+   * references are judged against this plan, which the Sonnet planner may word differently from
+   * the deterministic queries. Absent, the deterministic queries apply.
+   */
+  referencePlan?: string[] | undefined;
+  /** The planned queries whose absence blocks generation (TASK-0034). */
+  essentialReferences?: string[] | undefined;
+  /** Spanish label per planned query, for messages to the client (TASK-0034). */
+  referenceLabels?: Record<string, string> | undefined;
   messages: MultiAgentMessage[];
   brief?: TattooBrief;
   missingFields: string[];

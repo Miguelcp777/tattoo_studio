@@ -21,6 +21,14 @@ TASK-0019 implements a local consented studio using existing encryption/sanitiza
 input moderation, with owned media access, deletion and 24-hour expiry. See its evidence.
 Provider retention guarantees, public deployment, backup policies and legal review remain UNKNOWN.
 
+TASK-0032 (ADR-0016) activates the mockup blend, which sends the screened, EXIF-stripped body photo
+to an external provider under a `SafetyClearance` and adult consent. This exercises SEC-INV-001
+(no training/retention) and SEC-INV-007 (no unscreened egress) for real rather than keeping
+own-body photos out of generation entirely; both invariants are unchanged. The output gate
+(SEC-INV-006) must be built for this path, and the provider is eligible only with a no-training
+guarantee. ADR-0006's pre-launch blockers (legal review, DPIA, retention window, residency) now sit
+on this feature's critical path.
+
 ## Intended behavior
 
 ### Personal data handled

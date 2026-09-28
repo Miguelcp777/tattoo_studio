@@ -9,6 +9,19 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0036: `edit_artwork(..., attached=n)` — the first `n` references after the accepted master
+are photos the client attached to this change; the edit prompt tells the model to reproduce what
+the request names from them, redrawn in the artwork's style. `attached=0` keeps the old prompt.
+
+TASK-0032 (ADR-0015/0016): the image-to-image / inpaint path becomes reachable for the mockup
+blend, but only through a real `SafetyClearance` minted by `safety` over the screened body photo —
+the clearance stays uninstantiable otherwise, so the photo path is unreachable without it
+(GEN-INV-003 unchanged). The blend provider must satisfy the no-training/no-retention guarantee
+(GEN-INV-002); its selection and the geometry tolerance come from TASK-0008. Master artwork may use
+Flux (fal/BFL) or GPT-Image selected per pass by configuration through the registry (ADR-0009), and
+no body photograph is ever an input to master artwork. Callers reach this module only via the
+`orchestration` graph; the single-outbound-integration-point rule (GEN-INV-001) is unchanged.
+
 TASK-0028 (ADR-0012): `generation/style_library.py` builds the catalogue images. It lives here
 because ARCH-INV-001 confines outbound model calls to this module and `safety`; the provider is
 injected rather than constructed, since `generation` may not import `app` without closing a
@@ -147,6 +160,9 @@ assertion being vacuous.
 
 ## Change history
 
+- 2026-09-26 (TASK-0032, ADR-0015/0016): Image-to-image / inpaint path activated for the mockup
+  blend under a real `SafetyClearance`; per-pass Flux/GPT-Image master artwork; blend-provider
+  no-training eligibility becomes a gating requirement (from TASK-0008). No implementation yet.
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0012): `SafetyClearance` relocated to the `safety` module, which now
   exists and is its proper owner (FINDING-0003). Re-exported here so call sites are

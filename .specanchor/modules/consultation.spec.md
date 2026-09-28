@@ -9,6 +9,49 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0034 (user feedback after trying the app): (1) **Proposed size.** Once a zone is known and no
+size is stated, `proposeSize` sets one — the architect's recommendation scaled to fit the zone
+span, or a medium fraction of the zone — flagged `size.proposed`, shown as "propuesto por
+nosotros", re-made when the zone changes, and always beaten by a stated size (within ADR-0010;
+amends TASK-0033's "the architect never sets the size" at the user's request). (2) **Relevant
+references.** The Sonnet planner returns short concrete-noun queries with `essential` and a
+Spanish label; curated entity queries (TASK-0020) win over it. The scout gathers up to three
+Commons candidates per query and a Sonnet vision judge (`ClaudeReferenceJudge`, thumbnails sent
+as base64) keeps only those that depict the request, rejecting historical emblem versions; a judge
+failure keeps nothing unverified; the official Valencia CF crest is trusted by source. (3) **Only
+essential references block**, named by label. (4) The closing chat message states the adopted
+proposal and the one next action. Architect and scout run concurrently.
+
+TASK-0033 (resolves FINDING-0004): `OrchestratorAgent` takes an optional architect
+(`ConsultationProvider`). On a chat turn with text it sends the conversation — text only, no
+reference images — and `agents/architect.ts` sanitizes the proposal against the contract
+vocabulary (anything else is dropped, CONSULT-INV-003) and merges it: explicit statements and
+earlier decisions win, the architect fills gaps, and technical proposals (linework, shading) may
+replace only their untouched defaults. **The architect never sets the size or the side of the
+body** (ADR-0010/0011; the side rule follows a live run where Opus guessed it). Both Claude agents
+use the official `@anthropic-ai/sdk` with structured outputs (`output_config.format`, the schema's
+enums are the contract vocabulary), `effort: low`, and refuse to read a `max_tokens` or `refusal`
+stop. The schema keeps at most 24 optional parameters, an API limit found live. The session keeps
+the scout's searched queries as `referencePlan`; missing references are judged against that plan,
+not the deterministic queries (a live end-to-end run showed the old check blocked readiness). A
+non-empty mimicry flag declines imitation like the regex branch (CONSULT-INV-005). Any architect
+failure falls back to the deterministic path and logs a fixed line with no user text. Architect
+proposals are reviewed by the client in the master brief before generation (ADR-0013); they are
+not yet flagged as proposals there (known debt). The shared prompt now lists the 16 contract styles
+and asks for `mimicryDetected: null` unless a named living artist is requested. Both reasoning
+backends time out after 30 s.
+
+TASK-0032 (ADR-0015): this module owns the interactive agent tier. The prompt architect
+(`agents/master-prompt.ts` + provider) runs on **Claude Opus 5.5** and the visual scout
+(`agents/image-scout.ts`) runs on **Claude Sonnet 5**, both behind `ConsultationProvider`, selected
+by configuration alongside the existing GPT-6 Astra backend; the fixture provider stays the offline
+path. It remains the only tier that makes a reasoning-LLM call (ARCH-INV-001 clarification), and it
+still never generates imagery (CONSULT-INV-001). The scout searches licensed sources first (Commons)
+and uses a bounded open-web image search only as a fallback when licensed sources return nothing;
+every scouted candidate passes `safety` screening before it can become a reference and is marked a
+candidate, never `user_supplied`. The visual creator (`agents/creator.ts`) stays a hard failure
+here — creation is the worker `orchestration` graph (ARCH-INV-001).
+
 TASK-0030: a catalogue reference's `label` is the Spanish style and variant name. TASK-0028 put
 the English prompt text there, which the interface then showed to the client.
 
@@ -87,8 +130,11 @@ retention lifecycle, not the photo lifecycle.
 ## External integrations
 
 OpenAI API targeting **GPT-6 Astra** (`gpt-6-astra`) for multimodal reasoning, reference image
-analysis, and structured tool extraction. Alternatively Claude API (`claude-opus-5`, `claude-sonnet-5`).
-Structured output via tool calling so extraction returns typed slot data rather than parsed prose.
+analysis, and structured tool extraction. Alternatively the Claude API (TASK-0032, ADR-0015):
+**Claude Opus 5.5** for the prompt architect and **Claude Sonnet 5** for the visual scout, selected
+by configuration, through the official `@anthropic-ai/sdk`. Claude extraction uses structured
+outputs (`output_config.format`), not prose JSON: live, prose JSON was truncated by reasoning
+tokens. Verified live 2026-09-26 (TASK-0033 EV-006..010).
 
 ## Error semantics
 
@@ -132,6 +178,17 @@ Implementation initiated in TASK-0003.
 
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0003): Added OpenAI GPT-6 Astra integration and multimodal reference image support.
+- 2026-09-26 (TASK-0032, ADR-0015): Architect backend landed — `ClaudeConsultationProvider`
+  (Claude Opus 5.5, Anthropic Messages API), shared `CONSULTATION_SYSTEM_PROMPT` now used by both
+  backends, and a config-driven `selectConsultationProvider` with the fixture as the offline path
+  (8 tests). Scout landed — `ClaudeScoutQueryPlanner` (Claude Sonnet 5) and injectable
+  `ScoutOptions` on `VisualSearchAgent` (licensed first, bounded open-web fallback, every candidate
+  screened, fail closed; defaults unchanged, 8 tests). Neither Claude agent is on the live web
+  route yet: `OrchestratorAgent` still extracts with regex and builds a default scout
+  (FINDING-0004).
+- 2026-09-26 (TASK-0033): Architect on the live route via `agents/architect.ts` (sanitize, merge,
+  text-only turns, fallback); shared prompt aligned to 16 styles; 30 s provider timeouts. Resolves
+  FINDING-0004.
 
 ## Statement evidence
 | Statement | Evidence status | Source / revision | Verification result |

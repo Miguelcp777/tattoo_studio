@@ -72,6 +72,12 @@ export interface ConsultationSlots {
     | {
         widthMm?: number | undefined;
         heightMm?: number | undefined;
+        /**
+         * True when the studio proposed this size (TASK-0034) rather than the client stating it.
+         * Never part of the TattooBrief: it only decides how the size is labelled and whether it
+         * is re-proposed when the zone changes.
+         */
+        proposed?: boolean | undefined;
       }
     | undefined;
   constraints?:

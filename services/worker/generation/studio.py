@@ -171,6 +171,7 @@ class StudioProvider:
         instruction: str,
         *,
         rendered: bool,
+        attached: int = 0,
     ) -> bytes:
         response = self.client.post(
             "https://api.openai.com/v1/images/edits",
@@ -182,7 +183,7 @@ class StudioProvider:
                 "size": "1536x1024"
                 if brief["size"]["widthMm"] > brief["size"]["heightMm"]
                 else "1024x1536",
-                "prompt": self.edit_prompt(instruction, rendered=rendered),
+                "prompt": self.edit_prompt(instruction, rendered=rendered, attached=attached),
             },
             files=[("image[]", ("accepted-master.png", master, "image/png"))]
             + [
@@ -193,12 +194,29 @@ class StudioProvider:
         return self.image_bytes(response)
 
     @staticmethod
-    def edit_prompt(instruction: str, *, rendered: bool) -> str:
-        """Provider-neutral edit prompt: the accepted master is always the FIRST image."""
+    def edit_prompt(instruction: str, *, rendered: bool, attached: int = 0) -> str:
+        """Provider-neutral edit prompt: the accepted master is always the FIRST image.
+
+        `attached` counts the photos the client sent with this request (TASK-0036). They come
+        right after the master and are what the request points at ("como en la foto").
+        """
+        guide = (
+            (
+                "The client attached "
+                + ("image 2" if attached == 1 else f"images 2 to {attached + 1}")
+                + " with this request: reproduce what the request names from "
+                + ("it" if attached == 1 else "them")
+                + " faithfully (figure, pose, attributes, identifying details), redrawn in the "
+                "artwork's existing tattoo style and integrated into its composition. "
+                "Any later images are the design's earlier identity references. "
+            )
+            if attached
+            else "Remaining images are identity references, not replacement compositions. "
+        )
         return (
             "Edit the FIRST image: the accepted flat tattoo artwork. "
-            "Remaining images are identity references, not replacement compositions. "
-            "Apply only the client's requested changes; preserve unrelated motifs, "
+            + guide
+            + "Apply only the client's requested changes; preserve unrelated motifs, "
             "composition and identity. Return the complete flat artwork on pure white, "
             "no skin, mockup, text annotations or surrounding scene. "
             + (

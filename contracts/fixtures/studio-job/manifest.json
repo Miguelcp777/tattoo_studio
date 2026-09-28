@@ -120,6 +120,18 @@
       "file": "invalid/edit-too-long.json",
       "valid": false,
       "why": "TASK-0021 bounded edit request"
+    },
+    {
+      "name": "edit-with-references",
+      "file": "valid/edit-with-references.json",
+      "valid": true,
+      "why": "TASK-0036 a change request may attach reference photos"
+    },
+    {
+      "name": "edit-too-many-references",
+      "file": "invalid/edit-too-many-references.json",
+      "valid": false,
+      "why": "TASK-0036 at most three attached references per change"
     }
   ]
 }

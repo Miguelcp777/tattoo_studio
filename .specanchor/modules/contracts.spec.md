@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0036: `edit.referenceIds` (1–3 asset IDs) in `studio-job` and `studio-status`: photos a
+client attaches to a change request. Only IDs travel; the worker checks ownership.
+
 TASK-0031 (ADR-0014): the studio-status `transform` records `freshness` and `surface` beside
 `curvature` and `taper`, for the same reason those are recorded: a render should say what was
 done to it. `surface` is an attenuation in 0..1, explicitly not a displacement.

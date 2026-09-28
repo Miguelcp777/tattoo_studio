@@ -3,7 +3,17 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { NextResponse } from 'next/server';
-import { findOffer, OrchestratorAgent, type OrchestrationSession } from '@tattoo/consultation';
+import {
+  ClaudeConsultationProvider,
+  ClaudeReferenceJudge,
+  ClaudeScoutQueryPlanner,
+  findOffer,
+  OpenAIAstraProvider,
+  OrchestratorAgent,
+  VisualSearchAgent,
+  type ConsultationProvider,
+  type OrchestrationSession,
+} from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 
 interface Session {
@@ -15,7 +25,48 @@ interface Session {
 }
 const root = globalThis as typeof globalThis & { inkcraftSessions?: Map<string, Session> };
 const sessions = (root.inkcraftSessions ??= new Map<string, Session>());
-export const orchestrator = new OrchestratorAgent();
+
+export interface LiveAgentConfig {
+  architect: 'claude' | 'openai' | undefined;
+  scoutPlanner: boolean;
+}
+
+/**
+ * Which model-backed agents the live consultation uses (TASK-0033). Opt-in only: a credential in
+ * the environment enables nothing by itself, so a developer's key cannot make the test suite call a
+ * paid API, and `fixture` (canned replies) is never used on the live route.
+ */
+export function liveAgentConfig(
+  env: Record<string, string | undefined> = process.env,
+): LiveAgentConfig {
+  const backend = env['TATTOO_CONSULTATION_BACKEND'];
+  return {
+    architect: backend === 'claude' || backend === 'openai' ? backend : undefined,
+    scoutPlanner: env['TATTOO_SCOUT_PLANNER'] === 'claude',
+  };
+}
+
+export function buildOrchestrator(
+  env: Record<string, string | undefined> = process.env,
+): OrchestratorAgent {
+  const config = liveAgentConfig(env);
+  const architect: ConsultationProvider | undefined =
+    config.architect === 'claude'
+      ? new ClaudeConsultationProvider()
+      : config.architect === 'openai'
+        ? new OpenAIAstraProvider()
+        : undefined;
+  // TASK-0034: the Sonnet scout plans the searches and checks the images it found.
+  const scout = new VisualSearchAgent(
+    undefined,
+    config.scoutPlanner
+      ? { planner: new ClaudeScoutQueryPlanner(), judge: new ClaudeReferenceJudge() }
+      : {},
+  );
+  return new OrchestratorAgent(scout, architect);
+}
+
+export const orchestrator = buildOrchestrator();
 export class RequestError extends Error {
   constructor(
     message: string,

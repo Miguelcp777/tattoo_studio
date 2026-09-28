@@ -18,6 +18,12 @@ common-master black contour delivery. The realistic colour artwork and automatic
 surface goal below remain INTENT, not accepted reductions of the user's goal. These open
 requirements prevent declaring the whole product verified.
 
+TASK-0032 (ADR-0016) activates the constrained AI blend for the on-body mockup, which pursues the
+photorealistic-skin goal above. It changes how the mockup is produced, not what the product
+promises: PROD-INV-001 (mockup and stencil are the same artwork) and PROD-INV-005 (every artifact
+labelled a visualization) are unchanged and are enforced by the geometry check and the
+geometric-only fallback.
+
 ## Intended behavior
 
 Two audiences, two artifacts:

@@ -9,6 +9,14 @@ last_reviewed: 2026-09-19
 
 # Module: safety
 
+TASK-0032 (ADR-0015/0016): two obligations become load-bearing. (1) Scouted open-web candidates
+(the Claude Sonnet 5 scout's fallback) are screened before they can become references — a candidate
+depicting a real person is rejected, as ordinary references already are. (2) Activating the mockup
+blend makes `screen_output` a hard prerequisite: generated imagery is screened before it is stored
+or shown (SAFETY-INV-001, SEC-INV-006), and the body photo reaches the blend provider only carrying
+a `SafetyClearance` bound to the screened bytes (SAFETY-INV-002, SEC-INV-007). No gate is loosened;
+`screen_output`, still unbuilt, moves onto this task's critical path.
+
 ## Responsibility
 
 Enforce the consent, moderation and content-policy gates defined in the quality-and-security
@@ -137,6 +145,9 @@ that specific attack.
 
 ## Change history
 
+- 2026-09-26 (TASK-0032, ADR-0015/0016): Scouted open-web candidates must pass screening; the
+  output gate and photo-egress-under-clearance become prerequisites for the mockup blend. No
+  implementation yet.
 - 2026-09-19: Created during SDD bootstrap.
 - 2026-09-19 (TASK-0012): Gate structure, clearance type and deny-by-default
   implementation. Dependency on `media` removed, resolving FINDING-0003.

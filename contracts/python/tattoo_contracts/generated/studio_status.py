@@ -11,7 +11,7 @@ from __future__ import annotations
 from enum import Enum, StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class State(StrEnum):
@@ -111,6 +111,10 @@ class Transform(BaseModel):
     ] = None
 
 
+class ReferenceId(RootModel[str]):
+    root: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
+
+
 class Coverage(Enum):
     larger = 'larger'
     smaller = 'smaller'
@@ -128,6 +132,9 @@ class Edit(BaseModel):
     )
     parentJobId: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
     instruction: Annotated[str, Field(max_length=1000, min_length=3)]
+    referenceIds: Annotated[
+        list[ReferenceId] | None, Field(max_length=3, min_length=1)
+    ] = None
     coverage: Coverage | None = None
     mode: Mode | None = None
 

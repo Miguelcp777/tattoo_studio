@@ -259,6 +259,16 @@
               "minLength": 3,
               "maxLength": 1000
             },
+            "referenceIds": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              }
+            },
             "coverage": {
               "enum": [
                 "larger",

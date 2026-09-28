@@ -6,18 +6,29 @@ export function TattooPreviewModal({
   artifact,
   onClose,
   onEdit,
+  onAttach,
   editingDisabled = false,
   consentControls,
 }: {
   artifact: GeneratedTattooArtifact;
   onClose: () => void;
-  onEdit?: (instruction: string, coverage?: 'larger' | 'smaller' | 'full') => void;
+  onEdit?: (
+    instruction: string,
+    coverage?: 'larger' | 'smaller' | 'full',
+    referenceIds?: string[],
+  ) => void;
+  /** Uploads a photo for the change request; resolves to its asset ID (TASK-0036). */
+  onAttach?: (file: File) => Promise<string>;
   editingDisabled?: boolean;
   consentControls?: ReactNode;
 }): ReactNode {
   const dialog = useRef<HTMLDialogElement>(null);
   const [reviewed, setReviewed] = useState(false);
   const [instruction, setInstruction] = useState('');
+  const [attached, setAttached] = useState<{ assetId: string; name: string }[]>([]);
+  const [attaching, setAttaching] = useState(false);
+  const [attachError, setAttachError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
   const [detail, setDetail] = useState<'mockup' | 'stencil' | null>(null);
   const detailTrigger = useRef<HTMLButtonElement | null>(null);
   function closeDetail() {
@@ -55,7 +66,12 @@ export function TattooPreviewModal({
           className="proposal-edit"
           onSubmit={(event) => {
             event.preventDefault();
-            if (instruction.trim().length >= 3 && !editingDisabled) onEdit(instruction.trim());
+            if (instruction.trim().length >= 3 && !editingDisabled && !attaching)
+              onEdit(
+                instruction.trim(),
+                undefined,
+                attached.length ? attached.map((a) => a.assetId) : undefined,
+              );
           }}
         >
           <label htmlFor="proposal-change">¿Qué quieres cambiar de esta propuesta?</label>
@@ -66,8 +82,64 @@ export function TattooPreviewModal({
             minLength={3}
             required
             onChange={(event) => setInstruction(event.target.value)}
-            placeholder="Por ejemplo: haz el escudo más pequeño y deja más espacio entre los elementos."
+            placeholder="Por ejemplo: haz el escudo más pequeño, o «quiero una virgen como en la foto adjunta»."
           />
+          {onAttach && (
+            <div className="edit-attachments">
+              <button
+                type="button"
+                disabled={editingDisabled || attaching || attached.length >= 3}
+                onClick={() => fileInput.current?.click()}
+              >
+                {attaching ? 'Subiendo foto…' : 'Adjuntar foto de referencia'}
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (!file) return;
+                  setAttaching(true);
+                  setAttachError('');
+                  try {
+                    const assetId = await onAttach(file);
+                    setAttached((list) => [...list, { assetId, name: file.name }]);
+                  } catch (error) {
+                    setAttachError(error instanceof Error ? error.message : String(error));
+                  } finally {
+                    setAttaching(false);
+                  }
+                }}
+              />
+              <span>
+                {attached.length >= 3
+                  ? 'Máximo tres fotos por cambio.'
+                  : 'Opcional, hasta tres. Di en el texto qué quieres tomar de ella.'}
+              </span>
+              {attachError && <p role="alert">{attachError}</p>}
+              {attached.length > 0 && (
+                <ul>
+                  {attached.map((photo) => (
+                    <li key={photo.assetId}>
+                      <img src={url(photo.assetId)} alt={`Foto adjunta: ${photo.name}`} />
+                      <button
+                        type="button"
+                        aria-label={`Quitar ${photo.name}`}
+                        onClick={() =>
+                          setAttached((list) => list.filter((a) => a.assetId !== photo.assetId))
+                        }
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <p>
             Crearemos otra versión a partir de este dibujo. La anterior se conservará. Revisa
             también los detalles que no hayas pedido cambiar.
@@ -108,13 +180,20 @@ export function TattooPreviewModal({
           <button
             className="btn-primary"
             type="submit"
-            disabled={editingDisabled || instruction.trim().length < 3}
+            disabled={editingDisabled || attaching || instruction.trim().length < 3}
           >
             Crear versión con estos cambios
           </button>
         </form>
       )}
-      {artifact.edit && <p>Cambio solicitado: {artifact.edit.instruction}</p>}
+      {artifact.edit && (
+        <p>
+          Cambio solicitado: {artifact.edit.instruction}
+          {artifact.edit.referenceIds?.length
+            ? ` · con ${artifact.edit.referenceIds.length} foto${artifact.edit.referenceIds.length > 1 ? 's' : ''} adjunta${artifact.edit.referenceIds.length > 1 ? 's' : ''}`
+            : ''}
+        </p>
+      )}
       {detail && (
         <ImageDetail
           key={detail}

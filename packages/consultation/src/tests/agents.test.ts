@@ -95,8 +95,11 @@ describe('TASK-0019 consultation and references', () => {
     expect(s.slots.linework?.weight).toBe('fine');
     expect(s.slots.colour).toEqual({ mode: 'black_and_grey' });
     expect(s.questionsAsked).toBe(3);
-    expect(s.phase).toBe('needs_details');
-    expect(s.brief).toBeUndefined();
+    // TASK-0034: once the zone is known the studio proposes a size, so the brief completes and
+    // the proposal is flagged rather than presented as the client's measurement.
+    expect(s.slots.size?.proposed).toBe(true);
+    expect(s.brief?.size.widthMm).toBe(s.slots.size?.widthMm);
+    expect(s.phase).toBe('ready_to_generate');
   });
   it('asks zero questions for a fully specified brief and validates it', async () => {
     const o = offline();
@@ -188,7 +191,8 @@ describe('TASK-0019 consultation and references', () => {
     expect(session.questionsAsked).toBe(0);
     expect(session.references[0]?.source).toBe('https://thumb.wikimedia.org/statue.jpg');
     expect(session.phase).toBe('needs_details');
-    expect(session.missingFields.some((field) => field.includes('Flag'))).toBe(true);
+    // TASK-0034: the missing symbol is named for the client in Spanish.
+    expect(session.missingFields).toContain('referencia: la Senyera valenciana');
   });
   it('has no successful fallback for the retired creator', async () => {
     await expect(new VisualCreatorAgent().generateTattoo()).rejects.toThrow('worker');

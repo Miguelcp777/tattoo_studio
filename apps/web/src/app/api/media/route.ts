@@ -19,6 +19,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;
     locked = true;
+    if (body['purpose'] === 'edit') {
+      // TASK-0036: a photo for a change request on an existing design. It is screened and
+      // stored like any reference, but does not reopen the consultation or its accepted brief.
+      const data = await (
+        await worker(current.state.sessionId, '/media', 'POST', {
+          data: body['data'],
+          kind: 'reference',
+          adult: body['adult'],
+          consent: body['consent'],
+        })
+      ).json();
+      return reply(data, current);
+    }
     if (body['kind'] === 'reference' && current.state.references.length >= 5)
       throw new RequestError('Máximo cinco referencias.');
     const data = await (await worker(current.state.sessionId, '/media', 'POST', body)).json();

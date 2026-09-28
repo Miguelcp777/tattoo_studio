@@ -17,6 +17,7 @@ import { StylePicker } from '@/components/StylePicker';
 import { MasterBrief } from '@/components/MasterBrief';
 
 import { buildSteps } from '@/lib/steps';
+import { generationBlockers, nextAction } from '@/lib/next-step';
 
 import type { StudioJobStatus, GeneratedTattooArtifact } from '@/types/generation';
 
@@ -322,7 +323,10 @@ export default function ConsultationPage(): ReactNode {
             }),
       };
 
-    if (form.width && form.height)
+    // TASK-0034: an untouched studio proposal stays a proposal, so it is re-made if the zone
+    // changes; only a size the client typed becomes their measurement.
+    const sizeTouched = form.width !== savedForm.width || form.height !== savedForm.height;
+    if (form.width && form.height && (sizeTouched || !session?.slots.size?.proposed))
       preferences['size'] = { widthMm: Number(form.width), heightMm: Number(form.height) };
 
     await run(async () =>
@@ -397,7 +401,33 @@ export default function ConsultationPage(): ReactNode {
 
   const disabled = busy || activeJob;
 
-  async function editProposal(instruction: string, coverage?: 'larger' | 'smaller' | 'full') {
+  /**
+   * TASK-0036: a photo for a change request, screened by the worker; not added to the brief.
+   * Throws, so the open dialog can show the reason instead of the page behind it.
+   */
+  async function attachForEdit(file: File): Promise<string> {
+    if (file.size > 8000000) throw new Error('La imagen supera 8 MB.');
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]!);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const data = await call('/api/media', {
+      data: base64,
+      kind: 'reference',
+      purpose: 'edit',
+      adult,
+      consent,
+    });
+    return data.assetId;
+  }
+
+  async function editProposal(
+    instruction: string,
+    coverage?: 'larger' | 'smaller' | 'full',
+    referenceIds?: string[],
+  ) {
     setSubmittingGeneration(true);
     setShowResult(false);
     try {
@@ -410,6 +440,7 @@ export default function ConsultationPage(): ReactNode {
             parentJobId: selectedJobId,
             instruction,
             ...(coverage ? { coverage, mode: 'placement' } : {}),
+            ...(referenceIds?.length ? { referenceIds } : {}),
           },
         });
         setJob(data);
@@ -437,6 +468,28 @@ export default function ConsultationPage(): ReactNode {
   const offers = styleOffers(slots?.style?.primary);
   const chosenVariant = session?.references.find((r) => r.verification === 'style_library');
   const chosenOfferId = offers.find((o) => o.image === chosenVariant?.source)?.id;
+
+  // TASK-0034: name what stands between the client and generation, and the one next action.
+  const missingFields = session?.missingFields ?? [];
+  const gate = {
+    hasSession: Boolean(slots?.subject?.description),
+    busy,
+    activeJob,
+    hasArtifact: Boolean(artifact),
+    unsaved,
+    briefMissing: session ? masterPrompt.missing : [],
+    missingReferences: missingFields
+      .filter((f) => f.startsWith('referencia: '))
+      .map((f) => f.slice('referencia: '.length)),
+    noReferences: missingFields.includes('referencia visual'),
+    briefAccepted,
+    adult,
+    consent,
+    referencesReviewed,
+    phaseReady: session?.phase === 'ready_to_generate',
+  };
+  const blockers = generationBlockers(gate);
+  const action = nextAction(gate);
 
   async function chooseStyleVariant(variantId: string) {
     await run(async () =>
@@ -544,7 +597,15 @@ export default function ConsultationPage(): ReactNode {
         <aside className="brief-panel" aria-label="Preferencias y entrega">
           <h2 id="step-brief">Tu proyecto</h2>
 
-          <p>{session ? `Preguntas: ${session.questionsAsked} / 3` : 'Empieza por tu idea'}</p>
+          <div className="next-step" role="status" aria-live="polite">
+            <strong>{action.title}</strong>
+            <p>{action.detail}</p>
+            {action.step && action.step !== 'brief' && (
+              <button type="button" className="link-button" onClick={() => goToStep(action.step!)}>
+                Ir ahí
+              </button>
+            )}
+          </div>
 
           <div className="studio-fields">
             <label>
@@ -673,6 +734,12 @@ export default function ConsultationPage(): ReactNode {
             </label>
           </div>
 
+          {slots?.size?.proposed && (
+            <p className="small-note">
+              Tamaño propuesto por el estudio según la zona y tu idea. Puedes cambiarlo y guardar.
+            </p>
+          )}
+
           <button onClick={() => void save()} disabled={disabled || !session}>
             Guardar preferencias
           </button>
@@ -754,7 +821,7 @@ export default function ConsultationPage(): ReactNode {
             ))}
           </div>
 
-          <label className="check-row">
+          <label className="check-row" id="step-permisos">
             <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
             Soy mayor de 18 años.
           </label>
@@ -901,9 +968,8 @@ export default function ConsultationPage(): ReactNode {
             He revisado que las referencias corresponden a mi idea.
           </label>
 
-          {unsaved && <p role="status">Guarda los cambios del panel antes de generar.</p>}
-
           <button
+            id="step-diseno"
             className="btn-primary generate-button"
 
             disabled={
@@ -913,7 +979,8 @@ export default function ConsultationPage(): ReactNode {
               !adult ||
               !consent ||
               !referencesReviewed ||
-              !briefAccepted
+              !briefAccepted ||
+              blockers.length > 0
             }
 
             onClick={() => void generate()}
@@ -929,9 +996,24 @@ export default function ConsultationPage(): ReactNode {
             />
           )}
 
-          {session?.missingFields.length ? (
-            <p className="small-note">Pendiente: {session.missingFields.join(', ')}</p>
-          ) : null}
+          {session && !activeJob && blockers.length > 0 && (
+            <div className="blockers">
+              <p className="small-note">Para generar falta:</p>
+              <ul>
+                {blockers.map((blocker) => (
+                  <li key={blocker.text}>
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() => goToStep(blocker.step)}
+                    >
+                      {blocker.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {artifact && <button onClick={() => setShowResult(true)}>Ver diseño y descargar</button>}
           {versions.length > 0 && (
@@ -1004,7 +1086,10 @@ export default function ConsultationPage(): ReactNode {
           key={selectedJobId}
           artifact={artifact}
           onClose={() => setShowResult(false)}
-          onEdit={(instruction, coverage) => void editProposal(instruction, coverage)}
+          onEdit={(instruction, coverage, referenceIds) =>
+            void editProposal(instruction, coverage, referenceIds)
+          }
+          onAttach={attachForEdit}
           editingDisabled={Boolean(
             disabled || submittingGeneration || !adult || !consent || !selectedJobId,
           )}

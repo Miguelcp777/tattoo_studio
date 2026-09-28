@@ -169,6 +169,14 @@ class Edit(BaseModel):
     )
     parentJobId: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
     instruction: Annotated[str, Field(max_length=1000, min_length=3, pattern='\\S')]
+    referenceIds: Annotated[
+        list[ReferenceId] | None,
+        Field(
+            description="TASK-0036: reference images the client attached to this change request, already screened and owned. They guide the edit and join the design's references.",
+            max_length=3,
+            min_length=1,
+        ),
+    ] = None
     coverage: Coverage | None = None
     mode: Mode1 | None = None
 

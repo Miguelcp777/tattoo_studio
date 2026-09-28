@@ -67,6 +67,11 @@ export interface GeneratedTattooArtifact {
   edit?: {
     parentJobId: string;
     instruction: string;
+    /**
+     * @minItems 1
+     * @maxItems 3
+     */
+    referenceIds?: [string] | [string, string] | [string, string, string];
     coverage?: 'larger' | 'smaller' | 'full';
     mode?: 'artwork' | 'placement';
   };

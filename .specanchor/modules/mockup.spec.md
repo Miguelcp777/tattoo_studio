@@ -9,6 +9,39 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0035: whole-zone recognition (`placement.whole_zone_intent`) tolerates a one-letter slip in
+the zone noun ("gemlo") and accepts "ocupe todo el <noun>" for any noun that is not an artwork
+word ("todo el modelo"). A live request "que ocupe todo el gemlo" had been run as an artwork edit
+at the old millimetres. ADR-0008 is unchanged: the noun is still never mapped onto `bodyPart`.
+
+TASK-0008 (preparation): `geometry.py` is the MOCKUP-INV-002 method. It compares only the design
+region recorded by `composite`, normalises each image against a heavy blur of itself so lighting
+and tone changes do not count, finds ink as pixels darker than the surrounding skin, and reports
+the 95th-percentile symmetric outline displacement (pixels and relative to the design diagonal)
+plus ink-mask IoU. Anything unverifiable fails closed. `GeometryTolerance` has no default: its
+values are TASK-0008's output. `GeometryCheck` implements the orchestration graph's geometry port.
+Displacement is the primary criterion — IoU misses a removed element and is harsh on thin lines.
+
+TASK-0032 (ADR-0016): the constrained AI blend is activated, lifting ADR-0007's interim
+"no generative pass after placement" freeze for this module. `blend` becomes a real image-*editing*
+pass over the geometric warp, run in the `orchestration` graph's `ai_blend` node through
+`generation`. The geometric warp stays authoritative (MOCKUP-INV-001) and the geometry check
+(MOCKUP-INV-002) fails the render when post-blend landmarks move beyond the ADR-0002/TASK-0008
+tolerance. The body photo reaches the blend provider only with a `SafetyClearance`, under adult
+consent, EXIF-stripped, over TLS, and only to a no-training/no-retention provider (ADR-0006). The
+generated output passes the safety output gate before storage/display. The stencil is unaffected:
+it stays the native centerline vector of the master (ADR-0003), never derived from the blended
+render. Until a provider passes TASK-0008, the module keeps the geometric-only path as the
+labelled fallback (PROD-INV-005) — the blend does not ship unguarded.
+
+The creator's finish target (user request 2026-09-26) is an on-body result that reads
+**hyperrealistic and freshly applied** — crisp saturated ink with the sheen and surrounding redness
+of just-tattooed skin. The "freshly applied" look is already produced geometrically by the
+`fresh=True` composite (ADR-0014 fresh-ink halo); the blend deepens the realism as its editing
+instruction (`orchestration.FRESH_TATTOO_FINISH`) without altering the design (MOCKUP-INV-001). It
+is a finish target, not a prediction of healing: outputs stay labelled illustrative
+(PROD-INV-005, MOCKUP-INV-004).
+
 TASK-0031 (ADR-0014): the fresh-ink halo is a ring — the ink coverage is subtracted from the
 dilated mask — because the warmth belongs on skin, not pigment. Without it, mid-grey shading
 lets the tint through and the whole design goes warm. `DEFAULT_FRESHNESS = 2.0`.
@@ -98,6 +131,10 @@ Mockups derived from a user photo share that photo's retention lifecycle and are
 
 `contracts`, `generation`, `media`, `safety`, `jobs`.
 
+Sequenced by the `orchestration` module at generation time (TASK-0032): this module exposes the
+same callables and orchestration owns their ordering. That is an inbound edge (orchestration
+depends on mockup, not the reverse), so it is stated here as prose rather than as a dependency.
+
 ## External integrations
 
 Depth and segmentation models (candidates: Depth Anything class, SAM class), run locally.
@@ -146,6 +183,9 @@ not evidence that the full anatomical/photorealistic target has been achieved (A
 
 ## Change history
 
+- 2026-09-26 (TASK-0032, ADR-0016): Activated the constrained AI blend, lifting ADR-0007's interim
+  geometric-only freeze; geometry check and the geometric-only fallback remain mandatory. Sequenced
+  by the new `orchestration` module. No implementation yet.
 - 2026-09-19: Created during SDD bootstrap.
 
 ## Statement evidence
@@ -153,6 +193,7 @@ not evidence that the full anatomical/photorealistic target has been achieved (A
 |---|---|---|---|
 | Hybrid warp-then-blend pipeline | INTENT | ADR-0002; user decision 2026-09-19 | NOT_RUN |
 | AI blend preserves geometry within tolerance | UNKNOWN | Spike TASK-0008 pending | NOT_RUN |
+| Geometry method separates skin integration from moved/redrawn designs | VERIFIED (synthetic only) | `tests/test_geometry.py` 8 tests; TASK-0008 self-test `SEPARATES` | PASS |
 | Aging is illustrative only | INTENT | Planning session 2026-09-19 | NOT_RUN |
 
 ## TASK-0019 current implementation and remaining intent

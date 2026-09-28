@@ -500,6 +500,17 @@ export const schemas: Record<string, Record<string, unknown>> = {
           "maxLength": 1000,
           "pattern": "\\S"
         },
+        "referenceIds": {
+          "description": "TASK-0036: reference images the client attached to this change request, already screened and owned. They guide the edit and join the design's references.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          }
+        },
         "coverage": {
           "enum": [
             "larger",
@@ -831,6 +842,16 @@ export const schemas: Record<string, Record<string, unknown>> = {
               "type": "string",
               "minLength": 3,
               "maxLength": 1000
+            },
+            "referenceIds": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              }
             },
             "coverage": {
               "enum": [

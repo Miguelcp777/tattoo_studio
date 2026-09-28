@@ -38,6 +38,7 @@ const WEIGHT_LABELS: Record<string, string> = {
   fine: 'fino',
   medium: 'medio',
   bold: 'grueso',
+  mixed: 'mixto (grueso en contornos, fino en detalles)',
 };
 
 const SIDE_LABELS: Record<string, string> = {
@@ -66,8 +67,38 @@ function sizeLine(slots: ConsultationSlots): { value: string; proposed: boolean 
     Math.abs(size.widthMm - span.widthMm) < 1 &&
     Math.abs(size.heightMm - span.heightMm) < 1,
   );
-  return { value: `${size.widthMm} × ${size.heightMm} mm`, proposed: fillsZone };
+  // TASK-0034: a size the studio proposed (from the architect or the zone) says so.
+  return {
+    value: `${size.widthMm} × ${size.heightMm} mm`,
+    proposed: fillsZone || size.proposed === true,
+  };
 }
+
+const spanishList = (items: string[]): string =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+
+/**
+ * One line summarising what the studio has settled so far (TASK-0034), for the chat's closing
+ * message: "Irezumi · Muslo · Color · 170 × 330 mm (propuesto)".
+ */
+export function proposalSummary(slots: ConsultationSlots): string {
+  const parts: string[] = [];
+  const style = slots.style?.primary;
+  if (style) parts.push(STYLE_OPTIONS[style] ?? style);
+  const zone = slots.placement?.bodyPart;
+  if (zone) {
+    const side = slots.placement?.side;
+    const label = BODY_OPTIONS[zone] ?? zone;
+    parts.push(side && SIDE_LABELS[side] ? `${label} ${SIDE_LABELS[side]}` : label);
+  }
+  const colour = slots.colour?.mode;
+  if (colour) parts.push(COLOUR_LABELS[colour] ?? colour);
+  const size = sizeLine(slots);
+  if (size.value) parts.push(size.proposed ? `${size.value} (propuesto)` : size.value);
+  return parts.join(' · ');
+}
+
+export { spanishList };
 
 /**
  * Build the summary the client accepts.

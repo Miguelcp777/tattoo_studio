@@ -152,6 +152,56 @@ export function qualitativeSize(
   };
 }
 
+/**
+ * Propose a size once a zone is known and the client has not stated one (TASK-0034, ADR-0010).
+ *
+ * The recommendation (the architect's, when there is one) is scaled down to fit the zone's
+ * reference span, preserving its aspect; without one, a medium fraction of the zone is used. The
+ * result is flagged `proposed` so it is labelled as ours. A stated size always wins. A proposal is
+ * kept while the zone stays the same and re-made when it changes; with no zone there is none.
+ */
+export function proposeSize(
+  slots: ConsultationSlots,
+  recommended?: { widthMm: number; heightMm: number },
+  previousZone?: BodyPart,
+): ConsultationSlots {
+  const size = slots.size;
+  if (size?.widthMm && size?.heightMm && !size.proposed) return slots;
+  const zone = slots.placement?.bodyPart;
+  const span = zone ? BODY_ZONE_SPANS[zone] : undefined;
+  if (!zone || !span) {
+    if (!size?.proposed) return slots;
+    const rest = { ...slots };
+    delete rest.size;
+    return rest;
+  }
+  if (size?.proposed && size.widthMm && size.heightMm && zone === previousZone && !recommended)
+    return slots;
+  let width: number;
+  let height: number;
+  if (recommended) {
+    const fit = Math.min(
+      1,
+      span.widthMm / recommended.widthMm,
+      span.heightMm / recommended.heightMm,
+    );
+    width = recommended.widthMm * fit;
+    height = recommended.heightMm * fit;
+  } else {
+    const scale = SIZE_SCALES['medium'] ?? 0.6;
+    width = span.widthMm * scale;
+    height = span.heightMm * scale;
+  }
+  return {
+    ...slots,
+    size: {
+      widthMm: Math.max(10, Math.round(width)),
+      heightMm: Math.max(10, Math.round(height)),
+      proposed: true,
+    },
+  };
+}
+
 function colours(text: string): string[] {
   const palette = ['rojo', 'azul', 'verde', 'amarillo', 'naranja', 'violeta', 'dorado'].filter(
     (c) => text.includes(c),
@@ -166,15 +216,18 @@ export function missingPreferences(s: ConsultationSlots): string[] {
   if (!s.colour?.mode) missing.push('color');
   return missing;
 }
+/** Marks a linework the studio proposed itself, so a later, better-informed value may replace it. */
+export const DEFAULT_LINEWORK_NOTE = 'Propuesta técnica ajustable por el tatuador';
+
 export function withTechnicalDefaults(s: ConsultationSlots): ConsultationSlots {
   return {
     ...s,
     linework:
-      s.linework && s.linework.notes !== 'Propuesta técnica ajustable por el tatuador'
+      s.linework && s.linework.notes !== DEFAULT_LINEWORK_NOTE
         ? s.linework
         : {
             weight: s.style?.primary === 'fine_line' ? 'fine' : 'medium',
-            notes: 'Propuesta técnica ajustable por el tatuador',
+            notes: DEFAULT_LINEWORK_NOTE,
           },
     shading: s.shading ?? { technique: 'none', intensity: 'light' },
     placement: { ...s.placement, orientation: s.placement?.orientation ?? 'vertical' },

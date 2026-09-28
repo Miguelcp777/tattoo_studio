@@ -838,6 +838,43 @@ summary {
   box-sizing: border-box;
   resize: vertical;
 }
+.edit-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 0.85rem;
+}
+.edit-attachments ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.edit-attachments li {
+  position: relative;
+}
+.edit-attachments img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #363c48;
+}
+.edit-attachments li button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  border-radius: 999px;
+}
 .coverage-controls {
   border-top: 1px solid #363c48;
   padding-top: 14px;
@@ -1303,4 +1340,37 @@ body::after {
 .link-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* TASK-0034: the one next action, and what still blocks generation. */
+.next-step {
+  border: 1px solid var(--border-active);
+  border-left: 4px solid var(--accent-gold);
+  background: var(--bg-surface-elevated);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.next-step strong {
+  display: block;
+  color: var(--accent-gold);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.next-step p {
+  margin: 0.3rem 0 0.4rem;
+  color: var(--text-primary);
+}
+
+.blockers ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.blockers li {
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
 }

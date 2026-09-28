@@ -1,0 +1,394 @@
+import { describe, expect, it, vi } from 'vitest';
+import { BODY_ZONE_SPANS } from '@tattoo/contracts';
+import {
+  conversationTurns,
+  DEFAULT_LINEWORK_NOTE,
+  OrchestratorAgent,
+  sanitizeArchitectSlots,
+  VisualSearchAgent,
+  type ConsultationProvider,
+  type MultiAgentMessage,
+  type ProviderExtractionOutput,
+} from '../index';
+import type { ConsultationTurn } from '../types';
+
+const reference = {
+  source: 'https://upload.wikimedia.org/example.png',
+  mimeType: 'image/png' as const,
+};
+
+const offlineScout = () =>
+  new VisualSearchAgent(vi.fn(async () => Response.json({ query: { pages: {} } })) as typeof fetch);
+
+function fakeArchitect(output: Partial<ProviderExtractionOutput>) {
+  const processTurn = vi.fn<(turns: ConsultationTurn[]) => Promise<ProviderExtractionOutput>>(
+    async () => ({ extractedSlots: {}, assistantReply: 'ok', ...output }),
+  );
+  const architect: ConsultationProvider = { processTurn };
+  return { architect, processTurn };
+}
+
+const samurai = {
+  subject: { description: 'a rewrite the client never said', elements: ['samurái', 'olas'] },
+  style: { primary: 'irezumi', notes: 'wabori con olas' },
+  linework: { weight: 'bold' },
+  shading: { technique: 'smooth_blend', intensity: 'heavy' },
+  colour: { mode: 'black_and_grey' },
+  placement: { bodyPart: 'thigh_front', side: 'right', orientation: 'vertical' },
+  size: { widthMm: 300, heightMm: 400 },
+} as const;
+
+describe('Prompt architect on the live route (TASK-0033)', () => {
+  it('AC-001: fills what a vague idea left open, keeping the client words', async () => {
+    const { architect } = fakeArchitect({ extractedSlots: structuredClone(samurai) as never });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+
+    const s = await o.handleUserInteraction(o.createSession(), 'Un guerrero samurái sobre olas', [
+      reference,
+    ]);
+
+    expect(s.slots.subject?.description).toBe('Un guerrero samurái sobre olas');
+    expect(s.slots.subject?.elements).toEqual(['samurái', 'olas']);
+    expect(s.slots.style).toEqual({ primary: 'irezumi', notes: 'wabori con olas' });
+    expect(s.slots.placement).toMatchObject({ bodyPart: 'thigh_front', orientation: 'vertical' });
+    // Live finding: the architect guessed a side the client never gave. It is not adopted.
+    expect(s.slots.placement?.side).toBeUndefined();
+    expect(s.slots.colour).toEqual({ mode: 'black_and_grey' });
+    expect(s.slots.linework?.weight).toBe('bold');
+    expect(s.slots.shading).toEqual({ technique: 'smooth_blend', intensity: 'heavy' });
+    expect(s.questionsAsked).toBe(0);
+  });
+
+  it('AC-002: explicit statements win; the architect size is only a zone-fitted proposal', async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: {
+        style: { primary: 'irezumi', notes: 'no aplica' },
+        colour: { mode: 'colour', palette: ['rojo'] },
+        placement: { bodyPart: 'upper_back', side: 'right' },
+        size: { widthMm: 300, heightMm: 400 },
+      },
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Un león de línea fina en el antebrazo izquierdo, solo negro',
+      [reference],
+    );
+
+    expect(s.slots.style).toEqual({ primary: 'fine_line' });
+    expect(s.slots.placement).toMatchObject({ bodyPart: 'inner_forearm', side: 'left' });
+    expect(s.slots.colour).toEqual({ mode: 'black_and_grey' });
+    // TASK-0034: 300 × 400 mm cannot fit an inner forearm; it is scaled down and flagged.
+    const span = BODY_ZONE_SPANS['inner_forearm']!;
+    expect(s.slots.size?.proposed).toBe(true);
+    expect(s.slots.size?.widthMm).toBeLessThanOrEqual(span.widthMm);
+    expect(s.slots.size?.heightMm).toBeLessThanOrEqual(span.heightMm);
+  });
+
+  it('TASK-0034: an explicit size always beats the proposal', async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: { size: { widthMm: 300, heightMm: 400 } },
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Un león en el antebrazo izquierdo, 8 x 15 cm',
+      [reference],
+    );
+    expect(s.slots.size).toEqual({ widthMm: 80, heightMm: 150 });
+  });
+
+  it('TASK-0034: a proposal is re-made when the zone changes and survives a panel save', async () => {
+    const o = new OrchestratorAgent(offlineScout());
+    const first = await o.handleUserInteraction(
+      o.createSession(),
+      'Un león de línea fina en el gemelo, solo negro',
+      [reference],
+    );
+    expect(first.slots.size?.proposed).toBe(true);
+    const moved = await o.handleUserInteraction(first, '', [], {
+      placement: { bodyPart: 'upper_back', orientation: 'vertical' },
+    });
+    expect(moved.slots.size?.proposed).toBe(true);
+    expect(moved.slots.size).not.toEqual(first.slots.size);
+  });
+
+  it('AC-003: values outside the contract are not adopted', async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: {
+        subject: { elements: ['ok', 'x'.repeat(200), 42 as never] },
+        style: { primary: 'cyberpunk' as never },
+        linework: { weight: 'ultra' as never },
+        shading: { technique: 'smooth_blend' },
+        colour: { mode: 'rainbow' as never },
+        placement: {
+          bodyPart: 'elbow' as never,
+          orientation: 'sideways' as never,
+          side: 'up' as never,
+        },
+      },
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+
+    const s = await o.handleUserInteraction(o.createSession(), 'Un zorro', [reference]);
+
+    expect(s.slots.subject?.elements).toEqual(['ok']);
+    expect(s.slots.style).toBeUndefined();
+    expect(s.slots.colour).toBeUndefined();
+    expect(s.slots.placement?.bodyPart).toBeUndefined();
+    expect(s.slots.linework).toEqual({ weight: 'medium', notes: DEFAULT_LINEWORK_NOTE });
+    expect(s.slots.shading).toEqual({ technique: 'none', intensity: 'light' });
+    expect(s.questionsAsked).toBe(1);
+  });
+
+  it('AC-004: a failing architect gives exactly the deterministic result', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const failing: ConsultationProvider = {
+      processTurn: vi.fn(async () => {
+        throw new Error('network down');
+      }),
+    };
+    const input = 'Un lobo en el gemelo derecho';
+    const withFailure = new OrchestratorAgent(offlineScout(), failing);
+    const deterministic = new OrchestratorAgent(offlineScout());
+
+    const a = await withFailure.handleUserInteraction(withFailure.createSession(), input, [
+      reference,
+    ]);
+    const b = await deterministic.handleUserInteraction(deterministic.createSession(), input, [
+      reference,
+    ]);
+
+    expect(a.slots).toEqual(b.slots);
+    expect(a.questionsAsked).toBe(b.questionsAsked);
+    expect(a.phase).toBe(b.phase);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(String(warn.mock.calls[0]?.[0])).not.toContain('lobo');
+    warn.mockRestore();
+  });
+
+  it('AC-005: a genuine mimicry flag declines imitation; a placeholder does not', async () => {
+    const flagged = fakeArchitect({
+      extractedSlots: structuredClone(samurai) as never,
+      mimicryDetected: {
+        artistName: 'Nikko Hurtado',
+        suggestedStyle: 'black_and_grey_realism',
+        explanation: 'No imitamos artistas vivos.',
+      },
+    });
+    const o = new OrchestratorAgent(offlineScout(), flagged.architect);
+    const declined = await o.handleUserInteraction(
+      o.createSession(),
+      'Un retrato como los de ese artista',
+      [reference],
+    );
+    expect(declined.phase).toBe('needs_details');
+    expect(declined.brief).toBeUndefined();
+    expect(declined.slots).toEqual({});
+    expect(declined.messages.at(-1)?.content).toContain('imitación');
+
+    const placeholder = fakeArchitect({
+      extractedSlots: structuredClone(samurai) as never,
+      mimicryDetected: { artistName: '  ', suggestedStyle: 'irezumi', explanation: '' },
+    });
+    const p = new OrchestratorAgent(offlineScout(), placeholder.architect);
+    const accepted = await p.handleUserInteraction(
+      p.createSession(),
+      'Un guerrero samurái sobre olas',
+      [reference],
+    );
+    expect(accepted.slots.style?.primary).toBe('irezumi');
+  });
+
+  it('AC-006: not called without text; turns alternate, start with the client, end with the input', async () => {
+    const { architect, processTurn } = fakeArchitect({});
+    const o = new OrchestratorAgent(offlineScout(), architect);
+
+    const afterPanel = await o.handleUserInteraction(o.createSession(), '', [reference], {
+      style: { primary: 'fine_line' },
+    });
+    expect(processTurn).not.toHaveBeenCalled();
+
+    const first = await o.handleUserInteraction(afterPanel, 'Un león', [reference]);
+    await o.handleUserInteraction(first, 'En el antebrazo izquierdo', [reference]);
+
+    const turns = processTurn.mock.calls.at(-1)?.[0] ?? [];
+    expect(turns[0]?.role).toBe('user');
+    expect(turns.at(-1)?.role).toBe('user');
+    expect(turns.at(-1)?.content.endsWith('En el antebrazo izquierdo')).toBe(true);
+    for (let i = 1; i < turns.length; i++) expect(turns[i]?.role).not.toBe(turns[i - 1]?.role);
+    expect(turns.every((t) => !t.referenceImages)).toBe(true);
+  });
+});
+
+describe('scout plan on the live route (TASK-0033 live finding)', () => {
+  /** Commons answers each query with its own file, or nothing for the listed misses. */
+  const commonsPerQuery = (misses: string[] = []) =>
+    vi.fn(async (url: string | URL | Request) => {
+      const query = new URL(String(url)).searchParams.get('gsrsearch') ?? '';
+      if (misses.includes(query)) return Response.json({ query: { pages: {} } });
+      const slug = encodeURIComponent(query.replace(/\s+/g, '_'));
+      return Response.json({
+        query: {
+          pages: {
+            one: {
+              index: 1,
+              title: `File:${query}.jpg`,
+              imageinfo: [{ url: `https://upload.wikimedia.org/${slug}.jpg`, mime: 'image/jpeg' }],
+            },
+          },
+        },
+      });
+    }) as unknown as typeof fetch;
+  const planner = {
+    plan: vi.fn(async () => [
+      { query: 'samurai woodblock print', essential: false, label: 'un grabado de samurái' },
+      { query: 'Great Wave Hokusai', essential: true, label: 'La gran ola de Hokusai' },
+    ]),
+  };
+  const brief = 'Un león de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm';
+
+  it('judges missing references against the planned queries, not the client sentence', async () => {
+    const o = new OrchestratorAgent(new VisualSearchAgent(commonsPerQuery(), { planner }));
+    const s = await o.handleUserInteraction(o.createSession(), brief);
+
+    expect(s.referencePlan).toEqual(['samurai woodblock print', 'Great Wave Hokusai']);
+    expect(s.references).toHaveLength(2);
+    expect(s.missingFields.filter((f) => f.startsWith('referencia'))).toEqual([]);
+    expect(s.phase).toBe('ready_to_generate');
+  });
+
+  it('reports a planned query that found nothing in its planned wording', async () => {
+    const o = new OrchestratorAgent(
+      new VisualSearchAgent(commonsPerQuery(['Great Wave Hokusai']), { planner }),
+    );
+    const s = await o.handleUserInteraction(o.createSession(), brief);
+
+    // TASK-0034: an essential miss is named in Spanish, by its label.
+    expect(s.missingFields).toContain('referencia: La gran ola de Hokusai');
+    expect(s.messages.at(-1)?.content).toContain('La gran ola de Hokusai');
+    expect(s.missingFields.some((f) => f.includes(brief))).toBe(false);
+    expect(s.phase).toBe('needs_details');
+  });
+});
+
+describe('relevant references (TASK-0034)', () => {
+  /** Commons returns three files per query; image URLs answer with a tiny JPEG. */
+  const commonsThree = vi.fn(async (url: string | URL | Request) => {
+    const href = String(url);
+    if (href.includes('commons.wikimedia.org')) {
+      const query = new URL(href).searchParams.get('gsrsearch') ?? '';
+      const slug = query.replace(/\W+/g, '_');
+      return Response.json({
+        query: {
+          pages: Object.fromEntries(
+            ['unrelated logo', 'right thing', 'another unrelated'].map((title, index) => [
+              title,
+              {
+                index: index + 1,
+                title: `File:${title}.jpg`,
+                imageinfo: [
+                  {
+                    url: `https://upload.wikimedia.org/${slug}_${index}.jpg`,
+                    mime: 'image/jpeg',
+                  },
+                ],
+              },
+            ]),
+          ),
+        },
+      });
+    }
+    return new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
+      headers: { 'content-type': 'image/jpeg' },
+    });
+  }) as unknown as typeof fetch;
+  const planner = {
+    plan: vi.fn(async () => [{ query: 'howling wolf', essential: false, label: 'un lobo' }]),
+  };
+
+  it('keeps only the candidate the judge recognises', async () => {
+    const choose = vi.fn(async (_subject: string, candidates: { title: string; data: string }[]) =>
+      candidates.flatMap((c, i) => (c.title.includes('right thing') ? [i] : [])),
+    );
+    const result = await new VisualSearchAgent(commonsThree, {
+      planner,
+      judge: { choose },
+    }).scoutReferenceImages({ userInput: 'Un lobo aullando' });
+
+    expect(choose).toHaveBeenCalledOnce();
+    expect(choose.mock.calls[0]?.[1]).toHaveLength(3);
+    expect(choose.mock.calls[0]?.[1][0]?.data).toBe(
+      Buffer.from([0xff, 0xd8, 0xff]).toString('base64'),
+    );
+    expect(result.scoutedImages.map((r) => r.label)).toEqual(['File:right thing.jpg']);
+  });
+
+  it('keeps nothing unverified when the judge fails, and says so', async () => {
+    const result = await new VisualSearchAgent(commonsThree, {
+      planner,
+      judge: {
+        choose: vi.fn(async () => {
+          throw new Error('down');
+        }),
+      },
+    }).scoutReferenceImages({ userInput: 'Un lobo aullando' });
+    expect(result.scoutedImages).toEqual([]);
+    expect(result.reportMessage).toContain('no he podido comprobar');
+  });
+
+  it('a generic motif the judge rejects does not block generation', async () => {
+    const o = new OrchestratorAgent(
+      new VisualSearchAgent(commonsThree, { planner, judge: { choose: vi.fn(async () => []) } }),
+    );
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Un lobo aullando de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
+    );
+    // Nothing found and nothing essential missing: the client is steered to a style variant or
+    // an upload, not blocked on a search.
+    expect(s.missingFields).toEqual(['referencia visual']);
+    expect(s.messages.at(-1)?.content).toContain('variantes de estilo');
+  });
+});
+
+describe('architect helpers (TASK-0033)', () => {
+  it('conversationTurns drops a leading studio message and joins adjacent ones', () => {
+    const at = '2026-09-26T00:00:00.000Z';
+    const msg = (senderLabel: string, content: string): MultiAgentMessage => ({
+      sender: 'orchestrator',
+      senderLabel,
+      content,
+      timestamp: at,
+    });
+    const turns = conversationTurns(
+      [
+        msg('Asistente de diseño', 'hola'),
+        msg('Cliente', 'un león'),
+        msg('Asistente de diseño', '¿zona?'),
+        msg('Referencias', 'he buscado'),
+        msg('Cliente', 'antebrazo'),
+      ],
+      'antebrazo',
+    );
+    expect(turns.map((t) => t.role)).toEqual(['user', 'assistant', 'user']);
+    expect(turns[1]?.content).toBe('¿zona?\nhe buscado');
+  });
+
+  it('only adopts zones the client panel can show (live: Opus proposed thigh_outer)', () => {
+    expect(sanitizeArchitectSlots({ placement: { bodyPart: 'thigh_outer' } })).toEqual({});
+    expect(sanitizeArchitectSlots({ placement: { bodyPart: 'thigh_front' } })).toEqual({
+      placement: { bodyPart: 'thigh_front' },
+    });
+  });
+
+  it('sanitizeArchitectSlots never reads a size and keeps palettes off black and grey', () => {
+    const slots = sanitizeArchitectSlots({
+      size: { widthMm: 100, heightMm: 100 },
+      colour: { mode: 'black_and_grey', palette: ['rojo'] },
+    });
+    expect(slots).toEqual({ colour: { mode: 'black_and_grey' } });
+    expect(sanitizeArchitectSlots(null)).toEqual({});
+  });
+});

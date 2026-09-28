@@ -7,6 +7,7 @@ nudge controls remain visual-only and never touch the brief.
 
 from __future__ import annotations
 
+import difflib
 import io
 import re
 import unicodedata
@@ -66,6 +67,27 @@ def _fold(text: str) -> str:
     ).strip(" .!¡?¿")
 
 
+_ZONE_WORDS = tuple(
+    form
+    for alternative in _ZONE[3:-1].split("|")
+    for form in (
+        (alternative[:-2], alternative[:-2] + "s") if alternative.endswith("s?") else (alternative,)
+    )
+)
+# "que ocupe todo el <cualquier cosa>": the verb and the quantifier already carry the intent,
+# whatever noun (or misspelling of one) follows. TASK-0035: "que ocupe todo el gemlo" was read
+# as an artwork edit and the tattoo stayed the same size.
+_VERB_ALL_NOUN = rf"\b{_VERB}\b.*\b{_ALL}\s+(?:el|la|los|las|mi|mis|su|sus)\s+(\w+)"
+
+
+def _zone_word(folded: str) -> bool:
+    """A body-zone noun, tolerating a one-letter slip ("gemlo", "atebrazo")."""
+    if re.search(rf"\b{_ZONE}\b", folded):
+        return True
+    words = re.findall(r"[a-z]{5,}", folded)
+    return any(difflib.get_close_matches(w, _ZONE_WORDS, n=1, cutoff=0.8) for w in words)
+
+
 def whole_zone_intent(text: str) -> bool:
     """True when the sentence asks for a body zone to be covered end to end.
 
@@ -76,11 +98,13 @@ def whole_zone_intent(text: str) -> bool:
     folded = _fold(text)
     if re.search(_NEGATED, folded):
         return False
-    zone = re.search(rf"\b{_ZONE}\b", folded)
     quantified = re.search(rf"\b{_ALL}\b", folded) or re.search(_SPAN, folded)
-    if zone and quantified:
+    if quantified and _zone_word(folded):
         return True
     if re.search(rf"\b{_VERB}\b", folded) and re.search(_SPAN, folded):
+        return True
+    target = re.search(_VERB_ALL_NOUN, folded)
+    if target and not re.search(_ARTWORK_CHANGE, target[1]):
         return True
     return bool(re.search(_JOINT_TO_JOINT, folded))
 

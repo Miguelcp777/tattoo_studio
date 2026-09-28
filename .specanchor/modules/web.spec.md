@@ -9,6 +9,26 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0036: the change form in the preview can attach up to three reference photos. They upload
+through `/api/media` with `purpose: 'edit'`, which forwards only the image and consent to the
+worker and does not add them to the consultation (the accepted brief is not reopened); upload
+errors show inside the dialog. Their IDs travel as `edit.referenceIds`.
+
+TASK-0034: the panel shows a "Siguiente paso" banner and, under "Generar diseño y plantilla", the
+list of what still blocks generation — each item links to its section (`lib/next-step.ts`, pure
+and unit-tested; the gates themselves are unchanged, WEB-INV-001). Anchors `step-permisos` and
+`step-diseno` now exist, so the progress rail's last two steps also scroll somewhere. A proposed
+size is pre-filled with a note, and saving the panel sends a size only if the client changed it,
+so an untouched proposal stays a proposal. With `TATTOO_SCOUT_PLANNER=claude` the scout also gets
+the Sonnet vision judge.
+
+TASK-0033: `studio-server.ts` composes the live orchestrator with `buildOrchestrator(env)`.
+Model-backed agents are **opt-in**: `TATTOO_CONSULTATION_BACKEND=claude|openai` enables the prompt
+architect, `TATTOO_SCOUT_PLANNER=claude` enables the Sonnet query planner. A credential alone
+enables nothing, so a developer key cannot make tests call a paid API, and the canned fixture is
+never used on the live route. This is composition only; the merge rules live in `consultation`
+(WEB-INV-001). With both unset the route behaves exactly as before.
+
 TASK-0030: a catalogue pick is read from disk by `catalogueBytes`, not fetched. Its identifier
 must resolve in the catalogue and the path is rebuilt from the resolved entry, so traversal fails
 at resolution rather than at the filesystem. `referenceBytes` and its allowlist are untouched:
@@ -116,7 +136,8 @@ Session and auth state only. No domain persistence.
 
 ## External integrations
 
-None directly.
+None directly. When opted in (TASK-0033), the server process runs `consultation`'s reasoning
+calls (Anthropic or OpenAI) with the client's chat text; no image leaves through that path.
 
 ## Error semantics
 
