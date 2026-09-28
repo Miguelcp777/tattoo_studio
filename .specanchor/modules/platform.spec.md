@@ -23,6 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0039: both studio composites (new design and reposition) pass `fit_body=True`, so the mockup
+fits the body in the photograph (see `mockup.spec.md`).
+
 TASK-0036: studio job submission checks ownership of `edit.referenceIds`, puts them first in the
 design's references (cap 5), re-analyses them, and never short-circuits a change with photos to a
 reposition. An edit now takes its millimetres from the parent's **result**: the stored payload

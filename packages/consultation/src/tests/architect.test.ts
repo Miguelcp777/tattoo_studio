@@ -3,6 +3,7 @@ import { BODY_ZONE_SPANS } from '@tattoo/contracts';
 import {
   conversationTurns,
   DEFAULT_LINEWORK_NOTE,
+  textReadings,
   OrchestratorAgent,
   sanitizeArchitectSlots,
   VisualSearchAgent,
@@ -59,12 +60,48 @@ describe('Prompt architect on the live route (TASK-0033)', () => {
     expect(s.questionsAsked).toBe(0);
   });
 
-  it('AC-002: explicit statements win; the architect size is only a zone-fitted proposal', async () => {
+  it('TASK-0039: the architect rereads the message; side and size stay the client s', async () => {
+    // TASK-0033/AC-002 had the keyword rules win over the architect. Live, the rules read
+    // "parte en blanco y negro y el resto en color" as black and grey and overrode an architect
+    // that had it right, so the owner asked for the agent that understands the prompt to decide.
     const { architect } = fakeArchitect({
       extractedSlots: {
-        style: { primary: 'irezumi', notes: 'no aplica' },
-        colour: { mode: 'colour', palette: ['rojo'] },
-        placement: { bodyPart: 'upper_back', side: 'right' },
+        style: { primary: 'black_and_grey_realism', notes: 'estadio mitad B/N, resto color' },
+        colour: { mode: 'black_and_grey_with_accent', palette: ['rojo', 'amarillo'] },
+        placement: { bodyPart: 'calf', side: 'left' },
+        size: { widthMm: 300, heightMm: 400 },
+      },
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Mestalla hiper realista, parte en blanco y negro y el resto en color, en el gemelo derecho',
+      [reference],
+    );
+    expect(s.slots.colour).toEqual({
+      mode: 'black_and_grey_with_accent',
+      palette: ['rojo', 'amarillo'],
+    });
+    expect(s.slots.style?.primary).toBe('black_and_grey_realism');
+    expect(s.slots.placement).toMatchObject({ bodyPart: 'calf', side: 'right' });
+    const span = BODY_ZONE_SPANS['calf']!;
+    expect(s.slots.size?.proposed).toBe(true);
+    expect(s.slots.size?.heightMm).toBeLessThanOrEqual(span.heightMm);
+  });
+
+  it('TASK-0039: values chosen in the panel are never reread', () => {
+    const before = { colour: { mode: 'colour' as const } };
+    const after = { colour: { mode: 'black_and_grey' as const } };
+    expect([...textReadings(before, after)]).toEqual(['colour']);
+    expect([...textReadings(before, after, { colour: { mode: 'black_and_grey' } })]).toEqual([]);
+    // Nothing the message changed is nothing to reread.
+    expect([...textReadings(before, before)]).toEqual([]);
+  });
+
+  it('AC-002 (superseded by TASK-0039 for style, colour and zone): what the architect did not answer stays as read', async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: {
+        placement: { side: 'right' },
         size: { widthMm: 300, heightMm: 400 },
       },
     });

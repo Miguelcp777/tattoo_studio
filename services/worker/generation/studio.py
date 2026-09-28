@@ -11,6 +11,39 @@ import httpx2
 
 from safety.openai_moderation import OpenAIModerationProvider
 
+#: What each zone looks like to a camera (TASK-0039). The raw id is not enough: asked for a
+#: "right calf" in "frontal view", the model drew the front of the leg — the shin — and the
+#: client's calf tattoo was shown on the wrong side of the body.
+ZONE_VIEWS: dict[str, str] = {
+    "calf": "calf, the back of the lower leg seen from directly behind, with the rounded "
+    "gastrocnemius muscle between the back of the knee and the ankle",
+    "shin": "shin, the front of the lower leg seen from the front, from knee to ankle",
+    "inner_forearm": "inner forearm, palm side up, from wrist to elbow",
+    "outer_forearm": "outer forearm, back of the arm facing the camera, from wrist to elbow",
+    "upper_arm_inner": "inner upper arm, arm raised, from elbow to armpit",
+    "upper_arm_outer": "outer upper arm seen from the side, from elbow to shoulder",
+    "shoulder": "shoulder cap seen from the side",
+    "collarbone": "collarbone area seen from the front",
+    "chest": "chest seen from the front, from the collarbones to below the pectorals",
+    "sternum": "sternum, the centre of the chest seen from the front",
+    "ribs": "rib cage side of the torso, arm raised, seen from the side",
+    "stomach": "stomach seen from the front",
+    "upper_back": "upper back seen from directly behind, shoulder blades visible",
+    "lower_back": "lower back seen from directly behind, above the waistline",
+    "spine": "spine seen from directly behind, from the neck to the lower back",
+    "hip": "hip seen from the side",
+    "thigh_front": "front of the thigh seen from the front, from hip to knee",
+    "thigh_outer": "outer thigh seen from the side, from hip to knee",
+    "ankle": "ankle seen from the side",
+    "foot": "top of the foot seen from above",
+    "wrist_inner": "inner wrist, palm side up",
+    "wrist_outer": "outer wrist, back of the hand side",
+    "hand": "back of the hand",
+    "finger": "side of a finger",
+    "neck": "side of the neck",
+    "behind_ear": "area just behind the ear",
+}
+
 
 class StudioProvider:
     def __init__(
@@ -119,6 +152,9 @@ class StudioProvider:
             "natural highlights and subtle tonal depth. "
             "Respect the colour mode: black_and_grey_with_accent means predominantly monochrome "
             "with selective colour accents or the transition explicitly described by the client. "
+            "The colour mode decides colour even when the style is black_and_grey_realism, the "
+            "only realism style: with any colour mode, paint the parts the client asked for in "
+            "colour. "
             "If no palette is provided, choose colours from the supplied references and subject. "
             "Keep identifying flag and emblem colours faithful to the reference images. "
             "No text labels, frames, paper texture, cast shadows or background scenery. "
@@ -230,15 +266,15 @@ class StudioProvider:
 
     @staticmethod
     def background_prompt(brief: dict[str, Any]) -> str:
+        placement = brief["placement"]
+        side = {"left": "left ", "right": "right ", "centre": ""}.get(placement.get("side", ""), "")
+        view = ZONE_VIEWS.get(placement["bodyPart"], placement["bodyPart"].replace("_", " "))
         return (
-            "Photographic close-up of bare unmarked adult "
-            f"{brief['placement'].get('side', '')} {brief['placement']['bodyPart']}. "
-            "Professional macro photograph, soft directional studio light, visible pores, "
-            "fine natural skin texture and realistic muscle volume. Skin fills the central "
-            "80 percent of the frame, frontal view with space for a large tattoo. "
-            "No tattoo, no ink, no "
-            "text, no nudity. The skin surface fills the image center, vertical "
-            "portrait crop."
+            f"Photograph of the bare, unmarked adult {side}{view}. "
+            "Professional studio photograph, soft directional light, visible pores, fine natural "
+            "skin texture and realistic muscle volume. The zone fills most of the frame, with a "
+            "narrow strip of plain neutral backdrop on both sides so its outline is visible. "
+            "No tattoo, no ink, no text, no nudity. Vertical portrait crop."
         )
 
     def background(self, brief: dict[str, Any]) -> bytes:

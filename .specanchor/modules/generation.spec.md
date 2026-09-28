@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0039: `ZONE_VIEWS` names each zone's camera view for the background prompt (the calf is the
+back of the lower leg from behind; a "frontal view" had produced a shin), and asks for a neutral
+strip either side so `mockup` can read the silhouette. The artwork prompt states that the colour
+mode wins over the name of `black_and_grey_realism`.
+
 TASK-0036: `edit_artwork(..., attached=n)` — the first `n` references after the accepted master
 are photos the client attached to this change; the edit prompt tells the model to reproduce what
 the request names from them, redrawn in the artwork's style. `attached=0` keeps the old prompt.

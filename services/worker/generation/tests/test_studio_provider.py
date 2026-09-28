@@ -85,3 +85,29 @@ def test_reference_download_rejects_non_commons_hosts(url: str) -> None:
     with pytest.raises(ValueError, match="Commons"):
         provider.download_reference(url)
     provider.close()
+
+
+def _zones() -> list[str]:
+    import json
+    from importlib import resources
+
+    zones = resources.files("tattoo_contracts.reference").joinpath("body-zones.json")
+    data = zones.read_text("utf-8")
+    return sorted(json.loads(data)["zones"])
+
+
+def test_every_zone_has_a_camera_view() -> None:
+    from generation.studio import ZONE_VIEWS
+
+    assert sorted(ZONE_VIEWS) == _zones()
+
+
+def test_a_calf_background_is_the_back_of_the_leg() -> None:
+    # TASK-0039: "right calf ... frontal view" produced a shin, so a calf tattoo sat on the front
+    # of the leg. The view is named, and nothing asks for a frontal view any more.
+    prompt = StudioProvider.background_prompt({"placement": {"bodyPart": "calf", "side": "right"}})
+    assert "right calf" in prompt
+    assert "from directly behind" in prompt
+    assert "frontal" not in prompt
+    shin = StudioProvider.background_prompt({"placement": {"bodyPart": "shin"}})
+    assert "front of the lower leg" in shin

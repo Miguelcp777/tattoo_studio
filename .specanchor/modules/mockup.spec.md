@@ -9,6 +9,14 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0039: `limb.py` reads the body's silhouette (chroma against a plain backdrop; `None` when not
+confident). `composite(..., fit_body=True)` centres the design on it, takes the taper from it,
+shrinks until at most `MAX_SPILL` (2 %) of the ink is off the body (floor `MIN_FIT_SCALE` 0.6),
+then clips ink and fresh-ink redness to the silhouette, recording `bodyFit` in the transform. A
+calibrated photo keeps its scale. Geometric only; the master and stencil are untouched
+(MOCKUP-INV-001). This supersedes the TASK-0022 statement below that placement is not measured
+body segmentation: it now is, for the silhouette, while `SKIN_FRAME_FRACTION` remains the fallback.
+
 TASK-0035: whole-zone recognition (`placement.whole_zone_intent`) tolerates a one-letter slip in
 the zone noun ("gemlo") and accepts "ocupe todo el <noun>" for any noun that is not an artwork
 word ("todo el modelo"). A live request "que ocupe todo el gemlo" had been run as an artwork edit

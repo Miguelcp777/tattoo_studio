@@ -121,6 +121,28 @@ export function sanitizeArchitectSlots(raw: unknown): ConsultationSlots {
   return slots;
 }
 
+/** A field the keyword rules can read from free text, which the architect may reread. */
+export type TextReading = 'style' | 'colour' | 'bodyPart';
+
+/**
+ * Which fields the keyword rules set from the current message alone (TASK-0039): changed from
+ * what the session held, and not chosen in the panel in the same request. The side is absent on
+ * purpose: only the client states it, and the architect never sets it.
+ */
+export function textReadings(
+  before: ConsultationSlots,
+  after: ConsultationSlots,
+  panel: ConsultationSlots = {},
+): Set<TextReading> {
+  const read = new Set<TextReading>();
+  if (!panel.style && after.style?.primary !== before.style?.primary) read.add('style');
+  if (!panel.colour && JSON.stringify(after.colour) !== JSON.stringify(before.colour))
+    read.add('colour');
+  if (!panel.placement && after.placement?.bodyPart !== before.placement?.bodyPart)
+    read.add('bodyPart');
+  return read;
+}
+
 const isDefaultShading = (s: ConsultationSlots['shading']): boolean =>
   s?.technique === 'none' && s.intensity === 'light';
 
@@ -130,9 +152,21 @@ const isDefaultShading = (s: ConsultationSlots['shading']): boolean =>
  * never merged: both are facts the client states, not proposals.
  */
 export function mergeArchitect(
-  explicit: ConsultationSlots,
+  stated: ConsultationSlots,
   proposed: ConsultationSlots,
+  guessed: ReadonlySet<TextReading> = new Set(),
 ): ConsultationSlots {
+  // TASK-0039: a value the keyword rules pulled out of this very message is a guess at what the
+  // client wrote, not something they chose in the panel. The architect read the same sentence
+  // whole, so where it answered, its reading replaces the guess. Live, the rules took
+  // "parte en blanco y negro y el resto en color" as black and grey while Opus had it right.
+  const explicit: ConsultationSlots = { ...stated };
+  if (guessed.has('style') && proposed.style?.primary) delete explicit.style;
+  if (guessed.has('colour') && proposed.colour?.mode) delete explicit.colour;
+  if (guessed.has('bodyPart') && proposed.placement?.bodyPart && explicit.placement) {
+    explicit.placement = { ...explicit.placement };
+    delete explicit.placement.bodyPart;
+  }
   const merged: ConsultationSlots = { ...explicit };
 
   if (proposed.subject?.elements && !explicit.subject?.elements?.length) {

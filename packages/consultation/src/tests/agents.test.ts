@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { VisualSearchAgent, referenceQueries } from '../agents/image-scout';
 import { OrchestratorAgent } from '../agents/orchestrator';
 import { VisualCreatorAgent } from '../agents/creator';
+import { extractPreferences } from '../agents/researcher';
 const reference = {
   source: 'https://upload.wikimedia.org/example.png',
   mimeType: 'image/png' as const,
@@ -196,5 +197,29 @@ describe('TASK-0019 consultation and references', () => {
   });
   it('has no successful fallback for the retired creator', async () => {
     await expect(new VisualCreatorAgent().generateTattoo()).rejects.toThrow('worker');
+  });
+});
+
+describe('mixed colour requests (TASK-0039)', () => {
+  const mode = (input: string) => extractPreferences(input, {}).colour?.mode;
+
+  it('reads "part black and grey, the rest in colour" as both, not as black and grey', () => {
+    // The owner's exact sentence. The first cue alone recorded black and grey as the client's
+    // word, overrode the architect and made the worker desaturate the whole design.
+    expect(
+      mode(
+        'quiero un tatuaje del estadio de MEstalla y el escudo del Valencia, con la señera valenciana envolviendo el estadio, hiper realista , con parte del estadio en blanco y negro y el resto en color, en el gemelo derecho , que ocupe todo el gemelo',
+      ),
+    ).toBe('black_and_grey_with_accent');
+    expect(mode('todo en negro y gris con el escudo a color')).toBe('black_and_grey_with_accent');
+    expect(mode('en blanco y negro con acentos de color')).toBe('black_and_grey_with_accent');
+  });
+
+  it('keeps single and negated cues as they were', () => {
+    expect(mode('un lobo en blanco y negro')).toBe('black_and_grey');
+    expect(mode('un lobo en blanco y negro, sin color')).toBe('black_and_grey');
+    expect(mode('un lobo a todo color')).toBe('colour');
+    expect(mode('un lobo con colores vivos')).toBe('colour');
+    expect(mode('un lobo')).toBeUndefined();
   });
 });

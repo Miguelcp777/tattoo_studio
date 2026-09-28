@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0039: a message naming both black-and-grey and colour reads as
+`black_and_grey_with_accent`; "sin color" is not a colour cue. **Supersedes the TASK-0033 merge rule
+for style, colour and zone:** `textReadings` finds what the keyword rules read from the current
+message alone, and where the architect answered, `mergeArchitect` adopts its reading instead. Panel
+choices are never reread; the architect still never sets the side or the size. The system prompt
+adds that colour mode decides colour and that a whole-zone request gets the whole zone's size.
+
 TASK-0038 (ADR-0017): `offerAsPick` replaces `offerAsReference`; a pick is
 `OrchestrationSession.stylePick`, not a `ReferenceImage`, and `'style_library'` is gone from
 `verification`. `buildMasterPrompt(slots, references, pick?)` names the variant while the style

@@ -9,6 +9,8 @@ from typing import Any
 import numpy as np
 from PIL import Image, ImageFilter
 
+from mockup import limb
+
 #: Strength of the fresh-ink ring (TASK-0031). At 1.0 the reddening was measurable but not
 #: visible; 2.0 reads as recent without tinting the design. Illustrative, not clinical.
 DEFAULT_FRESHNESS = 2.0
@@ -78,6 +80,102 @@ def visible_size(master: Image.Image, size: dict[str, float]) -> dict[str, float
     return {"widthMm": size["heightMm"] * art.width / art.height, "heightMm": size["heightMm"]}
 
 
+#: Share of the design's ink allowed past the silhouette before it is scaled down. What remains
+#: is the part that wraps round the limb, which the camera would not see.
+MAX_SPILL = 0.02
+#: A fit never shrinks the design below this share of its requested size.
+MIN_FIT_SCALE = 0.6
+#: Taper the cylinder may take from the photograph; the same bound `composite` enforces.
+MAX_TAPER = 0.35
+
+
+def _shape(
+    master: Image.Image, width: int, height: int, curvature: float, taper: float
+) -> Image.Image:
+    """The artwork at its projected size, wrapped on a tapered cylinder when curved.
+
+    Geometric only; the source artwork remains untouched (MOCKUP-INV-001).
+    """
+    ink_image = master.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
+    if not curvature:
+        return ink_image
+    mesh = []
+
+    def source_point(px: int, py: int) -> tuple[float, float]:
+        t = py / height
+        radius = 1 - taper * t * t
+        u = (2 * px / width - 1) / radius
+        # Continue beyond the image edge so PIL fills exposed margins white.
+        sx = math.asin(max(-1, min(1, u)) * math.sin(curvature)) / curvature
+        sx += max(0, abs(u) - 1) * (1 if u > 0 else -1)
+        bow = 0.035 * height * math.sin(curvature) * (1 - min(1, u * u))
+        sy = py - bow * math.sin(math.pi * t)
+        return (sx + 1) * width / 2, sy
+
+    for top in range(0, height, max(1, height // 48)):
+        bottom = min(height, top + max(1, height // 48))
+        for left in range(0, width, max(1, width // 48)):
+            right = min(width, left + max(1, width // 48))
+            quad = (
+                *source_point(left, top),
+                *source_point(left, bottom),
+                *source_point(right, bottom),
+                *source_point(right, top),
+            )
+            mesh.append(((left, top, right, bottom), quad))
+    return ink_image.transform(
+        (width, height), Image.Transform.MESH, mesh, Image.Resampling.BICUBIC, fillcolor="white"
+    )
+
+
+def _fit_to_body(
+    master: Image.Image,
+    body: np.ndarray,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    curvature: float,
+    taper: float,
+    calibrated: bool,
+) -> tuple[int, int, int, int, float, dict[str, Any]]:
+    """Centre the design on the body, taper it with the limb and shrink it until it stays on.
+
+    The vertical centre is kept. A calibrated photo keeps its physical scale: only the centring
+    and the clip apply, since shrinking it would contradict the millimetres the client measured.
+    """
+    rows, cols = body.shape
+    centre_y = y + height / 2
+    if curvature:
+        measured = limb.taper(body, y, y + height, MAX_TAPER)
+        if measured is not None:
+            taper = measured
+    scale, spill = 1.0, 0.0
+    while True:
+        w, h = max(2, round(width * scale)), max(2, round(height * scale))
+        top = min(max(0, round(centre_y - h / 2)), rows - h)
+        centre_x = limb.centre_line(body, top, top + h)
+        left = x if centre_x is None else round(centre_x - w / 2)
+        left = min(max(0, left), cols - w)
+        ink = np.asarray(_shape(master, w, h, curvature, taper), dtype=np.float32)
+        inked = ink.min(axis=2) < 230
+        total = int(inked.sum())
+        spill = (
+            float((inked & ~body[top : top + h, left : left + w]).sum()) / total if total else 0.0
+        )
+        if calibrated or spill <= MAX_SPILL or scale * 0.95 < MIN_FIT_SCALE:
+            break
+        scale *= 0.95
+    return (
+        left,
+        top,
+        w,
+        h,
+        taper,
+        {"scale": round(scale, 3), "spill": round(spill, 4), "taper": round(taper, 3)},
+    )
+
+
 def composite(
     master: Image.Image,
     background: bytes,
@@ -90,6 +188,7 @@ def composite(
     fit_visible: bool = False,
     freshness: float = DEFAULT_FRESHNESS,
     surface: float = 0.0,
+    fit_body: bool = False,
 ) -> tuple[bytes, dict[str, Any]]:
     with Image.open(io.BytesIO(background)) as source:
         photo = source.convert("RGB")
@@ -113,47 +212,36 @@ def composite(
         raise ValueError(
             "El diseño queda fuera de la fotografía. Ajusta posición, anchura o calibración."
         )
-    ink_image = master.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
     if not 0 <= curvature <= 1.2 or not 0 <= taper <= 0.35:
         raise ValueError("Curvatura fuera del rango admitido.")
     if not 0 <= surface <= SURFACE_LIMIT:
         raise ValueError("Ajuste de superficie fuera del rango admitido.")
-    if curvature:
-        # Tapered cylindrical approximation. The source artwork remains untouched.
-        mesh = []
-
-        def source_point(px: int, py: int) -> tuple[float, float]:
-            t = py / height
-            radius = 1 - taper * t * t
-            u = (2 * px / width - 1) / radius
-            # Continue beyond the image edge so PIL fills exposed margins white.
-            sx = math.asin(max(-1, min(1, u)) * math.sin(curvature)) / curvature
-            sx += max(0, abs(u) - 1) * (1 if u > 0 else -1)
-            bow = 0.035 * height * math.sin(curvature) * (1 - min(1, u * u))
-            sy = py - bow * math.sin(math.pi * t)
-            return (sx + 1) * width / 2, sy
-
-        for top in range(0, height, max(1, height // 48)):
-            bottom = min(height, top + max(1, height // 48))
-            for left in range(0, width, max(1, width // 48)):
-                right = min(width, left + max(1, width // 48))
-                quad = (
-                    *source_point(left, top),
-                    *source_point(left, bottom),
-                    *source_point(right, bottom),
-                    *source_point(right, top),
-                )
-                mesh.append(((left, top, right, bottom), quad))
-        ink_image = ink_image.transform(
-            (width, height),
-            Image.Transform.MESH,
-            mesh,
-            Image.Resampling.BICUBIC,
-            fillcolor="white",
+    body = limb.body_mask(photo) if fit_body else None
+    fitted: dict[str, Any] | None = None
+    if body is not None:
+        # TASK-0039: fit to the body actually in the photograph, not to an assumed framing.
+        x, y, width, height, taper, fitted = _fit_to_body(
+            master, body, x, y, width, height, curvature, taper, bool(p.get("photoWidthMm"))
         )
+    ink_image = _shape(master, width, height, curvature, taper)
     if fresh:
         ink_image = ink_image.filter(ImageFilter.GaussianBlur(0.3))
     ink = np.asarray(ink_image, dtype=np.float32) / 255
+    if body is not None:
+        # Ink past the silhouette wraps round the limb, out of the camera's sight; it is not
+        # printed on the backdrop. A narrow feather, inside the silhouette only, keeps the edge
+        # from reading as a cut.
+        region = body[y : y + height, x : x + width]
+        skin = (
+            np.asarray(
+                Image.fromarray(region.astype(np.uint8) * 255).filter(
+                    ImageFilter.GaussianBlur(max(1.0, width * 0.004))
+                ),
+                dtype=np.float32,
+            )
+            / 255
+        ) * region
+        ink = 1 - (1 - ink) * skin[:, :, None]
     pixels = np.asarray(photo, dtype=np.float32).copy()
     patch = pixels[y : y + height, x : x + width]
     if surface:
@@ -176,6 +264,8 @@ def composite(
         # the strokes; a solid black stroke hides the tint anyway, but mid-grey shading lets it
         # through, and without this the whole design goes warm instead of its border.
         halo = np.clip(halo - coverage, 0, 1) * freshness
+        if body is not None:
+            halo *= skin  # irritated skin, never a reddened backdrop
         warm = patch.copy()
         warm[:, :, 0] += (255 - warm[:, :, 0]) * halo * 0.14
         warm[:, :, 1] *= 1 - halo * 0.095
@@ -199,6 +289,7 @@ def composite(
         **({"surface": surface} if surface else {}),
         "freshness": freshness if fresh else 0.0,
         **({"sourceCropPx": crop} if crop else {}),
+        **({"bodyFit": fitted} if fitted else {}),
         "scaleCalibrated": bool(p.get("photoWidthMm")),
         "generativePostprocess": False,
     }

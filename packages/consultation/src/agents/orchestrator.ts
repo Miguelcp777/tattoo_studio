@@ -3,7 +3,7 @@ import type { ConsultationProvider } from '../providers/types';
 import { brief as extractBrief } from '../state-machine';
 import type { ConsultationSlots, ReferenceImage } from '../types';
 import type { MultiAgentMessage, OrchestrationSession } from './types';
-import { consultArchitect, mergeArchitect } from './architect';
+import { consultArchitect, mergeArchitect, textReadings } from './architect';
 import { VisualSearchAgent, referenceQueries, type ScoutResult } from './image-scout';
 import { buildMasterPrompt, proposalSummary, spanishList } from './master-prompt';
 import {
@@ -88,7 +88,10 @@ export class OrchestratorAgent {
       next.messages.push(message('orchestrator', MIMICRY_MESSAGE));
       return next;
     }
-    let slots = extractPreferences(input, { ...next.slots, ...preferences });
+    const held = { ...next.slots, ...preferences };
+    let slots = extractPreferences(input, held);
+    // TASK-0039: what the keyword rules read from this message alone; the architect may reread it.
+    const guessed = textReadings(held, slots, preferences);
 
     // The architect never rewrites the subject, so whether to search is known before it answers.
     let merged = [...next.references, ...references]
@@ -137,7 +140,7 @@ export class OrchestratorAgent {
       return next;
     }
     // TASK-0033: the architect proposes what the client left open; explicit values still win.
-    if (proposal) slots = mergeArchitect(slots, proposal.slots);
+    if (proposal) slots = mergeArchitect(slots, proposal.slots, guessed);
     // TASK-0034: with a zone and no stated size, the studio proposes one and says so.
     slots = proposeSize(slots, proposal?.size, session.slots.placement?.bodyPart);
     next.slots = withTechnicalDefaults(slots);

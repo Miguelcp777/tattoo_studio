@@ -174,6 +174,8 @@ class _StudioGenerationDeps:
             taper=0.25 if body_part == "calf" else 0,
             # Read from the photograph, so it suits a back or a chest as readily as a limb.
             surface=DEFAULT_SURFACE,
+            # TASK-0039: centred on, tapered with and kept on the body actually photographed.
+            fit_body=True,
         )
 
 
@@ -525,6 +527,7 @@ class Studio:
                 curvature=parent["transform"].get("curvature", 1.05 if body_part == "calf" else 0),
                 taper=parent["transform"].get("taper", 0.25 if body_part == "calf" else 0),
                 surface=parent["transform"].get("surface", DEFAULT_SURFACE),
+                fit_body=True,
             )
         if resize:
             assert stored_vector is not None

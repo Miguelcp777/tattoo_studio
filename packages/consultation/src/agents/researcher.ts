@@ -102,11 +102,19 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
     slots.placement = { ...slots.placement, side: 'centre' };
   if (/horizontal/.test(text)) slots.placement = { ...slots.placement, orientation: 'horizontal' };
   else if (/vertical/.test(text)) slots.placement = { ...slots.placement, orientation: 'vertical' };
-  if (/transicion|toques de color|accent/.test(text))
+  // TASK-0039: "parte en blanco y negro y el resto en color" names both, and means both. Reading
+  // the first cue alone recorded black and grey as the client's word, which then overrode the
+  // architect and made the worker desaturate the whole design. A negated cue ("sin color") is not
+  // a request for colour.
+  const monochrome =
+    /blanco y negro|solo negro|en negro|negro y gris|black and (grey|gray)|black only|b\/n/.test(
+      text,
+    );
+  const coloured = /\bcolou?r(es)?\b|colou?red/.test(text.replace(/\bsin colou?r(es)?\b/g, ''));
+  if (/transicion|toques de color|acentos? de color|accent/.test(text) || (monochrome && coloured))
     slots.colour = { mode: 'black_and_grey_with_accent', palette: colours(text) };
-  else if (/blanco y negro|solo negro|en negro|black and (grey|gray)|black only|b\/n/.test(text))
-    slots.colour = { mode: 'black_and_grey' };
-  else if (/\bcolor\b|colour/.test(text)) slots.colour = { mode: 'colour', palette: colours(text) };
+  else if (monochrome) slots.colour = { mode: 'black_and_grey' };
+  else if (coloured) slots.colour = { mode: 'colour', palette: colours(text) };
   const size = text.match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(mm|cm)/);
   if (size)
     slots.size = {
