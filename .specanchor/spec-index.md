@@ -75,6 +75,7 @@ exist and its field set is unproven against any consumer.
 | ADR-0016 | Activate the constrained AI blend for the mockup (supersedes an ADR-0007 clause) | proposed |
 | ADR-0017 | A catalogue pick settles the style; it is not a reference (amends ADR-0012) | accepted |
 | ADR-0018 | The AI finish runs on generated plates, chosen by measurement, and falls back (amends ADR-0016) | accepted |
+| ADR-0019 | The camera try-on runs entirely on the client's device | accepted |
 
 ## Invariant ownership
 

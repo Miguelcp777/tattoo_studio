@@ -259,6 +259,13 @@ export function TattooPreviewModal({
         <p className="hash">Diseño: {artifact.designId}</p>
         <p>Colocación geométrica; sin regeneración de líneas después de colocar.</p>
       </details>
+      {/* TASK-0042: the try-on runs on the client's own device; the design travels as its id. */}
+      <p className="try-on-link">
+        <a className="btn-primary" href={`/probar?design=${artifact.master.assetId}`}>
+          Pruébalo con la cámara
+        </a>
+        <small>Se procesa en tu dispositivo; ninguna imagen de la cámara se envía.</small>
+      </p>
       <label className="check-row">
         <input type="checkbox" checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} />
         He revisado los símbolos. El tatuador debe validar el trazo y la impresión antes de

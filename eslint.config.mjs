@@ -27,6 +27,19 @@ export default tseslint.config(
     },
   },
   {
+    // The app-shell worker (TASK-0042) runs in the service worker scope, not a window.
+    files: ['**/public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        URL: 'readonly',
+      },
+    },
+  },
+  {
     // Build scripts run in Node, not the browser.
     files: ['**/*.mjs', '**/scripts/**/*.js'],
     languageOptions: {

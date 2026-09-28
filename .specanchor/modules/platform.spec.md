@@ -23,6 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0042: `eslint.config.mjs` gives `**/public/sw.js` the service-worker globals; without it the
+app-shell worker fails `no-undef`. PWA assets (`icons/`, `sw.js`) ship from `apps/web/public`.
+
 TASK-0041: no platform code change; `bodyType` flows through the existing job submission to the
 worker's `background_prompt`.
 

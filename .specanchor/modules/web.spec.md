@@ -9,6 +9,15 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0042 (ADR-0019): `/probar` is the live camera try-on. `lib/skin-blend.ts` ports the worker's
+ink treatment (multiply, ADR-0014 attenuation, TASK-0031 ring) as pure functions; `lib/try-on.ts`
+does one frame (placement, rotation box, blend) and the page owns the camera and the loop. **No
+camera frame leaves the device**: the page's only request is the GET for the client's own design,
+and a source scan (`probar/no-upload.test.ts`) fails the suite if any egress API appears. The app is
+installable (`app/manifest.ts`, `public/sw.js`), and the worker never caches or intercepts `/api/`.
+**Known limitation:** no body segmentation yet, so the design follows the pointer rather than the
+limb and ink placed off the body draws on the background.
+
 TASK-0041: the panel has a "Cuerpo" selector (hombre/mujer) that sends `placement.bodyType`; the
 master brief shows it and blocks acceptance until it is chosen.
 
