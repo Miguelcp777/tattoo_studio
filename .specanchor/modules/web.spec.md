@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0037: the acceptance gate is enforced by the server, no longer only by the interface.
+`accept_brief` recomputes the brief from server state, refuses an incomplete brief (422) and a
+signature differing from what the client read (409), and records the server's signature; it
+returns before the orchestrator, which now calls a model. `POST /api/generate` refuses a new
+design (409) unless the stored acceptance matches the brief as it now stands, so a change after
+accepting withdraws it. Edits to an accepted design do not pass through this guard.
+
 TASK-0036: the change form in the preview can attach up to three reference photos. They upload
 through `/api/media` with `purpose: 'edit'`, which forwards only the image and consent to the
 worker and does not add them to the consultation (the accepted brief is not reopened); upload

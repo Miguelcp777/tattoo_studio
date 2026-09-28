@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { POST } from './route';
 import { POST as consult } from '../consultation/route';
+import { briefSignature, buildMasterPrompt, type OrchestrationSession } from '@tattoo/consultation';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -73,6 +74,33 @@ describe('generation boundary', () => {
       );
       expect(started.status).toBe(200);
       const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
+      const refused = await POST(
+        new Request('http://localhost:3000/api/generate', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify({
+            adult: true,
+            consent: true,
+            referencesReviewed: true,
+            idempotencyKey: '33333333-3333-4333-8333-333333333333',
+          }),
+        }),
+      );
+      // TASK-0037/AC-001: no acceptance, no job.
+      expect(refused.status).toBe(409);
+      expect(submitted).toBeUndefined();
+      const state = (await started.json()).session as OrchestrationSession;
+      const accepted = await consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify({
+            action: 'accept_brief',
+            signature: briefSignature(buildMasterPrompt(state.slots, state.references)),
+          }),
+        }),
+      );
+      expect(accepted.status).toBe(200);
       const response = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
@@ -92,6 +120,38 @@ describe('generation boundary', () => {
         size: { widthMm: 80, heightMm: 150 },
       });
       expect(submitted?.['referenceIds']).toEqual(['a'.repeat(32)]);
+      // TASK-0037/AC-004: a change after accepting withdraws the acceptance. Asserted on the
+      // message too, so the refusal is proven to be the acceptance guard and not an earlier one.
+      const resized = await consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify({
+            action: 'preferences',
+            preferences: { size: { widthMm: 60, heightMm: 110 } },
+          }),
+        }),
+      );
+      expect(resized.status).toBe(200);
+      expect(((await resized.json()).session as OrchestrationSession).phase).toBe(
+        'ready_to_generate',
+      );
+      submitted = undefined;
+      const withdrawn = await POST(
+        new Request('http://localhost:3000/api/generate', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify({
+            adult: true,
+            consent: true,
+            referencesReviewed: true,
+            idempotencyKey: '44444444-4444-4444-8444-444444444444',
+          }),
+        }),
+      );
+      expect(withdrawn.status).toBe(409);
+      expect(JSON.stringify(await withdrawn.json())).toContain('Acepta el resumen');
+      expect(submitted).toBeUndefined();
       const edit = { parentJobId: 'b'.repeat(32), instruction: 'Haz el león más pequeño' };
       const edited = await POST(
         new Request('http://localhost:3000/api/generate', {
@@ -123,4 +183,59 @@ describe('generation boundary', () => {
       expect(denied.status).toBe(422);
     },
   );
+
+  it('refuses a stale or incomplete acceptance, and a change withdraws it (TASK-0037)', async () => {
+    vi.stubEnv('TATTOO_WORKER_TOKEN', 'test-only-token');
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request) => {
+        const target = String(url);
+        calls.push(target);
+        if (target.includes('commons.wikimedia.org/w/api')) return Response.json({ query: {} });
+        throw new Error(`Unexpected request ${target}`);
+      }),
+    );
+    const post = (cookie: string | undefined, body: unknown) =>
+      consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: cookie ? { cookie } : {},
+          body: JSON.stringify(body),
+        }),
+      );
+
+    const partial = await post(undefined, { action: 'orchestrate', userMessage: 'Un lobo' });
+    const cookie = partial.headers.get('set-cookie')!.split(';')[0]!;
+    const incomplete = (await partial.json()).session as OrchestrationSession;
+    // AC-002: an incomplete brief cannot be accepted, whatever signature is sent.
+    const early = await post(cookie, {
+      action: 'accept_brief',
+      signature: briefSignature(buildMasterPrompt(incomplete.slots, incomplete.references)),
+    });
+    expect(early.status).toBe(422);
+
+    const filled = await post(cookie, {
+      action: 'preferences',
+      preferences: {
+        style: { primary: 'blackwork' },
+        placement: { bodyPart: 'calf', side: 'right', orientation: 'vertical' },
+        colour: { mode: 'black_and_grey' },
+        size: { widthMm: 90, heightMm: 150 },
+      },
+    });
+    expect(filled.status).toBe(200);
+    const complete = (await filled.json()).session as OrchestrationSession;
+    const signature = briefSignature(buildMasterPrompt(complete.slots, complete.references));
+
+    // AC-002: a signature for something the server would not send is refused.
+    const stale = await post(cookie, { action: 'accept_brief', signature: `${signature}x` });
+    expect(stale.status).toBe(409);
+
+    const before = calls.length;
+    const accepted = await post(cookie, { action: 'accept_brief', signature });
+    expect(accepted.status).toBe(200);
+    // AC-005: accepting makes no outbound call at all, model or otherwise.
+    expect(calls.length).toBe(before);
+  });
 });

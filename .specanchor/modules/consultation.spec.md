@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0037: `briefSignature` is the single function client and server use to compare an accepted
+brief, so a correct acceptance cannot be refused and a stale one cannot be allowed.
+
 TASK-0034 (user feedback after trying the app): (1) **Proposed size.** Once a zone is known and no
 size is stated, `proposeSize` sets one — the architect's recommendation scaled to fit the zone
 span, or a medium fraction of the zone — flagged `size.proposed`, shown as "propuesto por

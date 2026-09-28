@@ -8,7 +8,7 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
 import { styleOffers } from '@tattoo/consultation/style-library';
 
-import { buildMasterPrompt } from '@tattoo/consultation/master-prompt';
+import { briefSignature, buildMasterPrompt } from '@tattoo/consultation/master-prompt';
 
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
@@ -460,8 +460,9 @@ export default function ConsultationPage(): ReactNode {
   // TASK-0029: a reading of the brief that will be sent, not a second description of it.
   const masterPrompt = buildMasterPrompt(slots ?? {}, session?.references ?? []);
 
-  const briefSignature = JSON.stringify(masterPrompt.lines);
-  const briefAccepted = masterPrompt.complete && briefSignature === acceptedSignature;
+  // TASK-0037: the same function the server uses, so a correct acceptance cannot be refused.
+  const currentSignature = briefSignature(masterPrompt);
+  const briefAccepted = masterPrompt.complete && currentSignature === acceptedSignature;
 
   // TASK-0028: offer catalogue variants once a style is known, so the client chooses by
   // looking rather than by imagining.
@@ -490,6 +491,16 @@ export default function ConsultationPage(): ReactNode {
   };
   const blockers = generationBlockers(gate);
   const action = nextAction(gate);
+
+  // TASK-0037: marked accepted only once the server has recorded it; the server is what
+  // generation checks, so a local-only acceptance would be a promise it does not keep.
+  async function acceptBrief() {
+    const signature = currentSignature;
+    await run(async () => {
+      accept((await call('/api/consultation', { action: 'accept_brief', signature })).session);
+      setAcceptedSignature(signature);
+    });
+  }
 
   async function chooseStyleVariant(variantId: string) {
     await run(async () =>
@@ -763,7 +774,7 @@ export default function ConsultationPage(): ReactNode {
             brief={session?.brief}
             accepted={briefAccepted}
             disabled={disabled}
-            onAccept={() => setAcceptedSignature(briefSignature)}
+            onAccept={() => void acceptBrief()}
             onReopen={() => setAcceptedSignature('')}
           />
 

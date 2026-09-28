@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 
-import { findOffer, offerAsReference, type ConsultationSlots } from '@tattoo/consultation';
+import {
+  briefSignature,
+  buildMasterPrompt,
+  findOffer,
+  offerAsReference,
+  type ConsultationSlots,
+} from '@tattoo/consultation';
 
 import { validateTattooBrief } from '@tattoo/contracts';
 
@@ -44,6 +50,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         'references',
         'retry_references',
         'style_variant',
+        'accept_brief',
       ].includes(String(body['action']))
     )
       throw new RequestError('Acción inválida.');
@@ -55,6 +62,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     current.busy = true;
 
     locked = true;
+
+    // TASK-0037: acceptance is recorded here and checked again at generation. It returns before
+    // the orchestrator, which now calls a model: accepting must cost nothing and change nothing.
+    if (body['action'] === 'accept_brief') {
+      const prompt = buildMasterPrompt(current.state.slots, current.state.references);
+      if (!prompt.complete)
+        throw new RequestError(`Falta ${prompt.missing.join(', ')} antes de aceptar.`, 422);
+      const signature = briefSignature(prompt);
+      // The client says what it read. If that is not what the server would send, the client
+      // agreed to something else, so the acceptance is refused rather than silently rebound.
+      if (body['signature'] !== signature)
+        throw new RequestError(
+          'El resumen ha cambiado. Revísalo otra vez antes de aceptarlo.',
+          409,
+        );
+      current.acceptedBrief = signature;
+      return reply({ session: current.state }, current);
+    }
 
     const text = body['idea'] ?? body['userMessage'] ?? '';
 

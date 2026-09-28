@@ -101,6 +101,16 @@ export function proposalSummary(slots: ConsultationSlots): string {
 export { spanishList };
 
 /**
+ * What a client accepts, as one comparable value (TASK-0037).
+ *
+ * The client sends it with its acceptance and the server stores its own; both must come from this
+ * function, or a correct acceptance could be refused and a stale one allowed.
+ */
+export function briefSignature(prompt: MasterPrompt): string {
+  return JSON.stringify(prompt.lines);
+}
+
+/**
  * Build the summary the client accepts.
  *
  * `missing` lists what still has no answer. A caller must not offer acceptance while it is

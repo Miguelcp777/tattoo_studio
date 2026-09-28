@@ -22,6 +22,8 @@ interface Session {
   busy: boolean;
   bodyPhotoId?: string;
   jobId?: string;
+  /** Signature of the brief the client accepted (TASK-0037). Stale as soon as the brief moves. */
+  acceptedBrief?: string;
 }
 const root = globalThis as typeof globalThis & { inkcraftSessions?: Map<string, Session> };
 const sessions = (root.inkcraftSessions ??= new Map<string, Session>());

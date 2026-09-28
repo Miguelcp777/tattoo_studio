@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { briefSignature, buildMasterPrompt } from '@tattoo/consultation';
 import { validateAgainst, type StudioJob } from '@tattoo/contracts';
 import {
   errorResponse,
@@ -43,6 +44,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     if (!current.state.brief || current.state.phase !== 'ready_to_generate')
       throw new RequestError('Completa el brief y sus medidas antes de generar.', 422);
+    // TASK-0037: the interface gate was presentational. Recompute the brief as it stands now and
+    // compare it with what was accepted, so a change after accepting withdraws the acceptance.
+    const standing = briefSignature(
+      buildMasterPrompt(current.state.slots, current.state.references),
+    );
+    if (current.acceptedBrief !== standing)
+      throw new RequestError('Acepta el resumen de tu tatuaje antes de generarlo.', 409);
     if (body['referencesReviewed'] !== true)
       throw new RequestError('Revisa las referencias antes de continuar.', 422);
     const referenceIds: string[] = [];
