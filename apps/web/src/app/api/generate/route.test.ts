@@ -68,7 +68,7 @@ describe('generation boundary', () => {
           method: 'POST',
           body: JSON.stringify({
             action: 'orchestrate',
-            userMessage: `Un león de línea fina en el antebrazo izquierdo, ${colour}, 8 x 15 cm`,
+            userMessage: `Un león de línea fina en el antebrazo izquierdo de un hombre, ${colour}, 8 x 15 cm`,
           }),
         }),
       );
@@ -219,7 +219,12 @@ describe('generation boundary', () => {
       action: 'preferences',
       preferences: {
         style: { primary: 'blackwork' },
-        placement: { bodyPart: 'calf', side: 'right', orientation: 'vertical' },
+        placement: {
+          bodyPart: 'calf',
+          side: 'right',
+          orientation: 'vertical',
+          bodyType: 'masculine',
+        },
         colour: { mode: 'black_and_grey' },
         size: { widthMm: 90, heightMm: 150 },
       },
@@ -286,7 +291,8 @@ describe('generation boundary', () => {
       );
     const started = await post(undefined, {
       action: 'orchestrate',
-      userMessage: 'Un tigre de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
+      userMessage:
+        'Un tigre de línea fina en el antebrazo izquierdo de un hombre, solo negro, 8 x 15 cm',
     });
     const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
     const before = ((await started.json()).session as OrchestrationSession).references;

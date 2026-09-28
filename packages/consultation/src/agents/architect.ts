@@ -28,6 +28,7 @@ const INTENSITIES = ['light', 'medium', 'heavy'] as const;
 const COLOUR_MODES = ['black_and_grey', 'colour', 'black_and_grey_with_accent'] as const;
 const ORIENTATIONS = ['vertical', 'horizontal', 'diagonal', 'wrapping'] as const;
 const SIDES = ['left', 'right', 'centre'] as const;
+const BODY_TYPES = ['masculine', 'feminine'] as const;
 
 const oneOf = <T extends string>(allowed: readonly T[], value: unknown): T | undefined =>
   typeof value === 'string' && (allowed as readonly string[]).includes(value)
@@ -101,11 +102,13 @@ export function sanitizeArchitectSlots(raw: unknown): ConsultationSlots {
   const bodyPart = input['placement']?.['bodyPart'];
   const orientation = oneOf(ORIENTATIONS, input['placement']?.['orientation']);
   const side = oneOf(SIDES, input['placement']?.['side']);
-  if (isBodyPart(bodyPart) || orientation || side) {
+  const bodyType = oneOf(BODY_TYPES, input['placement']?.['bodyType']);
+  if (isBodyPart(bodyPart) || orientation || side || bodyType) {
     slots.placement = {
       ...(isBodyPart(bodyPart) ? { bodyPart } : {}),
       ...(orientation ? { orientation } : {}),
       ...(side ? { side } : {}),
+      ...(bodyType ? { bodyType } : {}),
     };
   }
 
@@ -122,7 +125,7 @@ export function sanitizeArchitectSlots(raw: unknown): ConsultationSlots {
 }
 
 /** A field the keyword rules can read from free text, which the architect may reread. */
-export type TextReading = 'style' | 'colour' | 'bodyPart';
+export type TextReading = 'style' | 'colour' | 'bodyPart' | 'bodyType';
 
 /**
  * Which fields the keyword rules set from the current message alone (TASK-0039): changed from
@@ -140,6 +143,8 @@ export function textReadings(
     read.add('colour');
   if (!panel.placement && after.placement?.bodyPart !== before.placement?.bodyPart)
     read.add('bodyPart');
+  if (!panel.placement && after.placement?.bodyType !== before.placement?.bodyType)
+    read.add('bodyType');
   return read;
 }
 
@@ -166,6 +171,10 @@ export function mergeArchitect(
   if (guessed.has('bodyPart') && proposed.placement?.bodyPart && explicit.placement) {
     explicit.placement = { ...explicit.placement };
     delete explicit.placement.bodyPart;
+  }
+  if (guessed.has('bodyType') && proposed.placement?.bodyType && explicit.placement) {
+    explicit.placement = { ...explicit.placement };
+    delete explicit.placement.bodyType;
   }
   const merged: ConsultationSlots = { ...explicit };
 
@@ -206,6 +215,8 @@ export function mergeArchitect(
       ...explicit.placement,
       bodyPart: explicit.placement?.bodyPart ?? proposed.placement.bodyPart,
       orientation: explicit.placement?.orientation ?? proposed.placement.orientation,
+      // TASK-0041: body sex is proposed by the architect (unlike side), the client overriding it.
+      bodyType: explicit.placement?.bodyType ?? proposed.placement.bodyType,
     };
   }
 

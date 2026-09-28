@@ -64,6 +64,7 @@ function mergeSlots(
       bodyPart: extracted.placement.bodyPart ?? current.placement?.bodyPart,
       orientation: extracted.placement.orientation ?? current.placement?.orientation,
       side: extracted.placement.side ?? current.placement?.side,
+      bodyType: extracted.placement.bodyType ?? current.placement?.bodyType,
     };
   }
 
@@ -252,6 +253,7 @@ export function brief(state: ConsultationState): BriefExtractionResult {
       bodyPart: s.placement!.bodyPart!,
       orientation: s.placement!.orientation!,
       side: s.placement?.side,
+      bodyType: s.placement?.bodyType,
     },
     size: {
       widthMm: s.size!.widthMm!,

@@ -28,6 +28,8 @@ interface Form {
 
   side: string;
 
+  bodyType: string;
+
   color: string;
 
   palette: string;
@@ -43,6 +45,8 @@ const empty: Form = {
   body: '',
 
   side: '',
+
+  bodyType: '',
 
   color: '',
 
@@ -232,6 +236,8 @@ export default function ConsultationPage(): ReactNode {
 
       side: s.placement?.side ?? '',
 
+      bodyType: s.placement?.bodyType ?? '',
+
       color: s.colour?.mode ?? '',
 
       palette: s.colour?.palette?.join(', ') ?? '',
@@ -304,6 +310,8 @@ export default function ConsultationPage(): ReactNode {
         orientation: 'vertical',
 
         ...(form.side ? { side: form.side } : {}),
+
+        ...(form.bodyType ? { bodyType: form.bodyType } : {}),
       };
 
     if (form.color)
@@ -677,6 +685,21 @@ export default function ConsultationPage(): ReactNode {
                 <option value="right">Derecho</option>
 
                 <option value="centre">Centro</option>
+              </select>
+            </label>
+
+            <label>
+              Cuerpo
+              <select
+                value={form.bodyType}
+                onChange={(e) => setForm({ ...form, bodyType: e.target.value })}
+                disabled={disabled}
+              >
+                <option value="">Seleccionar</option>
+
+                <option value="masculine">Hombre</option>
+
+                <option value="feminine">Mujer</option>
               </select>
             </label>
 

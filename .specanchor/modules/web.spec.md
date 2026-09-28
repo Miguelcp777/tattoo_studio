@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0041: the panel has a "Cuerpo" selector (hombre/mujer) that sends `placement.bodyType`; the
+master brief shows it and blocks acceptance until it is chosen.
+
 TASK-0038 (ADR-0017): a catalogue pick sets the style and is recorded as `session.stylePick`; it
 is not a reference and is never uploaded. `catalogueBytes` and `isCatalogueSource` are removed, so
 the TASK-0030 note below describes code that no longer exists. With no reference at all, the

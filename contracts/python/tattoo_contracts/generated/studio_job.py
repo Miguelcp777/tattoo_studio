@@ -121,6 +121,15 @@ class Side(Enum):
     centre = 'centre'
 
 
+class BodyType(Enum):
+    """
+    Presented sex of the generated skin plate, so a calf reads as a man's or a woman's (TASK-0041). It never reaches the artwork prompt, only the background. Absent when an own photograph is the surface.
+    """
+
+    masculine = 'masculine'
+    feminine = 'feminine'
+
+
 class AvoidItem(RootModel[str]):
     root: Annotated[str, Field(max_length=120, min_length=1)]
 
@@ -268,6 +277,12 @@ class Placement(BaseModel):
     bodyPart: BodyPart
     orientation: Orientation
     side: Side | None = None
+    bodyType: Annotated[
+        BodyType | None,
+        Field(
+            description="Presented sex of the generated skin plate, so a calf reads as a man's or a woman's (TASK-0041). It never reaches the artwork prompt, only the background. Absent when an own photograph is the surface."
+        ),
+    ] = None
 
 
 class Size(BaseModel):

@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 
 import numpy as np
+import pytest
 from PIL import Image, ImageDraw
 
 from mockup import limb
@@ -125,3 +126,28 @@ def test_without_a_readable_body_nothing_changes() -> None:
     )
     assert base == same
     assert "bodyFit" not in fitted
+
+
+def test_a_wider_spill_margin_fills_more_of_the_limb(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-0041: raising MAX_SPILL keeps a whole-zone design larger, so it fills more of the limb.
+
+    A limb wraps, so the outermost ink is hidden round its side; the feathered clip keeps the edge
+    clean either way. Mechanism, not a pixel proxy: same design, two tolerances, the looser one
+    keeps a larger design."""
+    import mockup.engine as engine
+
+    # A tall oval a little wider than the drawn leg: at full size it spills in the 2-12 % band, so
+    # the two tolerances settle at different scales (a full slab would hit the floor at both).
+    design = Image.new("RGB", (300, 800), "white")
+    ImageDraw.Draw(design).ellipse((40, 20, 260, 780), fill=(40, 40, 40))
+    background = leg()
+    monkeypatch.setattr(engine, "MAX_SPILL", 0.02)
+    _, strict = composite(design, background, SIZE, WIDE, curvature=1.05, taper=0.25, fit_body=True)
+    monkeypatch.setattr(engine, "MAX_SPILL", 0.12)
+    _, loose = composite(design, background, SIZE, WIDE, curvature=1.05, taper=0.25, fit_body=True)
+    assert loose["bodyFit"]["scale"] > strict["bodyFit"]["scale"]
+    assert loose["heightPx"] > strict["heightPx"]
+    # Even at the looser margin nothing is printed on the backdrop.
+    fitted, _ = composite(design, background, SIZE, WIDE, curvature=1.05, taper=0.25, fit_body=True)
+    changed = np.abs(pixels(fitted) - pixels(background)).max(axis=2) > 12
+    assert (changed & backdrop_mask(background)).sum() == 0

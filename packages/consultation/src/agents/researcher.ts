@@ -96,6 +96,12 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
       slots.placement = { ...slots.placement, bodyPart };
       break;
     }
+  // TASK-0041: cues about whose body the generated plate is. "mujer/chica/femenino" and
+  // "hombre/chico/masculino"; a bare "mi pierna" says nothing about sex and is left unset.
+  if (/\b(?:mujer|chica|femenin[ao]|de ella|para ella)\b/.test(text))
+    slots.placement = { ...slots.placement, bodyType: 'feminine' };
+  else if (/\b(?:hombre|chico|masculin[ao]|varon|de el|para el)\b/.test(text))
+    slots.placement = { ...slots.placement, bodyType: 'masculine' };
   if (/izquierd|\bleft\b/.test(text)) slots.placement = { ...slots.placement, side: 'left' };
   else if (/derech|\bright\b/.test(text)) slots.placement = { ...slots.placement, side: 'right' };
   else if (/centrad|\bcentre\b/.test(text))

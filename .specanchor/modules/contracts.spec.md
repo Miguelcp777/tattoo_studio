@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0041: `placement.bodyType` ("masculine"|"feminine", optional) in both `tattoo-brief` and
+`studio-job` (the job embeds its own copy of the brief). Fixtures `placement-body-type` (valid) and
+`body-type-outside-vocabulary` (invalid).
+
 TASK-0040 (ADR-0018): in `studio-status`, `transform.generativePostprocess` becomes a boolean that
 may be true only with `finish: "accepted"`; `finish` and `bodyFit` (TASK-0039) are admitted.
 Fixtures: `valid/blended-finish.json`, `invalid/generative-without-accepted-check.json`;

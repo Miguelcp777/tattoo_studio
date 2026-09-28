@@ -388,6 +388,13 @@ export const schemas: Record<string, Record<string, unknown>> = {
                 "right",
                 "centre"
               ]
+            },
+            "bodyType": {
+              "description": "Presented sex of the generated skin plate, so a calf reads as a man's or a woman's (TASK-0041). It never reaches the artwork prompt, only the background. Absent when an own photograph is the surface.",
+              "enum": [
+                "masculine",
+                "feminine"
+              ]
             }
           }
         },
@@ -1203,6 +1210,13 @@ export const schemas: Record<string, Record<string, unknown>> = {
             "left",
             "right",
             "centre"
+          ]
+        },
+        "bodyType": {
+          "description": "Presented sex of the generated skin plate, so a calf reads as a man's or a woman's (TASK-0041). It never reaches the artwork prompt, only the background. Absent when an own photograph is the surface.",
+          "enum": [
+            "masculine",
+            "feminine"
           ]
         }
       }

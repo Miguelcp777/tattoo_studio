@@ -306,8 +306,13 @@ class StudioProvider:
         placement = brief["placement"]
         side = {"left": "left ", "right": "right ", "centre": ""}.get(placement.get("side", ""), "")
         view = ZONE_VIEWS.get(placement["bodyPart"], placement["bodyPart"].replace("_", " "))
+        # TASK-0041: the plate reads as a man's or a woman's body when the client said which. It is
+        # the only place body sex is used; it never reaches the artwork prompt.
+        person = {"masculine": "a man", "feminine": "a woman"}.get(
+            placement.get("bodyType", ""), "an adult"
+        )
         return (
-            f"Photograph of the bare, unmarked adult {side}{view}. "
+            f"Photograph of the bare, unmarked {side}{view} of {person}. "
             "Professional studio photograph, soft directional light, visible pores, fine natural "
             "skin texture and realistic muscle volume. The zone fills most of the frame, with a "
             "narrow strip of plain neutral backdrop on both sides so its outline is visible. "

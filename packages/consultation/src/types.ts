@@ -66,6 +66,8 @@ export interface ConsultationSlots {
         bodyPart?: BodyPart | undefined;
         orientation?: 'vertical' | 'horizontal' | 'diagonal' | 'wrapping' | undefined;
         side?: 'left' | 'right' | 'centre' | undefined;
+        /** Presented sex of the generated skin plate (TASK-0041). Absent with an own photo. */
+        bodyType?: 'masculine' | 'feminine' | undefined;
       }
     | undefined;
   size?:

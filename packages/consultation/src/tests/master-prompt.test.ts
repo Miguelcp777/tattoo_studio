@@ -6,7 +6,7 @@ import type { ConsultationSlots, ReferenceImage } from '../types';
 const full: ConsultationSlots = {
   subject: { description: 'Un lobo realista mirando de frente' },
   style: { primary: 'tribal' },
-  placement: { bodyPart: 'calf', side: 'right' },
+  placement: { bodyPart: 'calf', side: 'right', bodyType: 'masculine' },
   size: { widthMm: 140, heightMm: 380 },
   colour: { mode: 'black_and_grey' },
   linework: { weight: 'medium' },
@@ -91,5 +91,21 @@ describe('master brief (TASK-0029)', () => {
 
   it('marks the technical linework as a studio proposal', () => {
     expect(buildMasterPrompt(full).lines.find((l) => l.label === 'Trazo')?.proposed).toBe(true);
+  });
+});
+
+describe('body sex of the generated plate (TASK-0041)', () => {
+  it('is required before the brief is complete, and shown once chosen', () => {
+    const noType = { bodyPart: full.placement!.bodyPart, side: full.placement!.side };
+    const without = buildMasterPrompt({ ...full, placement: noType });
+    expect(without.complete).toBe(false);
+    expect(without.missing).toContain('el cuerpo (hombre o mujer)');
+    const line = buildMasterPrompt(full).lines.find((l) => l.label === 'Cuerpo');
+    expect(line?.value).toBe('Hombre');
+    expect(
+      buildMasterPrompt({ ...full, placement: { ...noType, bodyType: 'feminine' } }).lines.find(
+        (l) => l.label === 'Cuerpo',
+      )?.value,
+    ).toBe('Mujer');
   });
 });

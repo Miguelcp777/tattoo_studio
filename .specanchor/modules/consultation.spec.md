@@ -16,6 +16,11 @@ message alone, and where the architect answered, `mergeArchitect` adopts its rea
 choices are never reread; the architect still never sets the side or the size. The system prompt
 adds that colour mode decides colour and that a whole-zone request gets the whole zone's size.
 
+TASK-0041: `placement.bodyType` is the presented sex of the generated plate. The keyword rules and
+the architect propose it (it is merged from the architect, unlike side); the client sets it in the
+panel; TASK-0039's reread applies. `buildMasterPrompt` shows it ("Hombre"/"Mujer") and lists it in
+`missing` until chosen, so acceptance is blocked without adding a fourth chat question.
+
 TASK-0038 (ADR-0017): `offerAsPick` replaces `offerAsReference`; a pick is
 `OrchestrationSession.stylePick`, not a `ReferenceImage`, and `'style_library'` is gone from
 `verification`. `buildMasterPrompt(slots, references, pick?)` names the variant while the style

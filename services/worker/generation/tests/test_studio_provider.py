@@ -111,3 +111,17 @@ def test_a_calf_background_is_the_back_of_the_leg() -> None:
     assert "frontal" not in prompt
     shin = StudioProvider.background_prompt({"placement": {"bodyPart": "shin"}})
     assert "front of the lower leg" in shin
+
+
+def test_background_names_the_body_sex_when_given() -> None:
+    """TASK-0041: the plate reads as a man's or a woman's leg; unset stays a neutral adult."""
+    man = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "calf", "side": "right", "bodyType": "masculine"}}
+    )
+    woman = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "calf", "bodyType": "feminine"}}
+    )
+    neutral = StudioProvider.background_prompt({"placement": {"bodyPart": "calf"}})
+    assert "of a man" in man and "of a woman" in woman and "of an adult" in neutral
+    # Never leaks into a value the artwork prompt would read.
+    assert "bodyType" not in man

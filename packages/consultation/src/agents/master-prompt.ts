@@ -48,6 +48,11 @@ const SIDE_LABELS: Record<string, string> = {
   centre: 'centrado',
 };
 
+const BODY_TYPE_LABELS: Record<string, string> = {
+  masculine: 'Hombre',
+  feminine: 'Mujer',
+};
+
 function styleLine(slots: ConsultationSlots, pick: StylePick | undefined): string {
   const primary = slots.style?.primary;
   if (!primary) return '';
@@ -141,6 +146,12 @@ export function buildMasterPrompt(
       value: side && SIDE_LABELS[side] ? `${label} ${SIDE_LABELS[side]}` : label,
     });
   } else missing.push('la zona');
+
+  // TASK-0041: the generated plate reads as a man's or a woman's body. Asked here (blocks
+  // acceptance) rather than as a fourth chat question. Not needed once an own photo is the surface.
+  const bodyType = slots.placement?.bodyType;
+  if (bodyType) lines.push({ label: 'Cuerpo', value: BODY_TYPE_LABELS[bodyType] ?? bodyType });
+  else missing.push('el cuerpo (hombre o mujer)');
 
   const size = sizeLine(slots);
   if (size.value) {

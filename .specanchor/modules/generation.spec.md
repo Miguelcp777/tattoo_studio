@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0041: `background_prompt` renders the plate as a man's or a woman's body from
+`placement.bodyType`, a neutral adult when unset. It is the only use of body sex; `build_prompt`
+(the artwork) never reads it.
+
 TASK-0040 (ADR-0018): `StudioProvider.blend_mockup(mockup, finish)` is the mockup finish, an
 OpenAI image edit of the composite with an instruction to change how the ink sits and nothing else.
 Both backends use it: BFL keeps the plates, where FLUX.2's photographic skill is wanted. Its output

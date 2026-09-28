@@ -80,9 +80,12 @@ def visible_size(master: Image.Image, size: dict[str, float]) -> dict[str, float
     return {"widthMm": size["heightMm"] * art.width / art.height, "heightMm": size["heightMm"]}
 
 
-#: Share of the design's ink allowed past the silhouette before it is scaled down. What remains
-#: is the part that wraps round the limb, which the camera would not see.
-MAX_SPILL = 0.02
+#: Share of the design's ink allowed past the silhouette before it is scaled down (TASK-0041). A
+#: limb wraps roughly 180 degrees, so the outermost columns of a full-width design continue around
+#: its side, out of the camera's sight; a small margin there lets a whole-zone design fill the zone
+#: instead of shrinking to fit the visible width. The feathered silhouette clip keeps the edge from
+#: reading as a cut, checked on a real render at up to 12 %. 6 % fills well with clean edges.
+MAX_SPILL = 0.06
 #: A fit never shrinks the design below this share of its requested size.
 MIN_FIT_SCALE = 0.6
 #: Taper the cylinder may take from the photograph; the same bound `composite` enforces.

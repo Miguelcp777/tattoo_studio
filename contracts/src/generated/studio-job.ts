@@ -309,6 +309,10 @@ export interface StudioJob {
       bodyPart: BodyPart;
       orientation: 'vertical' | 'horizontal' | 'diagonal' | 'wrapping';
       side?: 'left' | 'right' | 'centre';
+      /**
+       * Presented sex of the generated skin plate, so a calf reads as a man's or a woman's (TASK-0041). It never reaches the artwork prompt, only the background. Absent when an own photograph is the surface.
+       */
+      bodyType?: 'masculine' | 'feminine';
     };
     /**
      * Millimetres are authoritative. No pixel dimension appears anywhere in this contract (CONTRACTS-INV-001).

@@ -446,3 +446,37 @@ describe('architect helpers (TASK-0033)', () => {
     expect(sanitizeArchitectSlots(null)).toEqual({});
   });
 });
+
+describe('body sex (TASK-0041)', () => {
+  it('takes the architect proposal but lets the client override it, unlike side', async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: { placement: { bodyType: 'feminine', side: 'left' } },
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+    // The client said nothing about sex, so the architect's proposal stands; side never does.
+    const proposed = await o.handleUserInteraction(
+      o.createSession(),
+      'Un lobo en el gemelo derecho, solo negro',
+      [reference],
+    );
+    expect(proposed.slots.placement?.bodyType).toBe('feminine');
+    expect(proposed.slots.placement?.side).toBe('right');
+
+    // The client stating it, with the architect silent on sex, keeps the client's word. (When the
+    // architect does answer, TASK-0039's reread lets its reading win, like style and colour.)
+    const { architect: a2 } = fakeArchitect({ extractedSlots: { linework: { weight: 'bold' } } });
+    const stated = await new OrchestratorAgent(offlineScout(), a2).handleUserInteraction(
+      new OrchestratorAgent().createSession(),
+      'Un lobo en el gemelo de un hombre, solo negro',
+      [reference],
+    );
+    expect(stated.slots.placement?.bodyType).toBe('masculine');
+  });
+
+  it('sanitizes an unknown body sex to nothing', () => {
+    expect(sanitizeArchitectSlots({ placement: { bodyType: 'other' } }).placement).toBeUndefined();
+    expect(
+      sanitizeArchitectSlots({ placement: { bodyType: 'feminine' } }).placement?.bodyType,
+    ).toBe('feminine');
+  });
+});

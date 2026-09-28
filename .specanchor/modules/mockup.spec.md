@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0041: `MAX_SPILL` is 0.06 (was 0.02). A limb wraps, so the outermost ink of a whole-zone
+design continues around its side out of view; the wider margin lets it fill the zone while the
+feathered silhouette clip keeps the edge clean (checked on a real render to 12 %).
+
 TASK-0040 (ADR-0018): `geometry.BLEND_TOLERANCE` (p95 ≤ 0.018 of the diagonal, ink IoU ≥ 0.62) is
 the first decided tolerance, measured on the live Mestalla composite: GPT-Image 4/4 inside, FLUX.2
 2/2 outside. It supersedes the TASK-0008 statement below that no tolerance is decided.

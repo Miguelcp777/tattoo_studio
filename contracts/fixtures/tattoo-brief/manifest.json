@@ -169,6 +169,18 @@
       "file": "invalid/uuid-uppercase.json",
       "valid": false,
       "why": "canonical lowercase UUID only, so both runtimes agree byte for byte"
+    },
+    {
+      "name": "placement-body-type",
+      "file": "valid/placement-body-type.json",
+      "valid": true,
+      "why": "an optional presented sex for the generated plate (TASK-0041)"
+    },
+    {
+      "name": "body-type-outside-vocabulary",
+      "file": "invalid/body-type-outside-vocabulary.json",
+      "valid": false,
+      "why": "bodyType is a closed vocabulary: masculine or feminine"
     }
   ]
 }

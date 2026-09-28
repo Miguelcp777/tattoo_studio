@@ -23,6 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0041: no platform code change; `bodyType` flows through the existing job submission to the
+worker's `background_prompt`.
+
 TASK-0040 (ADR-0018): the studio wires the finish (`_StudioBlend`, `GeometryCheck(BLEND_TOLERANCE)`)
 into new designs and re-placements, marks an own photo as such so the finish declines it, and
 reports `generativePostprocess`/`finish` in the transform and a notice line when the finish ships.
