@@ -52,8 +52,10 @@ approver.
 These come from the global specs and are not negotiable without an ADR:
 
 - Only `services/worker/generation/` may call an external image model.
-- The shared vector master is authoritative. The current mockup uses geometric multiply only;
-  adding an AI redraw after placement would break ADR-0007 and must not be done silently.
+- The shared vector master is authoritative. The mockup may carry a constrained AI finish over
+  the geometric composite, on generated skin plates only, delivered only when the geometry check
+  accepts it against that composite (ADR-0016, ADR-0018); otherwise the composite ships. It is
+  never a redraw, and own photos are not sent to it until GEN-INV-002 is verified.
 - Stencils are produced by a native line-art pass, never by edge-detecting the shaded render.
 - No user photograph is persisted or sent to a generation provider before passing the safety
   input gate. Sanitized bytes necessarily reach the moderation provider to run that gate.

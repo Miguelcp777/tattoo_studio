@@ -53,3 +53,26 @@ def build_generation_graph(
     graph.add_edge("output_gate", "assemble")
     graph.add_edge("assemble", END)
     return graph
+
+
+def build_finish_graph(
+    *,
+    blend: BlendPort | None = None,
+    geometry: GeometryCheckPort | None = None,
+    output_gate: OutputGatePort | None = None,
+) -> Graph[PipelineState]:
+    """The finish alone, for a mockup re-placed without new artwork (TASK-0040).
+
+    Same nodes, same order as the tail of the creation graph, so a resized or moved design is held
+    to the same blend -> geometry check -> output gate contract rather than a second copy of it.
+    The state must already carry ``mockup`` and ``transform``.
+    """
+    graph: Graph[PipelineState] = Graph()
+    graph.add_node("ai_blend", ai_blend_node(blend))
+    graph.add_node("geometry_check", geometry_check_node(geometry))
+    graph.add_node("output_gate", output_gate_node(output_gate))
+    graph.set_entry_point("ai_blend")
+    graph.add_edge("ai_blend", "geometry_check")
+    graph.add_edge("geometry_check", "output_gate")
+    graph.add_edge("output_gate", END)
+    return graph

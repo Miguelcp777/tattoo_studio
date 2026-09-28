@@ -9,6 +9,12 @@ last_reviewed: 2026-09-26
 
 # Module: orchestration
 
+TASK-0040 (ADR-0018): the blend runs on a generated plate (`body_photo is None`) as well as an own
+photo with its clearance; a provider exception is `unavailable`, a candidate refused by the check
+or by `output_gate` falls back to the composite (kept as `warp`), and `blend_outcome` records which.
+`GeometryToleranceError` is removed. `build_finish_graph` runs `ai_blend -> geometry_check ->
+output_gate` alone for a re-placed design.
+
 Introduced by TASK-0032 (ADR-0015). Hosts the LangGraph graph that sequences the creation of the
 two deliverables — the on-body mockup and the thermal stencil — inside a single `jobs` job. It is
 the concrete implementation of the "visual creator" agent. The prompt architect and visual scout
@@ -54,8 +60,9 @@ the design version and placement it rendered. Image bytes never travel through t
 - ORCH-INV-003: `stencil_trace` derives the stencil from the master geometry, never from the mockup
   or the blended render (ADR-0003, PROD-INV-001).
 - ORCH-INV-004: `ai_blend` runs only after `geometric_warp`, and `geometry_check` runs after
-  `ai_blend`; a blend whose output exceeds the ADR-0002/TASK-0008 tolerance fails the job rather
-  than producing artifacts (MOCKUP-INV-002).
+  `ai_blend`; a blend whose output exceeds the tolerance is discarded and the geometric composite
+  is delivered in its place, never the blend (MOCKUP-INV-002). Amended by ADR-0018, which replaced
+  "fails the job" with this fallback.
 - ORCH-INV-005: `output_gate` runs before any generated image is stored or returned (SEC-INV-006).
 - ORCH-INV-006: the creator's finish target — hyperrealistic, freshly-applied ink
   (`FRESH_TATTOO_FINISH`, user request 2026-09-26) — is passed to the blend as its editing
@@ -111,8 +118,8 @@ with `mockup` and `generation` respectively; this module tests ordering and the 
 
 ## Known uncertainties and debt
 
-- The numeric geometry tolerance and the blend provider are owed by TASK-0008; until then the graph
-  runs the geometric-only fallback.
+- The tolerance (`BLEND_TOLERANCE`) and the provider (GPT-Image) were set in TASK-0040 on one
+  design; more designs are owed before the numbers are trusted (ADR-0018).
 - LangGraph is a new worker dependency; its footprint and failure modes inside a `jobs` job are
   unmeasured.
 - Whether every node should be independently retryable, or only the hosted-call nodes, is undecided.

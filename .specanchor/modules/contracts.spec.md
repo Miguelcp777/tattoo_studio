@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0040 (ADR-0018): in `studio-status`, `transform.generativePostprocess` becomes a boolean that
+may be true only with `finish: "accepted"`; `finish` and `bodyFit` (TASK-0039) are admitted.
+Fixtures: `valid/blended-finish.json`, `invalid/generative-without-accepted-check.json`;
+`invalid/redrawn-geometry.json` stays invalid.
+
 TASK-0036: `edit.referenceIds` (1–3 asset IDs) in `studio-job` and `studio-status`: photos a
 client attaches to a change request. Only IDs travel; the worker checks ownership.
 

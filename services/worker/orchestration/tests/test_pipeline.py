@@ -2,7 +2,8 @@
 
 These prove the graph's contract (TASK-0032): the node order, that the stencil derives from the
 master and not the mockup, that the geometric-only path is the default when no blend provider is
-configured, that a blend outside tolerance fails the render, and that the module opens no socket.
+configured, that a blend outside tolerance falls back to the geometric composite (ADR-0018), and
+that the module opens no socket.
 The imaging itself is faked; its real behaviour is the composition root's, verified by the studio
 suite when ``Studio.generate`` is delegated to this graph.
 """
@@ -17,7 +18,6 @@ from typing import Any
 import pytest
 
 from orchestration import (
-    GeometryToleranceError,
     PipelineState,
     build_generation_graph,
 )
@@ -68,12 +68,14 @@ class FakeBlend:
         self.result = result
         self.calls = 0
         self.finish: str | None = None
+        self.photo: bytes | None = None
 
     def blend(
-        self, warped_mockup: bytes, photo: bytes, clearance: object, finish: str
+        self, warped_mockup: bytes, photo: bytes | None, clearance: object, finish: str
     ) -> bytes | None:
         self.calls += 1
         self.finish = finish
+        self.photo = photo
         return self.result
 
 
@@ -142,11 +144,36 @@ def test_blend_receives_the_hyperrealistic_fresh_finish() -> None:
     assert "hyperrealistic" in blend.finish and "freshly applied" in blend.finish
 
 
-def test_blend_only_runs_with_a_body_photo() -> None:
+def test_blend_runs_on_a_generated_plate_with_no_photograph() -> None:
+    """ADR-0018: a generated skin plate involves no one's photograph, so it may be finished."""
     blend = FakeBlend(b"BLENDED_SKIN")
-    out = build_generation_graph(FakeDeps(), blend=blend).invoke(_state(body_photo=None))
+    out = build_generation_graph(FakeDeps(), blend=blend, geometry=FakeCheck(True)).invoke(
+        _state(body_photo=None)
+    )
+    assert blend.calls == 1 and blend.photo is None
+    assert out.blended is True and out.blend_outcome == "accepted"
+    assert out.warp == b"GEOMETRIC_MOCKUP"
+
+
+def test_an_own_photo_without_its_clearance_is_never_sent() -> None:
+    blend = FakeBlend(b"BLENDED_SKIN")
+    out = build_generation_graph(FakeDeps(), blend=blend, geometry=FakeCheck(True)).invoke(
+        _state(body_photo=b"PHOTO", clearance=None)
+    )
     assert blend.calls == 0
-    assert out.blended is False
+    assert out.blended is False and out.blend_outcome == "declined"
+
+
+def test_a_failing_provider_keeps_the_geometric_composite() -> None:
+    class Broken:
+        def blend(self, *args: object) -> bytes | None:
+            raise RuntimeError("provider down, request quoted here")
+
+    out = build_generation_graph(FakeDeps(), blend=Broken(), geometry=FakeCheck(True)).invoke(
+        _state()
+    )
+    assert out.mockup == b"GEOMETRIC_MOCKUP"
+    assert out.blend_outcome == "unavailable"
 
 
 def test_absent_provider_keeps_the_geometric_composite() -> None:
@@ -159,19 +186,21 @@ def test_absent_provider_keeps_the_geometric_composite() -> None:
     assert out.mockup == b"GEOMETRIC_MOCKUP"
 
 
-def test_out_of_tolerance_blend_fails_the_render() -> None:
-    with pytest.raises(GeometryToleranceError):
-        build_generation_graph(
-            FakeDeps(), blend=FakeBlend(b"REDRAWN"), geometry=FakeCheck(False)
-        ).invoke(_state(body_photo=b"PHOTO", clearance=object()))
+def test_out_of_tolerance_blend_falls_back_to_the_warp() -> None:
+    """ADR-0018: the stencil-faithful composite is delivered instead of failing the job."""
+    out = build_generation_graph(
+        FakeDeps(), blend=FakeBlend(b"REDRAWN"), geometry=FakeCheck(False)
+    ).invoke(_state())
+    assert out.mockup == b"GEOMETRIC_MOCKUP"
+    assert out.files["mockup"] == (b"GEOMETRIC_MOCKUP", "image/png")
+    assert out.blended is False and out.blend_outcome == "rejected_geometry"
 
 
 def test_a_blend_is_never_accepted_without_a_geometry_check() -> None:
     """The check is load-bearing (ADR-0002): no check means no acceptance, not a free pass."""
-    with pytest.raises(GeometryToleranceError):
-        build_generation_graph(FakeDeps(), blend=FakeBlend(b"BLENDED_SKIN")).invoke(
-            _state(body_photo=b"PHOTO", clearance=object())
-        )
+    out = build_generation_graph(FakeDeps(), blend=FakeBlend(b"BLENDED_SKIN")).invoke(_state())
+    assert out.mockup == b"GEOMETRIC_MOCKUP"
+    assert out.blend_outcome == "rejected_geometry"
 
 
 def test_the_check_compares_the_warp_with_the_candidate_and_its_transform() -> None:
@@ -197,6 +226,21 @@ def test_output_gate_rejection_stops_the_render() -> None:
 
     with pytest.raises(ValueError, match="revisión de contenido"):
         build_generation_graph(FakeDeps(), output_gate=DenyGate()).invoke(_state())
+
+
+def test_a_blend_the_output_gate_rejects_falls_back_to_the_warp() -> None:
+    class DenyBlended:
+        def screen_output(self, image: bytes) -> bool:
+            return image != b"BLENDED_SKIN"
+
+    out = build_generation_graph(
+        FakeDeps(),
+        blend=FakeBlend(b"BLENDED_SKIN"),
+        geometry=FakeCheck(True),
+        output_gate=DenyBlended(),
+    ).invoke(_state())
+    assert out.mockup == b"GEOMETRIC_MOCKUP"
+    assert out.blended is False and out.blend_outcome == "rejected_output"
 
 
 def test_module_opens_no_socket() -> None:

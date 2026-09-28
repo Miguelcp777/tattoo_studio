@@ -102,6 +102,18 @@
       "file": "invalid/unknown-field.json",
       "valid": false,
       "why": "unknown-field"
+    },
+    {
+      "name": "blended-finish",
+      "file": "valid/blended-finish.json",
+      "valid": true,
+      "why": "an AI finish that passed the geometry check, with the body fit recorded (ADR-0018, TASK-0039)"
+    },
+    {
+      "name": "generative-without-accepted-check",
+      "file": "invalid/generative-without-accepted-check.json",
+      "valid": false,
+      "why": "a generative finish may only be delivered when the geometry check accepted it"
     }
   ]
 }

@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0040 (ADR-0018): `geometry.BLEND_TOLERANCE` (p95 ≤ 0.018 of the diagonal, ink IoU ≥ 0.62) is
+the first decided tolerance, measured on the live Mestalla composite: GPT-Image 4/4 inside, FLUX.2
+2/2 outside. It supersedes the TASK-0008 statement below that no tolerance is decided.
+
 TASK-0039: `limb.py` reads the body's silhouette (chroma against a plain backdrop; `None` when not
 confident). `composite(..., fit_body=True)` centres the design on it, takes the taper from it,
 shrinks until at most `MAX_SPILL` (2 %) of the ink is off the body (floor `MIN_FIT_SCALE` 0.6),

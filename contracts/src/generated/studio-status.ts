@@ -46,7 +46,22 @@ export interface GeneratedTattooArtifact {
      */
     taper?: number;
     scaleCalibrated: boolean;
-    generativePostprocess: false;
+    /**
+     * True only when a constrained AI finish replaced the geometric composite after passing the geometry check against it (ADR-0016, ADR-0018). The stencil never derives from it.
+     */
+    generativePostprocess: boolean;
+    /**
+     * What happened to the AI finish when one was attempted (ADR-0018). Anything but accepted means the geometric composite was delivered.
+     */
+    finish?: 'accepted' | 'declined' | 'unavailable' | 'rejected_geometry' | 'rejected_output';
+    /**
+     * How the design was fitted to the body silhouette read from the photograph (TASK-0039). A silhouette, not depth.
+     */
+    bodyFit?: {
+      scale: number;
+      spill: number;
+      taper: number;
+    };
     sourceCropPx?: {
       left: number;
       top: number;

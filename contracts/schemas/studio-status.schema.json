@@ -182,7 +182,45 @@
               "type": "boolean"
             },
             "generativePostprocess": {
-              "const": false
+              "type": "boolean",
+              "description": "True only when a constrained AI finish replaced the geometric composite after passing the geometry check against it (ADR-0016, ADR-0018). The stencil never derives from it."
+            },
+            "finish": {
+              "enum": [
+                "accepted",
+                "declined",
+                "unavailable",
+                "rejected_geometry",
+                "rejected_output"
+              ],
+              "description": "What happened to the AI finish when one was attempted (ADR-0018). Anything but accepted means the geometric composite was delivered."
+            },
+            "bodyFit": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scale",
+                "spill",
+                "taper"
+              ],
+              "description": "How the design was fitted to the body silhouette read from the photograph (TASK-0039). A silhouette, not depth.",
+              "properties": {
+                "scale": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                },
+                "spill": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "taper": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 0.35
+                }
+              }
             },
             "sourceCropPx": {
               "type": "object",
@@ -233,7 +271,27 @@
             "method",
             "scaleCalibrated",
             "generativePostprocess"
-          ]
+          ],
+          "if": {
+            "properties": {
+              "generativePostprocess": {
+                "const": true
+              }
+            },
+            "required": [
+              "generativePostprocess"
+            ]
+          },
+          "then": {
+            "required": [
+              "finish"
+            ],
+            "properties": {
+              "finish": {
+                "const": "accepted"
+              }
+            }
+          }
         },
         "notice": {
           "type": "string",

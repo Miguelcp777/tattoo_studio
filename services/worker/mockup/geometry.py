@@ -11,8 +11,8 @@ the first:
    reported rather than the mean, so a few texture specks cannot hide a moved element and a single
    stray pixel cannot fail a faithful blend. Ink-mask overlap (IoU) is reported alongside.
 
-The numeric tolerance is deliberately not decided here: TASK-0008 calibrates it on a corpus, and
-`GeometryTolerance` must always be constructed explicitly. Anything the method cannot verify — no
+`GeometryTolerance` has no default; `BLEND_TOLERANCE` is the one value decided so far, by TASK-0040
+measurement, and is named rather than implied. Anything the method cannot verify — no
 ink in the reference, ink gone from the result — reports an infinite displacement and fails, so an
 unverifiable blend can never pass by default.
 """
@@ -57,6 +57,14 @@ class GeometryTolerance:
 
     max_p95_relative: float
     min_ink_iou: float
+
+
+#: Calibrated in TASK-0040 on the live Mestalla composite (1024 x 1536, design 640 x 1136 px).
+#: GPT-Image edits, four runs: p95 0.0093-0.0158 of the diagonal, ink IoU 0.683-0.772, all visibly
+#: faithful (the worst only darkened the tone). FLUX.2 edits, two runs: p95 0.0199-0.0208, IoU
+#: 0.477-0.532, with ornaments and the crest's outline redrawn. The limits sit between the two.
+#: One design is a thin corpus: revisit when more designs have been measured (ADR-0018).
+BLEND_TOLERANCE = GeometryTolerance(max_p95_relative=0.018, min_ink_iou=0.62)
 
 
 def _region(transform: dict[str, Any], width: int, height: int) -> tuple[int, int, int, int]:

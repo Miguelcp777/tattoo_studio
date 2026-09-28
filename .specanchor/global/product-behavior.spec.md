@@ -22,7 +22,7 @@ TASK-0032 (ADR-0016) activates the constrained AI blend for the on-body mockup, 
 photorealistic-skin goal above. It changes how the mockup is produced, not what the product
 promises: PROD-INV-001 (mockup and stencil are the same artwork) and PROD-INV-005 (every artifact
 labelled a visualization) are unchanged and are enforced by the geometry check and the
-geometric-only fallback.
+geometric-only fallback. TASK-0040 (ADR-0018) switches the finish on for generated plates.
 
 ## Intended behavior
 

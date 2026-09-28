@@ -27,15 +27,6 @@ FRESH_TATTOO_FINISH = (
 )
 
 
-class GeometryToleranceError(ValueError):
-    """The AI blend moved design geometry beyond the ADR-0002/TASK-0008 tolerance.
-
-    A ``ValueError`` so the job queue records it as an honest, user-visible failure rather than an
-    opaque crash (see ``jobs.queue.JobQueue.tick``). The render fails; it never ships a mockup that
-    disagrees with the stencil (PROD-INV-001, MOCKUP-INV-002).
-    """
-
-
 class GenerationDeps(Protocol):
     """High-level creation operations, injected by ``app.studio``.
 
@@ -69,7 +60,9 @@ class GenerationDeps(Protocol):
 
 
 class BlendPort(Protocol):
-    """The constrained AI blend (ADR-0016), run only on a screened body photo.
+    """The constrained AI blend (ADR-0016, ADR-0018).
+
+    ``photo`` is ``None`` on a generated skin plate; an own photo arrives with its clearance.
 
     ``blend`` returns ``None`` when no eligible provider is configured, in which case the pipeline
     keeps the geometric-only composite (ADR-0002's retained fallback). It does not judge its own
@@ -77,7 +70,7 @@ class BlendPort(Protocol):
     """
 
     def blend(
-        self, warped_mockup: bytes, photo: bytes, clearance: Any, finish: str
+        self, warped_mockup: bytes, photo: bytes | None, clearance: Any, finish: str
     ) -> bytes | None: ...
 
 
@@ -141,4 +134,9 @@ class PipelineState:
     #: The blend's output, held until the geometry check accepts it; ``mockup`` stays the warp.
     blend_candidate: bytes | None = None
     blended: bool = False
+    #: The geometric composite a blend replaced, kept so a later gate can fall back to it.
+    warp: bytes | None = None
+    #: What happened to the finish (ADR-0018): ``None`` when no blend was attempted, else
+    #: ``accepted``, ``declined``, ``unavailable``, ``rejected_geometry`` or ``rejected_output``.
+    blend_outcome: str | None = None
     files: dict[str, tuple[bytes, str]] = field(default_factory=dict)

@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0040 (ADR-0018): `StudioProvider.blend_mockup(mockup, finish)` is the mockup finish, an
+OpenAI image edit of the composite with an instruction to change how the ink sits and nothing else.
+Both backends use it: BFL keeps the plates, where FLUX.2's photographic skill is wanted. Its output
+passes `accept_output` (moderation) like every other image.
+
 TASK-0039: `ZONE_VIEWS` names each zone's camera view for the background prompt (the calf is the
 back of the lower leg from behind; a "frontal view" had produced a shin), and asks for a neutral
 strip either side so `mockup` can read the silhouette. The artwork prompt states that the colour

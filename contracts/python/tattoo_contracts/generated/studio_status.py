@@ -55,6 +55,31 @@ class Method(Enum):
     fresh_ink_composite = 'fresh-ink-composite'
 
 
+class Finish(Enum):
+    """
+    What happened to the AI finish when one was attempted (ADR-0018). Anything but accepted means the geometric composite was delivered.
+    """
+
+    accepted = 'accepted'
+    declined = 'declined'
+    unavailable = 'unavailable'
+    rejected_geometry = 'rejected_geometry'
+    rejected_output = 'rejected_output'
+
+
+class BodyFit(BaseModel):
+    """
+    How the design was fitted to the body silhouette read from the photograph (TASK-0039). A silhouette, not depth.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    scale: Annotated[float, Field(gt=0.0, le=1.0)]
+    spill: Annotated[float, Field(ge=0.0, le=1.0)]
+    taper: Annotated[float, Field(ge=0.0, le=0.35)]
+
+
 class SourceCropPx(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -91,7 +116,24 @@ class Transform(BaseModel):
         ),
     ] = None
     scaleCalibrated: bool
-    generativePostprocess: Literal[False]
+    generativePostprocess: Annotated[
+        bool,
+        Field(
+            description='True only when a constrained AI finish replaced the geometric composite after passing the geometry check against it (ADR-0016, ADR-0018). The stencil never derives from it.'
+        ),
+    ]
+    finish: Annotated[
+        Finish | None,
+        Field(
+            description='What happened to the AI finish when one was attempted (ADR-0018). Anything but accepted means the geometric composite was delivered.'
+        ),
+    ] = None
+    bodyFit: Annotated[
+        BodyFit | None,
+        Field(
+            description='How the design was fitted to the body silhouette read from the photograph (TASK-0039). A silhouette, not depth.'
+        ),
+    ] = None
     sourceCropPx: SourceCropPx | None = None
     surface: Annotated[
         float | None,

@@ -733,3 +733,91 @@ def test_a_nudge_changes_the_view_and_nothing_that_gets_printed(tmp_path: Path) 
     assert result["transform"]["widthPx"] > parent["transform"]["widthPx"]
     assert "las medidas del PDF siguen siendo las originales" in result["notice"]
     assert provider.calls == 1
+
+
+def leg_plate() -> bytes:
+    """A generated-anatomy stand-in with a body the silhouette reader can find (TASK-0039)."""
+    image = Image.new("RGB", (400, 600), (128, 126, 124))
+    ImageDraw.Draw(image).polygon(
+        [(110, 0), (300, 0), (260, 600), (150, 600)], fill=(205, 150, 115)
+    )
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
+
+
+class LegProvider(FakeProvider):
+    """Paints a leg as the background and finishes the mockup with `finish`."""
+
+    def __init__(self, finish: str = "same") -> None:
+        super().__init__()
+        self.finish = finish
+        self.blends = 0
+
+    def background(self, brief: dict[str, Any]) -> bytes:
+        return leg_plate()
+
+    def blend_mockup(self, mockup: bytes, finish: str) -> bytes:
+        self.blends += 1
+        if self.finish == "fail":
+            raise ValueError("provider down")
+        if self.finish == "redraw":
+            return leg_plate()  # the design is gone: a redraw the check must refuse
+        return mockup
+
+
+def _leg_job(tmp_path: Path, provider: FakeProvider) -> tuple[Studio, dict[str, Any]]:
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    owner = "11111111-1111-4111-8111-111111111111"
+    ref = studio.ingest(
+        owner, {"data": base64.b64encode(picture()).decode(), "adult": True, "consent": True}
+    )
+    request = payload()
+    request["referenceIds"] = [ref["assetId"]]
+    request.pop("placement", None)
+    request["brief"]["placement"]["bodyPart"] = "calf"
+    job = studio.jobs.enqueue(owner, request)
+    assert studio.jobs.tick()
+    return studio, studio.jobs.get(owner, job["jobId"])
+
+
+def test_a_body_fitted_mockup_is_a_valid_status(tmp_path: Path) -> None:
+    """TASK-0039 shipped `bodyFit` outside the studio-status contract, so every job whose
+    background had a readable body would have been refused as an invalid status."""
+    _, job = _leg_job(tmp_path, LegProvider("fail"))
+    assert job["state"] == "succeeded", job
+    transform = job["result"]["transform"]
+    assert transform["bodyFit"]["spill"] <= 0.02
+    assert transform["generativePostprocess"] is False
+    assert transform["finish"] == "unavailable"
+
+
+def test_the_ai_finish_is_delivered_when_the_design_did_not_move(tmp_path: Path) -> None:
+    provider = LegProvider("same")
+    _, job = _leg_job(tmp_path, provider)
+    assert job["state"] == "succeeded", job
+    result = job["result"]
+    assert provider.blends == 1
+    assert result["transform"]["generativePostprocess"] is True
+    assert result["transform"]["finish"] == "accepted"
+    assert "Acabado de piel con IA" in result["notice"]
+
+
+def test_a_finish_that_redraws_is_refused_and_the_composite_ships(tmp_path: Path) -> None:
+    provider = LegProvider("redraw")
+    studio, job = _leg_job(tmp_path, provider)
+    assert job["state"] == "succeeded", job
+    result = job["result"]
+    assert provider.blends == 1
+    assert result["transform"]["generativePostprocess"] is False
+    assert result["transform"]["finish"] == "rejected_geometry"
+    shipped = studio.media.read(result["mockup"]["assetId"])
+    assert shipped != leg_plate()
+
+
+def test_an_own_photo_is_never_sent_for_the_finish() -> None:
+    from app.studio import _StudioBlend
+
+    provider = LegProvider("same")
+    assert _StudioBlend(provider).blend(b"warp", b"PHOTO", object(), "finish") is None
+    assert provider.blends == 0

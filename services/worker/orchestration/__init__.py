@@ -9,12 +9,11 @@ module imports no worker engine and performs no outbound egress (ORCH-INV-001).
 from __future__ import annotations
 
 from .graph import END, Graph
-from .pipeline import build_generation_graph
+from .pipeline import build_finish_graph, build_generation_graph
 from .state import (
     BlendPort,
     GenerationDeps,
     GeometryCheckPort,
-    GeometryToleranceError,
     OutputGatePort,
     PipelineState,
 )
@@ -24,9 +23,9 @@ __all__ = [
     "BlendPort",
     "GenerationDeps",
     "GeometryCheckPort",
-    "GeometryToleranceError",
     "Graph",
     "OutputGatePort",
     "PipelineState",
+    "build_finish_graph",
     "build_generation_graph",
 ]

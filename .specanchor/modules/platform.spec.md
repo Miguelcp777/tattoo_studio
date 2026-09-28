@@ -23,6 +23,11 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0040 (ADR-0018): the studio wires the finish (`_StudioBlend`, `GeometryCheck(BLEND_TOLERANCE)`)
+into new designs and re-placements, marks an own photo as such so the finish declines it, and
+reports `generativePostprocess`/`finish` in the transform and a notice line when the finish ships.
+`CLAUDE.md`'s geometric-only constraint is replaced accordingly.
+
 TASK-0039: both studio composites (new design and reposition) pass `fit_body=True`, so the mockup
 fits the body in the photograph (see `mockup.spec.md`).
 

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx2
+from PIL import Image
 
 from safety.openai_moderation import OpenAIModerationProvider
 
@@ -196,6 +198,41 @@ class StudioProvider:
                 ("image[]", (f"reference-{i}.png", data, "image/png"))
                 for i, data in enumerate(references)
             ],
+        )
+        return self.image_bytes(response)
+
+    @staticmethod
+    def blend_prompt(finish: str) -> str:
+        """Edit instruction for the mockup finish (ADR-0016, ADR-0018): how the ink sits, not what
+        it is. The geometry check, not this wording, is what enforces that."""
+        return (
+            "Edit this photograph only so the tattoo reads as real ink in the skin rather than a "
+            f"printed overlay: {finish}. Keep every line, shape, proportion, position and colour "
+            "of the tattoo exactly as it is. Do not add, remove, redraw, move or restyle any "
+            "element of the tattoo. Do not change the body, its outline, the framing or the "
+            "backdrop."
+        )
+
+    def blend_mockup(self, mockup: bytes, finish: str) -> bytes:
+        """The constrained finish on a composite (TASK-0040).
+
+        GPT-Image was chosen by measurement on the same composite: it kept the design within the
+        tolerance in four of four runs, while FLUX.2 redrew ornaments and failed in two of two.
+        Only a composite reaches here; the adapter declines own photographs (GEN-INV-002).
+        """
+        with Image.open(io.BytesIO(mockup)) as image:
+            portrait = image.height >= image.width
+        response = self.client.post(
+            "https://api.openai.com/v1/images/edits",
+            headers={"Authorization": f"Bearer {self.key}"},
+            data={
+                "model": self.image_model,
+                "prompt": self.blend_prompt(finish),
+                "size": "1024x1536" if portrait else "1536x1024",
+                "quality": "high",
+                "n": "1",
+            },
+            files=[("image[]", ("mockup.png", mockup, "image/png"))],
         )
         return self.image_bytes(response)
 

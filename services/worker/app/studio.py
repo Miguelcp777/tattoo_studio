@@ -26,8 +26,9 @@ from media.sanitize import sanitize
 from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM, zone_size
 from mockup.engine import DEFAULT_SURFACE, composite, visible_artwork, visible_size
+from mockup.geometry import BLEND_TOLERANCE, GeometryCheck
 from mockup.placement import Coverage, coverage_request, fit_coverage
-from orchestration import PipelineState, build_generation_graph
+from orchestration import PipelineState, build_finish_graph, build_generation_graph
 from safety.gate import InputGate
 from stencil.engine import (
     Master,
@@ -39,6 +40,41 @@ from stencil.engine import (
     serialize_master,
     trace_colour_artwork,
     trace_native_lineart,
+)
+
+
+class _StudioBlend:
+    """The mockup finish over the configured provider (TASK-0040, ADR-0018).
+
+    Declines an own photograph: ADR-0016 requires a provider whose no-training and no-retention
+    terms are verified (GEN-INV-002), and none is yet. A generated plate is no one's photograph.
+    Every provider output is moderated before it returns (`accept_output`, SEC-INV-006).
+    """
+
+    def __init__(self, provider: StudioProvider) -> None:
+        self.provider = provider
+
+    def blend(
+        self, warped_mockup: bytes, photo: bytes | None, clearance: Any, finish: str
+    ) -> bytes | None:
+        if photo is not None:
+            return None
+        return self.provider.blend_mockup(warped_mockup, finish)
+
+
+def finished_transform(state: PipelineState) -> dict[str, Any]:
+    """The composite's transform, saying whether an AI finish replaced it and why not if not."""
+    assert state.transform is not None
+    return {
+        **state.transform,
+        "generativePostprocess": state.blended,
+        **({"finish": state.blend_outcome} if state.blend_outcome else {}),
+    }
+
+
+FINISH_NOTICE = (
+    "Acabado de piel con IA sobre la composición; el diseño se ha comparado con la plantilla "
+    "antes de mostrarlo. "
 )
 
 
@@ -350,7 +386,9 @@ class Studio:
         # graph (TASK-0032, ADR-0015). The adapter reproduces the previous inline behaviour; the
         # graph fixes the order and hosts the future AI-blend / output-gate nodes.
         deps = _StudioGenerationDeps(self, owner, edit, parent, coverage, zone, payload)
-        state = build_generation_graph(deps).invoke(
+        state = build_generation_graph(
+            deps, blend=_StudioBlend(self.provider), geometry=GeometryCheck(BLEND_TOLERANCE)
+        ).invoke(
             PipelineState(
                 brief=brief,
                 references=references,
@@ -361,6 +399,8 @@ class Studio:
                     brief["linework"]["weight"], 0.35
                 ),
                 background=background,
+                # An own photo is marked as such so the finish declines it (ADR-0018).
+                body_photo=background if payload.get("bodyPhotoId") else None,
             )
         )
         # The graph always fills these on the success path; assert to narrow the optional state
@@ -368,7 +408,7 @@ class Studio:
         assert state.mockup is not None and state.background is not None
         assert state.transform is not None
         master, raster, mockup = state.master, state.raster, state.mockup
-        transform, background, files = state.transform, state.background, state.files
+        transform, background, files = finished_transform(state), state.background, state.files
         result: dict[str, Any] = {
             "designId": master.design_hash,
             "briefId": brief["briefId"],
@@ -385,6 +425,7 @@ class Studio:
                 if rendered
                 else "Propuesta de contornos negros. "
             )
+            + (FINISH_NOTICE if state.blended else "")
             + "Simulación de tinta reciente; curvatura aproximada en extremidades, "
             "no reconstrucción anatómica. "
             "Visualización ilustrativa. Revisa los símbolos y el trazo con "
@@ -529,6 +570,20 @@ class Studio:
                 surface=parent["transform"].get("surface", DEFAULT_SURFACE),
                 fit_body=True,
             )
+        # TASK-0040: a re-placed design gets the same finish, through the same nodes, as a new one.
+        own_photo = bool(payload.get("bodyPhotoId")) or parent.get("backgroundKind") == "own_photo"
+        finished = build_finish_graph(
+            blend=_StudioBlend(self.provider), geometry=GeometryCheck(BLEND_TOLERANCE)
+        ).invoke(
+            PipelineState(
+                brief=brief,
+                mockup=mockup,
+                transform=transform,
+                body_photo=background if own_photo else None,
+            )
+        )
+        assert finished.mockup is not None
+        mockup, transform = finished.mockup, finished_transform(finished)
         if resize:
             assert stored_vector is not None
             master = rescale(
@@ -571,7 +626,9 @@ class Studio:
             "briefRevision": brief["revision"],
             "transform": transform,
             "edit": payload["edit"],
-            "notice": notice + "La curvatura no es una reconstrucción anatómica.",
+            "notice": notice
+            + (FINISH_NOTICE if finished.blended else "")
+            + "La curvatura no es una reconstrucción anatómica.",
         }
         with self.lock:
             self.active(owner)
