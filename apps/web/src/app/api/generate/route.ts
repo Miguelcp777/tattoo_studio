@@ -9,8 +9,6 @@ import {
   session,
   worker,
   referenceBytes,
-  catalogueBytes,
-  isCatalogueSource,
   jobStatus,
 } from '../../../lib/studio-server';
 export async function POST(request: Request): Promise<NextResponse> {
@@ -47,7 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0037: the interface gate was presentational. Recompute the brief as it stands now and
     // compare it with what was accepted, so a change after accepting withdraws the acceptance.
     const standing = briefSignature(
-      buildMasterPrompt(current.state.slots, current.state.references),
+      buildMasterPrompt(current.state.slots, current.state.references, current.state.stylePick),
     );
     if (current.acceptedBrief !== standing)
       throw new RequestError('Acepta el resumen de tu tatuaje antes de generarlo.', 409);
@@ -57,9 +55,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     for (const reference of current.state.references) {
       if (!reference.assetId) {
         const res = await worker(current.state.sessionId, '/media', 'POST', {
-          data: isCatalogueSource(reference.source)
-            ? await catalogueBytes(reference.source)
-            : await referenceBytes(reference.source),
+          data: await referenceBytes(reference.source),
           kind: 'reference',
           consent: body['consent'] === true,
           adult: body['adult'] === true,

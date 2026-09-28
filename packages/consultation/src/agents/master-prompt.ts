@@ -13,6 +13,7 @@ import { BODY_ZONE_SPANS, STYLE_CATALOGUE } from '@tattoo/contracts';
 
 import type { ConsultationSlots, ReferenceImage } from '../types';
 import { BODY_OPTIONS, STYLE_OPTIONS } from './researcher';
+import type { StylePick } from './types';
 
 export interface MasterPromptLine {
   label: string;
@@ -47,13 +48,12 @@ const SIDE_LABELS: Record<string, string> = {
   centre: 'centrado',
 };
 
-function styleLine(slots: ConsultationSlots, references: ReferenceImage[]): string {
+function styleLine(slots: ConsultationSlots, pick: StylePick | undefined): string {
   const primary = slots.style?.primary;
   if (!primary) return '';
-  const label = STYLE_OPTIONS[primary] ?? primary;
-  const pick = references.find((r) => r.verification === 'style_library');
-  // The chosen variant is the most specific thing the client told us about the style.
-  return pick?.referenceQuery ? `${label} · ${pick.referenceQuery.split(' · ').pop()}` : label;
+  // The chosen variant is the most specific thing the client told us about the style. A pick
+  // from another style is stale (the style changed since) and says nothing about this one.
+  return pick?.style === primary ? pick.label : (STYLE_OPTIONS[primary] ?? primary);
 }
 
 function sizeLine(slots: ConsultationSlots): { value: string; proposed: boolean } {
@@ -119,6 +119,7 @@ export function briefSignature(prompt: MasterPrompt): string {
 export function buildMasterPrompt(
   slots: ConsultationSlots,
   references: ReferenceImage[] = [],
+  pick?: StylePick,
 ): MasterPrompt {
   const missing: string[] = [];
   const lines: MasterPromptLine[] = [];
@@ -127,7 +128,7 @@ export function buildMasterPrompt(
   if (subject) lines.push({ label: 'Qué', value: subject });
   else missing.push('el tema');
 
-  const style = styleLine(slots, references);
+  const style = styleLine(slots, pick);
   if (style) lines.push({ label: 'Estilo', value: style });
   else missing.push('el estilo');
 
@@ -165,11 +166,9 @@ export function buildMasterPrompt(
 
   const own = references.filter((r) => r.verification === 'user_supplied').length;
   const found = references.filter((r) => r.verification === 'candidate').length;
-  const catalogue = references.filter((r) => r.verification === 'style_library').length;
   const parts = [
     own ? `${own} tuya${own > 1 ? 's' : ''}` : '',
     found ? `${found} encontrada${found > 1 ? 's' : ''}` : '',
-    catalogue ? `${catalogue} del catálogo` : '',
   ].filter(Boolean);
   lines.push({
     label: 'Referencias',

@@ -458,7 +458,11 @@ export default function ConsultationPage(): ReactNode {
     slots?.style?.primary && slots?.placement?.bodyPart && slots?.colour?.mode,
   );
   // TASK-0029: a reading of the brief that will be sent, not a second description of it.
-  const masterPrompt = buildMasterPrompt(slots ?? {}, session?.references ?? []);
+  const masterPrompt = buildMasterPrompt(
+    slots ?? {},
+    session?.references ?? [],
+    session?.stylePick,
+  );
 
   // TASK-0037: the same function the server uses, so a correct acceptance cannot be refused.
   const currentSignature = briefSignature(masterPrompt);
@@ -467,8 +471,8 @@ export default function ConsultationPage(): ReactNode {
   // TASK-0028: offer catalogue variants once a style is known, so the client chooses by
   // looking rather than by imagining.
   const offers = styleOffers(slots?.style?.primary);
-  const chosenVariant = session?.references.find((r) => r.verification === 'style_library');
-  const chosenOfferId = offers.find((o) => o.image === chosenVariant?.source)?.id;
+  // TASK-0038: the pick settles the style; it is not listed among the references.
+  const chosenOfferId = offers.find((o) => o.id === session?.stylePick?.id)?.id;
 
   // TASK-0034: name what stands between the client and generation, and the one next action.
   const missingFields = session?.missingFields ?? [];

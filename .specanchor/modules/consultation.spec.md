@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0038 (ADR-0017): `offerAsPick` replaces `offerAsReference`; a pick is
+`OrchestrationSession.stylePick`, not a `ReferenceImage`, and `'style_library'` is gone from
+`verification`. `buildMasterPrompt(slots, references, pick?)` names the variant while the style
+matches it. The orchestrator forgets a pick when the style changes, and a pick does not satisfy the
+"referencia visual" readiness rule. This supersedes the TASK-0028 and TASK-0030 notes below.
+
 TASK-0037: `briefSignature` is the single function client and server use to compare an accepted
 brief, so a correct acceptance cannot be refused and a stale one cannot be allowed.
 

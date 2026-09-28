@@ -2,15 +2,15 @@
  * Style catalogue offers (TASK-0028, ADR-0012).
  *
  * When the client names a style, the agent shows what that style actually looks like instead of
- * asking them to imagine it. The variant they pick becomes one more reference alongside anything
- * they uploaded and anything the scout found.
+ * asking them to imagine it. The variant they pick settles the style; it is not a reference
+ * (TASK-0038).
  *
  * Pure: it reads the shared catalogue and returns offers. Nothing here fetches or generates.
  */
 
 import { STYLE_CATALOGUE, type StyleCatalogueEntry, type StyleName } from '@tattoo/contracts';
 
-import type { ReferenceImage } from '../types';
+import type { StylePick } from './types';
 
 export interface StyleVariantOffer {
   /** Stable identity of the pick, unique across styles. */
@@ -59,20 +59,13 @@ export function findOffer(id: string): StyleVariantOffer | undefined {
 }
 
 /**
- * The chosen variant as a reference image.
+ * The chosen variant as a style decision (TASK-0038, ADR-0017).
  *
- * Marked `style_library` rather than `user_supplied`: it is an illustrative render the studio
- * generated, not a photograph of real work and not something the client brought. Anything shown
- * to the client must be able to say which of the three it is.
+ * Deliberately not a reference image. The catalogue shows what a style looks like; sending its
+ * picture to the generator would also send its subject and its body (a tiger on a forearm) and
+ * hand the moderation gate a photograph of skin. The style name reaches the design; the picture
+ * stays on the page.
  */
-export function offerAsReference(offer: StyleVariantOffer): ReferenceImage {
-  return {
-    source: offer.image,
-    mimeType: 'image/webp',
-    verification: 'style_library',
-    referenceQuery: `${offer.styleLabel} · ${offer.label}`,
-    // Shown on the reference card, so it is the Spanish name, not the English prompt text.
-    label: `${offer.styleLabel} · ${offer.label}`,
-    license: 'Render ilustrativo generado por el estudio',
-  };
+export function offerAsPick(offer: StyleVariantOffer): StylePick {
+  return { id: offer.id, style: offer.style, label: `${offer.styleLabel} · ${offer.label}` };
 }

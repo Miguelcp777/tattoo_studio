@@ -47,7 +47,8 @@ rejected for artwork. A catalogue wants precisely that.
 5. **A pick is resolved server-side from an identifier.** The client sends `tribal:maori`; the
    route resolves it against the catalogue and refuses anything that does not. No caller can
    introduce an arbitrary image as a studio reference.
-6. **Provenance is recorded and shown.** These references carry `verification: 'style_library'`,
+6. *(Amended by ADR-0017: a pick is a style decision, not a reference.)*
+   **Provenance is recorded and shown.** These references carry `verification: 'style_library'`,
    never `user_supplied`, and the interface says they are illustrative renders rather than
    photographs of real work.
 

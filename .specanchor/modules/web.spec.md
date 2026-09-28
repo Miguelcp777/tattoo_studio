@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0038 (ADR-0017): a catalogue pick sets the style and is recorded as `session.stylePick`; it
+is not a reference and is never uploaded. `catalogueBytes` and `isCatalogueSource` are removed, so
+the TASK-0030 note below describes code that no longer exists. With no reference at all, the
+blocker points to «Referencias».
+
 TASK-0037: the acceptance gate is enforced by the server, no longer only by the interface.
 `accept_brief` recomputes the brief from server state, refuses an incomplete brief (422) and a
 signature differing from what the client read (409), and records the server's signature; it

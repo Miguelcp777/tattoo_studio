@@ -32,3 +32,10 @@ it('rejects arbitrary official-domain paths and external SVG resource loading', 
     'formato',
   );
 });
+it('refuses hosts outside the allowlist and catalogue paths', async () => {
+  // The allowlist is the SSRF control. TASK-0038: a catalogue image is not a reference, so no
+  // path reaches the worker with one, not even a pick left over in an older session.
+  await expect(referenceBytes('https://evil.test/x.png')).rejects.toThrow(/no permitida/);
+  await expect(referenceBytes('http://upload.wikimedia.org/x.png')).rejects.toThrow(/no permitida/);
+  await expect(referenceBytes('/style-library/tribal/maori.webp')).rejects.toThrow();
+});

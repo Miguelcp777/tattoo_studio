@@ -41,7 +41,8 @@ describe('generationBlockers (TASK-0034)', () => {
       'brief',
       'brief',
       'referencias',
-      'estilo',
+      // TASK-0038: a missing reference is answered in «Referencias», not by a style pick.
+      'referencias',
       'resumen',
       'permisos',
       'permisos',

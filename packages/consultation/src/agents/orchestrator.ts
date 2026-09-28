@@ -40,9 +40,10 @@ function closingMessage(session: OrchestrationSession): string {
     .map((field) => field.slice(MISSING_REFERENCE.length));
   if (essential.length)
     return `${lead}Para ser fiel necesito una imagen de ${spanishList(essential)}. Siguiente paso: adjúntala en «Referencias» o pulsa «Buscar las referencias pendientes».`;
+  // TASK-0038: a catalogue pick settles the style but is not a reference, so it cannot answer this.
   if (session.missingFields.includes('referencia visual'))
-    return `${lead}Siguiente paso: elige una de las variantes de estilo del panel o adjunta una imagen de referencia.`;
-  const gaps = buildMasterPrompt(session.slots, session.references).missing;
+    return `${lead}Siguiente paso: adjunta una imagen de referencia en «Referencias» o pulsa «Buscar las referencias pendientes».`;
+  const gaps = buildMasterPrompt(session.slots, session.references, session.stylePick).missing;
   if (gaps.length)
     return `${lead}Siguiente paso: indica ${spanishList(gaps)} en el panel y pulsa «Guardar preferencias».`;
   return `${lead}Revisa los valores del panel y pulsa «Guardar preferencias».`;
@@ -140,6 +141,8 @@ export class OrchestratorAgent {
     // TASK-0034: with a zone and no stated size, the studio proposes one and says so.
     slots = proposeSize(slots, proposal?.size, session.slots.placement?.bodyPart);
     next.slots = withTechnicalDefaults(slots);
+    // TASK-0038: a pick from a style the client has since moved away from no longer describes it.
+    if (next.stylePick && next.stylePick.style !== next.slots.style?.primary) delete next.stylePick;
 
     next.references = merged;
     if (subjectChanged) {

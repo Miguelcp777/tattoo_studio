@@ -73,6 +73,7 @@ exist and its field set is unproven against any consumer.
 | ADR-0006 | Privacy posture for body photographs | proposed |
 | ADR-0015 | Two-tier agent orchestration: TS triad + worker LangGraph pipeline | proposed |
 | ADR-0016 | Activate the constrained AI blend for the mockup (supersedes an ADR-0007 clause) | proposed |
+| ADR-0017 | A catalogue pick settles the style; it is not a reference (amends ADR-0012) | accepted |
 
 ## Invariant ownership
 

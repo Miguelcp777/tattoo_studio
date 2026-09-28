@@ -238,4 +238,100 @@ describe('generation boundary', () => {
     // AC-005: accepting makes no outbound call at all, model or otherwise.
     expect(calls.length).toBe(before);
   });
+
+  it('a catalogue pick sets the style and is never uploaded (TASK-0038)', async () => {
+    vi.stubEnv('TATTOO_WORKER_TOKEN', 'test-only-token');
+    const uploads: string[] = [];
+    let submitted: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        const target = String(url);
+        if (target.includes('commons.wikimedia.org/w/api'))
+          return Response.json({
+            query: {
+              pages: {
+                one: {
+                  title: 'File:Tiger.png',
+                  imageinfo: [{ url: 'https://upload.wikimedia.org/tiger.png', mime: 'image/png' }],
+                },
+              },
+            },
+          });
+        if (target === 'https://upload.wikimedia.org/tiger.png')
+          return new Response(new Uint8Array([1, 2, 3]));
+        if (target.endsWith('/studio/media')) {
+          uploads.push(JSON.parse(String(init?.body)).data);
+          return Response.json({ assetId: 'a'.repeat(32), mimeType: 'image/png' });
+        }
+        if (target.endsWith('/studio/jobs')) {
+          submitted = JSON.parse(String(init?.body));
+          return Response.json({
+            jobId: 'b'.repeat(32),
+            state: 'queued',
+            result: null,
+            error: null,
+          });
+        }
+        throw new Error(`Unexpected request ${target}`);
+      }),
+    );
+    const post = (cookie: string | undefined, body: unknown) =>
+      consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: cookie ? { cookie } : {},
+          body: JSON.stringify(body),
+        }),
+      );
+    const started = await post(undefined, {
+      action: 'orchestrate',
+      userMessage: 'Un tigre de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
+    });
+    const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
+    const before = ((await started.json()).session as OrchestrationSession).references;
+
+    const picked = await post(cookie, {
+      action: 'style_variant',
+      variantId: 'neo_traditional:animal',
+    });
+    expect(picked.status).toBe(200);
+    const state = (await picked.json()).session as OrchestrationSession;
+    // AC-001: the style is set and remembered; the references are exactly what they were.
+    expect(state.slots.style?.primary).toBe('neo_traditional');
+    expect(state.stylePick?.id).toBe('neo_traditional:animal');
+    expect(state.references).toEqual(before);
+    expect(JSON.stringify(state.references)).not.toContain('style-library');
+    // AC-002: the brief the client reads names the variant.
+    const prompt = buildMasterPrompt(state.slots, state.references, state.stylePick);
+    expect(prompt.lines.find((l) => l.label === 'Estilo')?.value).toBe('Neotradicional · Animal');
+
+    expect(state.phase).toBe('ready_to_generate');
+    const accepted = await post(cookie, {
+      action: 'accept_brief',
+      signature: briefSignature(prompt),
+    });
+    expect(accepted.status).toBe(200);
+    const response = await POST(
+      new Request('http://localhost:3000/api/generate', {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({
+          adult: true,
+          consent: true,
+          referencesReviewed: true,
+          idempotencyKey: '55555555-5555-4555-8555-555555555555',
+        }),
+      }),
+    );
+    expect(response.status).toBe(202);
+    // AC-003: only the real reference was uploaded; the catalogue picture never left the app.
+    expect(uploads).toEqual(['AQID']);
+    expect(submitted?.['referenceIds']).toEqual(['a'.repeat(32)]);
+    expect(submitted?.['brief']).toMatchObject({ style: { primary: 'neo_traditional' } });
+
+    // An unknown pick is refused and changes nothing.
+    const invented = await post(cookie, { action: 'style_variant', variantId: 'tribal:invented' });
+    expect(invented.status).toBe(400);
+  });
 });

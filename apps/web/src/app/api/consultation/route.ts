@@ -4,7 +4,7 @@ import {
   briefSignature,
   buildMasterPrompt,
   findOffer,
-  offerAsReference,
+  offerAsPick,
   type ConsultationSlots,
 } from '@tattoo/consultation';
 
@@ -66,7 +66,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0037: acceptance is recorded here and checked again at generation. It returns before
     // the orchestrator, which now calls a model: accepting must cost nothing and change nothing.
     if (body['action'] === 'accept_brief') {
-      const prompt = buildMasterPrompt(current.state.slots, current.state.references);
+      const prompt = buildMasterPrompt(
+        current.state.slots,
+        current.state.references,
+        current.state.stylePick,
+      );
       if (!prompt.complete)
         throw new RequestError(`Falta ${prompt.missing.join(', ')} antes de aceptar.`, 422);
       const signature = briefSignature(prompt);
@@ -172,16 +176,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       preferences = patch as ConsultationSlots;
     }
 
-    // TASK-0028: a catalogue pick is resolved here, never taken from the request. The client
-    // sends an identifier; anything that does not resolve against the catalogue is refused, so
-    // no caller can inject an arbitrary image as a studio reference.
+    // TASK-0028: a catalogue pick is resolved here, never taken from the request; anything that
+    // does not resolve against the catalogue is refused. TASK-0038: it settles the style only.
+    // It is not added to the references, so its picture is never uploaded or sent to a model.
     if (body['action'] === 'style_variant') {
       const offer = findOffer(String(body['variantId'] ?? ''));
-      if (!offer) throw new RequestError('Esa referencia de estilo no existe.');
-      current.state.references = [
-        ...current.state.references.filter((r) => r.verification !== 'style_library'),
-        offerAsReference(offer),
-      ];
+      if (!offer) throw new RequestError('Ese estilo no existe en el catálogo.');
+      current.state.stylePick = offerAsPick(offer);
       if (current.state.slots.style?.primary !== offer.style)
         current.state.slots.style = { ...current.state.slots.style, primary: offer.style };
     }

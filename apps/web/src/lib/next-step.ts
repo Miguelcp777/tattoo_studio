@@ -60,8 +60,8 @@ export function generationBlockers(g: GateInput): Blocker[] {
     });
   if (g.noReferences)
     blockers.push({
-      step: 'estilo',
-      text: 'Elige una variante de estilo o adjunta una imagen de referencia.',
+      step: 'referencias',
+      text: 'Adjunta una imagen de referencia o busca las referencias pendientes.',
     });
   if (!g.phaseReady && !blockers.length)
     blockers.push({ step: 'brief', text: 'Completa los datos pendientes del panel.' });

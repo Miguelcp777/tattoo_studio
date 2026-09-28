@@ -58,20 +58,31 @@ describe('master brief (TASK-0029)', () => {
   });
 
   it('shows the chosen catalogue variant, which is the most specific thing said', () => {
-    const refs = [reference('style_library', 'Tribal · Maorí')];
-    expect(value(full, refs, 'Estilo')).toBe('Tribal · Maorí');
+    const pick = { id: 'tribal:maori', style: 'tribal' as const, label: 'Tribal · Maorí' };
+    expect(buildMasterPrompt(full, [], pick).lines.find((l) => l.label === 'Estilo')?.value).toBe(
+      'Tribal · Maorí',
+    );
     expect(value(full, [], 'Estilo')).toBe('Tribal');
   });
 
-  it('counts references by where they came from', () => {
-    const refs = [
-      reference('user_supplied'),
-      reference('user_supplied'),
-      reference('candidate'),
-      reference('style_library', 'Tribal · Maorí'),
-    ];
-    expect(value(full, refs, 'Referencias')).toBe('2 tuyas, 1 encontrada, 1 del catálogo');
-    expect(value(full, [], 'Referencias')).toBe('ninguna');
+  it('ignores a pick from a style the client has moved away from', () => {
+    const stale = {
+      id: 'lettering:script',
+      style: 'lettering' as const,
+      label: 'Lettering · Script',
+    };
+    expect(buildMasterPrompt(full, [], stale).lines.find((l) => l.label === 'Estilo')?.value).toBe(
+      'Tribal',
+    );
+  });
+
+  it('counts references by where they came from; a style pick is not one (TASK-0038)', () => {
+    const refs = [reference('user_supplied'), reference('user_supplied'), reference('candidate')];
+    expect(value(full, refs, 'Referencias')).toBe('2 tuyas, 1 encontrada');
+    const pick = { id: 'tribal:maori', style: 'tribal' as const, label: 'Tribal · Maorí' };
+    expect(
+      buildMasterPrompt(full, [], pick).lines.find((l) => l.label === 'Referencias')?.value,
+    ).toBe('ninguna');
   });
 
   it('says which side of the body', () => {

@@ -346,10 +346,27 @@ describe('relevant references (TASK-0034)', () => {
       o.createSession(),
       'Un lobo aullando de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
     );
-    // Nothing found and nothing essential missing: the client is steered to a style variant or
-    // an upload, not blocked on a search.
+    // Nothing found and nothing essential missing: the client is steered to an upload or a new
+    // search. TASK-0038: no longer to a style variant, which settles the style but is not a
+    // reference.
     expect(s.missingFields).toEqual(['referencia visual']);
-    expect(s.messages.at(-1)?.content).toContain('variantes de estilo');
+    expect(s.messages.at(-1)?.content).toContain('adjunta una imagen de referencia');
+    expect(s.messages.at(-1)?.content).not.toContain('variantes de estilo');
+  });
+
+  it('forgets a catalogue pick once the style moves away from it (TASK-0038)', async () => {
+    const o = new OrchestratorAgent(
+      new VisualSearchAgent(commonsThree, { planner, judge: { choose: vi.fn(async () => []) } }),
+    );
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Un lobo aullando de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
+    );
+    s.stylePick = { id: 'tribal:maori', style: 'tribal', label: 'Tribal · Maorí' };
+    const kept = await o.handleUserInteraction(s, '', [], { style: { primary: 'tribal' } });
+    expect(kept.stylePick?.id).toBe('tribal:maori');
+    const moved = await o.handleUserInteraction(kept, '', [], { style: { primary: 'blackwork' } });
+    expect(moved.stylePick).toBeUndefined();
   });
 });
 

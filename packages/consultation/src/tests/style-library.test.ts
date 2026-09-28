@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { findOffer, offerAsReference, styleLabel, styleOffers } from '../agents/style-library';
+import { findOffer, offerAsPick, styleLabel, styleOffers } from '../agents/style-library';
 import { STYLE_OPTIONS } from '../agents/researcher';
 
 describe('style catalogue (TASK-0028)', () => {
@@ -31,14 +31,16 @@ describe('style catalogue (TASK-0028)', () => {
     expect(findOffer('nonsense')).toBeUndefined();
   });
 
-  it('records the pick as a studio render, never as the client s own', () => {
-    const offer = findOffer('tribal:maori')!;
-    const reference = offerAsReference(offer);
-    expect(reference.verification).toBe('style_library');
-    expect(reference.verification).not.toBe('user_supplied');
-    expect(reference.source).toBe(offer.image);
-    expect(reference.mimeType).toBe('image/webp');
-    expect(reference.license).toMatch(/ilustrativo/i);
+  it('records the pick as a style decision, not as a reference image (TASK-0038)', () => {
+    const offer = findOffer('neo_traditional:animal')!;
+    const pick = offerAsPick(offer);
+    expect(pick).toEqual({
+      id: 'neo_traditional:animal',
+      style: 'neo_traditional',
+      label: 'Neotradicional · Animal',
+    });
+    // Nothing a caller could upload: no image path, no bytes, no MIME type.
+    expect(JSON.stringify(pick)).not.toContain('.webp');
   });
 
   it('never names a person in a variant description (PROD-INV-004)', () => {

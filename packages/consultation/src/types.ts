@@ -12,8 +12,8 @@ export interface ReferenceImage {
   referenceQuery?: string;
   license?: string;
   retrievedAt?: string;
-  /** `style_library` is an illustrative render the studio generated, not real work and not the client's own (TASK-0028). */
-  verification?: 'candidate' | 'user_supplied' | 'style_library';
+  /** A catalogue pick is not a reference (TASK-0038): see `OrchestrationSession.stylePick`. */
+  verification?: 'candidate' | 'user_supplied';
   mimeType: ReferenceImageMimeType;
   /** Optional caption or user label describing what they like about this reference */
   label?: string | undefined;
