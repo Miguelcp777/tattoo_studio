@@ -41,6 +41,7 @@ from stencil.engine import (
     trace_colour_artwork,
     trace_native_lineart,
 )
+from telemetry import activity, forget, record, usage
 
 
 class _StudioBlend:
@@ -371,6 +372,18 @@ class Studio:
         return asset_id
 
     def ingest(self, owner: str, body: dict[str, Any]) -> dict[str, str]:
+        """Screen and store an upload, recording it (TASK-0054). The event holds no image."""
+        kind = str(body.get("kind", "reference"))
+        with activity(owner):
+            try:
+                stored = self._ingest(owner, body)
+            except ValueError as refusal:
+                record("upload", kind, outcome="refused", detail={"reason": str(refusal)[:300]})
+                raise
+            record("upload", kind, detail={"mimeType": stored["mimeType"]})
+            return stored
+
+    def _ingest(self, owner: str, body: dict[str, Any]) -> dict[str, str]:
         mark = self.deletion_mark(owner)
         kind = body.get("kind", "reference")
         if (
@@ -766,6 +779,16 @@ class Studio:
         The design does not change. Every field of the version is the parent's except the
         photograph and the notice, so an edit started from it edits the same design.
         """
+        with activity(owner):
+            try:
+                kept = self._capture(owner, body)
+            except (KeyError, ValueError) as refusal:
+                record("capture", "keep", outcome="refused", detail={"reason": str(refusal)[:300]})
+                raise
+            record("capture", "keep", job=kept["jobId"])
+            return kept
+
+    def _capture(self, owner: str, body: dict[str, Any]) -> dict[str, Any]:
         key = body.get("idempotencyKey")
         parent_id = body.get("parentJobId")
         if not isinstance(key, str) or not re.fullmatch("[a-f0-9-]{36}", key):
@@ -804,6 +827,9 @@ class Studio:
         return self.jobs.record(owner, {**payload, "idempotencyKey": key}, result)
 
     def delete(self, owner: str) -> None:
+        # Counted, then the account's events lose who it was and what it wrote (TASK-0054).
+        record("deletion", "erase_all", account=owner)
+        forget(owner)
         with self.lock:
             with self.db() as db:
                 # A watermark, not a blocklist: the account keeps working, with a clean slate.
@@ -844,6 +870,44 @@ async def bounded_json(request: Request) -> dict[str, Any]:
     return body
 
 
+#: An account id as Supabase issues it: a lowercase UUID (TASK-0046).
+OWNER_ID = "[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}"
+
+#: What the web tier may report (TASK-0054). Anything else is ignored, not stored.
+WEB_EVENT_KINDS = frozenset({"provider_call", "consultation_turn", "sign_in"})
+_COUNTS = ("duration_ms", "input_tokens", "output_tokens", "images")
+
+
+def web_event(item: Any) -> dict[str, Any] | None:
+    """A web-reported event reduced to known, bounded fields, or None if it is not one."""
+    if not isinstance(item, dict) or item.get("kind") not in WEB_EVENT_KINDS:
+        return None
+    operation = item.get("operation")
+    if not isinstance(operation, str) or not re.fullmatch("[a-z_]{1,40}", operation):
+        return None
+    clean: dict[str, Any] = {"kind": item["kind"], "operation": operation}
+    outcome = item.get("outcome", "ok")
+    clean["outcome"] = outcome if outcome in ("ok", "error", "refused") else "error"
+    for name in ("provider", "model"):
+        value = item.get(name)
+        if isinstance(value, str) and 0 < len(value) <= 80:
+            clean[name] = value
+    for name in _COUNTS:
+        value = item.get(name)
+        if isinstance(value, int) and not isinstance(value, bool) and 0 <= value < 10**9:
+            clean[name] = value
+    if isinstance(item.get("text"), str):
+        clean["text"] = item["text"]
+    detail = item.get("detail")
+    if isinstance(detail, dict):
+        clean["detail"] = {
+            str(key)[:40]: value
+            for key, value in list(detail.items())[:10]
+            if isinstance(value, str | int | float | bool) or value is None
+        }
+    return clean
+
+
 def router(studio: Studio, token: str) -> APIRouter:
     routes = APIRouter(prefix="/studio")
 
@@ -856,7 +920,7 @@ def router(studio: Studio, token: str) -> APIRouter:
         if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {token}"):
             raise HTTPException(401, "No autorizado")
         value = request.headers.get("x-owner-id", "")
-        if not re.fullmatch("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}", value):
+        if not re.fullmatch(OWNER_ID, value):
             raise HTTPException(401, "Propietario inválido")
         return value
 
@@ -922,6 +986,39 @@ def router(studio: Studio, token: str) -> APIRouter:
             return studio.jobs.enqueue(who, body)
         except (KeyError, ValueError) as error:
             raise HTTPException(422, str(error)) from error
+
+    @routes.post("/events", status_code=202)
+    async def events(request: Request) -> dict[str, int]:
+        """
+        Events the web tier observed: its own provider calls, consultation turns, sign-ins
+        (TASK-0054). The account is the header's, never the body's, and a cost is computed here
+        from the configured prices rather than accepted from the caller.
+        """
+        if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {token}"):
+            raise HTTPException(401, "No autorizado")
+        who = request.headers.get("x-owner-id") or None
+        if who is not None and not re.fullmatch(OWNER_ID, who):
+            raise HTTPException(401, "Propietario inválido")
+        body = await bounded_json(request)
+        items = body.get("events")
+        if not isinstance(items, list) or len(items) > 50:
+            raise HTTPException(422, "Se esperan entre 0 y 50 eventos.")
+        accepted = 0
+        for item in items:
+            clean = web_event(item)
+            if clean is None:
+                continue
+            kind, operation = clean.pop("kind"), clean.pop("operation")
+            if kind == "provider_call":
+                clean["cost_usd"] = usage.PRICES.cost(
+                    clean.get("model"),
+                    clean.get("input_tokens"),
+                    clean.get("output_tokens"),
+                    clean.get("images"),
+                )
+            record(kind, operation, account=who, **clean)
+            accepted += 1
+        return {"accepted": accepted}
 
     @routes.post("/captures", status_code=201)
     async def capture(request: Request) -> dict[str, Any]:

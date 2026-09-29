@@ -23,6 +23,12 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0054 (ADR-0024): the worker opens the event store at startup (`TATTOO_TELEMETRY_DSN` for
+Postgres, SQLite otherwise), loads `TATTOO_PRICES`, and exposes `POST /studio/events` for the web
+tier. Uploads, kept photos and erasures are recorded; erasure anonymises the account's events.
+`infra/supabase/telemetry.sql` creates the table and a least-privilege login. The architecture
+test lists `psycopg` as egress and allows it only in `telemetry`.
+
 TASK-0047 (ADR-0023): each stored file follows the lifecycle of what it shows (`lifecycle()` in
 `app/studio.py`): composites and backgrounds on the client's own photo are `PHOTO_DERIVED` and
 descend from it; everything else is `DESIGN` and descends from the first reference. The purge takes

@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0054 (ADR-0024): every paid call is metered with `telemetry.meter.provider_call` — the
+OpenAI artwork, edit, finish, background, reference analysis and moderation calls, and FLUX's
+submit-to-download as one call. The meter reads the status and the reported tokens itself, so the
+calls behave exactly as before; `telemetry` is a declared dependency.
+
 TASK-0041: `background_prompt` renders the plate as a man's or a woman's body from
 `placement.bodyType`, a neutral adult when unset. It is the only use of body sex; `build_prompt`
 (the artwork) never reads it.
@@ -105,7 +110,7 @@ request/response audit records.
 
 ## Dependencies
 
-`contracts`, `media`, `safety`.
+`contracts`, `media`, `safety`, `telemetry`.
 
 ## External integrations
 

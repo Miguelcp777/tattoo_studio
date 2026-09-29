@@ -138,3 +138,27 @@ def test_the_bfl_cluster_can_be_chosen_from_the_host() -> None:
         BflStudioProvider("openai-test", "bfl-test", base_url=url)
     with pytest.raises(ValueError):
         BflStudioProvider("openai-test", "bfl-test", base_url="https://api.example.com")
+
+
+def test_the_telemetry_role_can_touch_only_its_table() -> None:
+    """
+    TASK-0054. The worker's database login may write, read, prune and anonymise the events table
+    and nothing else: no other table, no ownership, no superuser, and updates limited to the two
+    columns that erasing an account clears.
+    """
+    sql = (INFRA / "supabase" / "telemetry.sql").read_text(encoding="utf-8").lower()
+    grants = re.findall(r"^grant [^;]+;", sql, re.MULTILINE)
+    assert grants == [
+        "grant usage on schema inkcraft to inkcraft_worker;",
+        "grant select, insert, delete on inkcraft.events to inkcraft_worker;",
+        "grant update (account, text) on inkcraft.events to inkcraft_worker;",
+    ]
+    for forbidden in ("grant all", "superuser", "createrole", "bypassrls", "alter role"):
+        assert forbidden not in sql, forbidden
+    # The password is a placeholder the owner replaces in the SQL editor, never a real one here.
+    assert "password 'change_me'" in sql
+    assert "enable row level security" in sql
+
+    worker = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))["worker"]
+    for setting in ("TATTOO_TELEMETRY_DSN", "TATTOO_PRICES", "TATTOO_TELEMETRY_RETENTION_DAYS"):
+        assert f"{setting}: ${{{setting}:" in worker, setting

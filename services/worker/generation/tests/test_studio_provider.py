@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -125,3 +126,49 @@ def test_background_names_the_body_sex_when_given() -> None:
     assert "of a man" in man and "of a woman" in woman and "of an adult" in neutral
     # Never leaks into a value the artwork prompt would read.
     assert "bodyType" not in man
+
+
+def test_a_paid_image_call_is_recorded_with_its_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """TASK-0054: the provider's own method meters itself, with what OpenAI reported."""
+    import base64 as b64
+    from datetime import UTC, datetime, timedelta
+
+    from telemetry import activity, configure
+    from telemetry.store import EventStore, sqlite_store
+
+    store = sqlite_store(tmp_path / "t.sqlite", start=False)
+    configure(store)
+
+    class Answer:
+        status_code = 200
+
+        def json(self) -> dict[str, Any]:
+            return {
+                "data": [{"b64_json": b64.b64encode(b"png").decode()}],
+                "usage": {"input_tokens": 40, "output_tokens": 1600},
+            }
+
+    provider = StudioProvider("test-not-a-secret")
+    monkeypatch.setattr(provider.client, "post", lambda url, **kw: Answer())
+    monkeypatch.setattr(provider, "accept_output", lambda data: data)
+    try:
+        with activity("11111111-1111-4111-8111-111111111111", "job-7"):
+            provider.background({"placement": {"bodyPart": "forearm"}})
+        (event,) = store.events(datetime.now(UTC) - timedelta(hours=1))
+    finally:
+        configure(EventStore(lambda: None, style="sqlite", start=False))
+        provider.close()
+
+    assert (event["provider"], event["operation"], event["model"]) == (
+        "openai",
+        "background",
+        provider.image_model,
+    )
+    assert (event["input_tokens"], event["output_tokens"], event["images"]) == (40, 1600, 1)
+    assert (event["account"], event["job"], event["outcome"]) == (
+        "11111111-1111-4111-8111-111111111111",
+        "job-7",
+        "ok",
+    )

@@ -78,6 +78,13 @@
       "spec": ".specanchor/modules/jobs.spec.md"
     },
     {
+      "name": "telemetry",
+      "paths": [
+        "services/worker/telemetry/*"
+      ],
+      "spec": ".specanchor/modules/telemetry.spec.md"
+    },
+    {
       "name": "platform",
       "paths": [
         ".claude/launch.json",

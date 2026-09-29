@@ -21,6 +21,7 @@ import {
   RequestError,
   session,
 } from '../../../lib/studio-server';
+import { attribute, report } from '../../../lib/telemetry';
 
 export async function GET(request: Request): Promise<NextResponse> {
   // TASK-0045: an unauthenticated read is refused, not answered with an empty studio. Only a
@@ -59,6 +60,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     // TASK-0045: nothing here runs for a stranger; the orchestrator calls a paid model.
     const caller = await requireAccount(request);
+    // TASK-0054: set here, in the handler's own context, so the model calls it makes below are
+    // attributed to this account. Set inside `requireAccount` it did not reach back to here.
+    attribute(caller.account.id);
     const body = await input(request);
 
     if (
@@ -103,6 +107,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           409,
         );
       current.acceptedBrief = signature;
+      report({ kind: 'consultation_turn', operation: 'accept_brief' }, caller.account.id);
       return reply({ session: current.state }, current);
     }
 
@@ -213,6 +218,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         (r) => r.source !== body['removeReference'],
       );
 
+    const heard = current.state.messages.length;
     current.state = await orchestrator.handleUserInteraction(
       current.state,
       text,
@@ -220,6 +226,28 @@ export async function POST(request: Request): Promise<NextResponse> {
       preferences,
       body['action'] === 'retry_references',
     );
+
+    // TASK-0054: the turn, as the client wrote it and as the studio answered.
+    const action = String(body['action']);
+    report(
+      {
+        kind: 'consultation_turn',
+        operation: action === 'orchestrate' ? 'message' : action,
+        ...(text.trim() ? { text } : {}),
+        detail: {
+          phase: current.state.phase,
+          ...(action === 'style_variant' ? { variant: String(body['variantId'] ?? '') } : {}),
+        },
+      },
+      caller.account.id,
+    );
+    const answer = current.state.messages
+      .slice(heard)
+      .filter((entry) => entry.senderLabel !== 'Cliente')
+      .map((entry) => entry.content)
+      .join('\n\n');
+    if (answer)
+      report({ kind: 'consultation_turn', operation: 'reply', text: answer }, caller.account.id);
 
     delete current.jobId;
 

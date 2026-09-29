@@ -1,6 +1,7 @@
 import type { ConsultationSlots, ConsultationTurn } from '../types';
 import { CONSULTATION_SYSTEM_PROMPT } from './system-prompt';
 import type { ConsultationProvider, ProviderExtractionOutput } from './types';
+import { reportUsage, tokensOf } from '../usage';
 
 export interface OpenAIAstraConfig {
   apiKey?: string;
@@ -45,6 +46,18 @@ export class OpenAIAstraProvider implements ConsultationProvider {
       ...turns.map((turn) => this.formatTurn(turn)),
     ];
 
+    // TASK-0054: timed from the request to the parsed body, which is where the tokens are.
+    const started = Date.now();
+    const report = (outcome: 'ok' | 'error', body?: unknown, error?: string): void =>
+      reportUsage({
+        provider: 'openai',
+        operation: 'consultation',
+        model: this.model,
+        outcome,
+        durationMs: Date.now() - started,
+        ...tokensOf(body),
+        ...(error ? { error } : {}),
+      });
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       // An interactive turn must not hang on a slow model (TASK-0033).
       signal: AbortSignal.timeout(30000),
@@ -62,6 +75,7 @@ export class OpenAIAstraProvider implements ConsultationProvider {
     });
 
     if (!response.ok) {
+      report('error', undefined, `HTTP ${response.status}`);
       const errorText = await response.text();
       throw new OpenAIAstraError(
         `OpenAI Astra API error (${response.status} ${response.statusText}): ${errorText}`,
@@ -69,6 +83,7 @@ export class OpenAIAstraProvider implements ConsultationProvider {
     }
 
     const data = await response.json();
+    report('ok', data);
     const rawContent = data.choices?.[0]?.message?.content;
     if (!rawContent) {
       throw new OpenAIAstraError('Model did not return message content.');

@@ -12,6 +12,7 @@ import httpx2
 from PIL import Image
 
 from safety.openai_moderation import OpenAIModerationProvider
+from telemetry.meter import provider_call
 
 #: What each zone looks like to a camera (TASK-0039). The raw id is not enough: asked for a
 #: "right calf" in "frontal view", the model drew the front of the leg — the shin — and the
@@ -62,7 +63,11 @@ class StudioProvider:
         self.client.close()
 
     def post(self, url: str, *, json: dict[str, Any], headers: dict[str, str]) -> Any:
-        return self.client.post(url, json=json, headers=headers)
+        # The moderation adapter's transport: every screen of an upload or an output is counted.
+        with provider_call("openai", "moderation", json.get("model")) as call:
+            response = self.client.post(url, json=json, headers=headers)
+            call.read(response)
+            return response
 
     def moderation(self) -> OpenAIModerationProvider:
         return OpenAIModerationProvider(
@@ -106,16 +111,18 @@ class StudioProvider:
             }
             for data in references
         )
-        response = self.client.post(
-            "https://api.openai.com/v1/responses",
-            headers={"Authorization": f"Bearer {self.key}"},
-            json={
-                "model": self.vision_model,
-                "store": False,
-                "input": [{"role": "user", "content": content}],
-            },
-        )
-        self.check(response)
+        with provider_call("openai", "analyze", self.vision_model) as call:
+            response = self.client.post(
+                "https://api.openai.com/v1/responses",
+                headers={"Authorization": f"Bearer {self.key}"},
+                json={
+                    "model": self.vision_model,
+                    "store": False,
+                    "input": [{"role": "user", "content": content}],
+                },
+            )
+            call.read(response)
+            self.check(response)
         body = response.json()
         text = " ".join(
             part.get("text", "")
@@ -182,23 +189,25 @@ class StudioProvider:
         self, brief: dict[str, Any], references: list[bytes], analysis: str, *, colour: bool
     ) -> bytes:
         prompt = self.artwork_prompt(brief, analysis, colour=colour)
-        response = self.client.post(
-            "https://api.openai.com/v1/images/edits",
-            headers={"Authorization": f"Bearer {self.key}"},
-            data={
-                "model": self.image_model,
-                "prompt": prompt,
-                "size": "1536x1024"
-                if brief["size"]["widthMm"] > brief["size"]["heightMm"]
-                else "1024x1536",
-                "quality": "high",
-                "n": "1",
-            },
-            files=[
-                ("image[]", (f"reference-{i}.png", data, "image/png"))
-                for i, data in enumerate(references)
-            ],
-        )
+        with provider_call("openai", "artwork", self.image_model) as call:
+            response = self.client.post(
+                "https://api.openai.com/v1/images/edits",
+                headers={"Authorization": f"Bearer {self.key}"},
+                data={
+                    "model": self.image_model,
+                    "prompt": prompt,
+                    "size": "1536x1024"
+                    if brief["size"]["widthMm"] > brief["size"]["heightMm"]
+                    else "1024x1536",
+                    "quality": "high",
+                    "n": "1",
+                },
+                files=[
+                    ("image[]", (f"reference-{i}.png", data, "image/png"))
+                    for i, data in enumerate(references)
+                ],
+            )
+            call.read(response)
         return self.image_bytes(response)
 
     @staticmethod
@@ -222,18 +231,20 @@ class StudioProvider:
         """
         with Image.open(io.BytesIO(mockup)) as image:
             portrait = image.height >= image.width
-        response = self.client.post(
-            "https://api.openai.com/v1/images/edits",
-            headers={"Authorization": f"Bearer {self.key}"},
-            data={
-                "model": self.image_model,
-                "prompt": self.blend_prompt(finish),
-                "size": "1024x1536" if portrait else "1536x1024",
-                "quality": "high",
-                "n": "1",
-            },
-            files=[("image[]", ("mockup.png", mockup, "image/png"))],
-        )
+        with provider_call("openai", "finish", self.image_model) as call:
+            response = self.client.post(
+                "https://api.openai.com/v1/images/edits",
+                headers={"Authorization": f"Bearer {self.key}"},
+                data={
+                    "model": self.image_model,
+                    "prompt": self.blend_prompt(finish),
+                    "size": "1024x1536" if portrait else "1536x1024",
+                    "quality": "high",
+                    "n": "1",
+                },
+                files=[("image[]", ("mockup.png", mockup, "image/png"))],
+            )
+            call.read(response)
         return self.image_bytes(response)
 
     def edit_artwork(
@@ -246,24 +257,26 @@ class StudioProvider:
         rendered: bool,
         attached: int = 0,
     ) -> bytes:
-        response = self.client.post(
-            "https://api.openai.com/v1/images/edits",
-            headers={"Authorization": f"Bearer {self.key}"},
-            data={
-                "model": self.image_model,
-                "quality": "high",
-                "n": "1",
-                "size": "1536x1024"
-                if brief["size"]["widthMm"] > brief["size"]["heightMm"]
-                else "1024x1536",
-                "prompt": self.edit_prompt(instruction, rendered=rendered, attached=attached),
-            },
-            files=[("image[]", ("accepted-master.png", master, "image/png"))]
-            + [
-                ("image[]", (f"reference-{i}.png", data, "image/png"))
-                for i, data in enumerate(references)
-            ],
-        )
+        with provider_call("openai", "edit", self.image_model) as call:
+            response = self.client.post(
+                "https://api.openai.com/v1/images/edits",
+                headers={"Authorization": f"Bearer {self.key}"},
+                data={
+                    "model": self.image_model,
+                    "quality": "high",
+                    "n": "1",
+                    "size": "1536x1024"
+                    if brief["size"]["widthMm"] > brief["size"]["heightMm"]
+                    else "1024x1536",
+                    "prompt": self.edit_prompt(instruction, rendered=rendered, attached=attached),
+                },
+                files=[("image[]", ("accepted-master.png", master, "image/png"))]
+                + [
+                    ("image[]", (f"reference-{i}.png", data, "image/png"))
+                    for i, data in enumerate(references)
+                ],
+            )
+            call.read(response)
         return self.image_bytes(response)
 
     @staticmethod
@@ -320,16 +333,18 @@ class StudioProvider:
         )
 
     def background(self, brief: dict[str, Any]) -> bytes:
-        response = self.client.post(
-            "https://api.openai.com/v1/images/generations",
-            headers={"Authorization": f"Bearer {self.key}"},
-            json={
-                "model": self.image_model,
-                "size": "1024x1536",
-                "quality": "medium",
-                "prompt": self.background_prompt(brief),
-            },
-        )
+        with provider_call("openai", "background", self.image_model) as call:
+            response = self.client.post(
+                "https://api.openai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {self.key}"},
+                json={
+                    "model": self.image_model,
+                    "size": "1024x1536",
+                    "quality": "medium",
+                    "prompt": self.background_prompt(brief),
+                },
+            )
+            call.read(response)
         return self.image_bytes(response)
 
     def image_bytes(self, response: Any) -> bytes:

@@ -57,6 +57,12 @@ export default function SignInPage(): ReactNode {
         <Brand variant="card" />
         <h1>Entra al estudio</h1>
         <p className="sign-in-note">Las cuentas las crea el estudio. Si necesitas uno, pídelo.</p>
+        {/* TASK-0054: what is recorded is said before anyone signs in, not discovered later. */}
+        <p className="sign-in-note sign-in-privacy">
+          Registramos el uso del estudio —tus mensajes, tus diseños, los tiempos y el consumo— para
+          mantenerlo y mejorarlo. Las fotos de tu cuerpo nunca se registran. Al eliminar tus datos,
+          lo registrado deja de estar asociado a ti.
+        </p>
 
         {error && (
           <p className="sign-in-error" role="alert">

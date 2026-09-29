@@ -1821,3 +1821,9 @@ body::after {
   font-size: 0.9rem;
   text-align: center;
 }
+
+/* TASK-0054: the monitoring notice, readable but secondary to signing in. */
+.sign-in-privacy {
+  font-size: 0.75rem;
+  line-height: 1.5;
+}

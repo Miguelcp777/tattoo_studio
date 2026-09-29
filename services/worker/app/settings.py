@@ -81,6 +81,18 @@ class Settings(BaseSettings):
     bfl_base_url: str = "https://api.eu.bfl.ai"
     """EU cluster by default: requests and results stay in the EU region."""
 
+    telemetry_dsn: SecretStr | None = None
+    """TASK-0054: Postgres connection string for events (TATTOO_TELEMETRY_DSN), for a role that
+    may only insert into, read, anonymise and prune ``inkcraft.events``. Unset: events are kept in
+    SQLite beside the studio data, which is what development and the tests use."""
+
+    prices: str | None = None
+    """TASK-0054: USD per model as JSON (TATTOO_PRICES), for cost estimates. Unset: tokens are
+    recorded and cost is left empty, never guessed."""
+
+    telemetry_retention_days: int = Field(default=365, ge=1)
+    """Events older than this are deleted (TATTOO_TELEMETRY_RETENTION_DAYS)."""
+
     bfl_background_model: str = "flux-2-pro"
     """TASK-0025: FLUX.2 renders the blank skin plate only. Artwork and edits stay on
     OpenAI, which is the vendor that will actually return flat art on white (ADR-0009)."""

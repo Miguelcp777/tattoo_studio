@@ -6,6 +6,7 @@ import base64
 import io
 import json
 import re
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -33,6 +34,9 @@ from stencil.engine import (
     trace_colour_artwork,
     trace_native_lineart,
 )
+from telemetry import configure
+from telemetry.store import EventStore, sqlite_store
+from telemetry.usage import Prices, configure_prices
 
 
 def picture(lines: bool = True) -> bytes:
@@ -1275,3 +1279,99 @@ def test_an_upload_is_a_photograph_or_design_material() -> None:
     )
     with pytest.raises(ValueError):
         store.ingest_photo(b"", object(), retention=RetentionClass.PHOTO_DERIVED)  # type: ignore[arg-type]
+
+
+# --- TASK-0054: what the studio records ---------------------------------------------------------
+
+
+@pytest.fixture
+def recorded(tmp_path: Path) -> Iterator[EventStore]:
+    store = sqlite_store(tmp_path / "telemetry.sqlite", start=False)
+    configure(store)
+    yield store
+    configure(EventStore(lambda: None, style="sqlite", start=False))
+    configure_prices(Prices())
+
+
+def kinds(store: EventStore) -> list[tuple[str, str, str]]:
+    return [
+        (e["kind"], e["operation"], e["outcome"])
+        for e in reversed(store.events(datetime.now(UTC) - timedelta(hours=1)))
+    ]
+
+
+def test_a_generation_is_recorded_for_its_owner(tmp_path: Path, recorded: EventStore) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    job_id = a_design(studio)
+
+    events = recorded.events(datetime.now(UTC) - timedelta(hours=1))
+    job = next(e for e in events if e["kind"] == "job")
+    assert (job["account"], job["job"], job["outcome"]) == (ACCOUNT, job_id, "ok")
+    assert job["detail"]["zone"] and job["duration_ms"] is not None
+    assert ("upload", "reference", "ok") in kinds(recorded)
+
+
+def test_a_refused_upload_is_recorded_without_the_image(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    with pytest.raises(ValueError):
+        studio.ingest(ACCOUNT, {**an_upload(), "consent": False})
+    (event,) = recorded.events(datetime.now(UTC) - timedelta(hours=1))
+    assert (event["kind"], event["outcome"]) == ("upload", "refused")
+    # Nothing that could be the picture: no text, and a detail of a reason only.
+    assert event["text"] is None and set(event["detail"]) == {"reason"}
+
+
+def test_erasing_the_account_leaves_numbers_without_a_name(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    a_design(studio)
+    studio.delete(ACCOUNT)
+    events = recorded.events(datetime.now(UTC) - timedelta(hours=1))
+    assert events and all(e["account"] is None for e in events)
+    assert ("deletion", "erase_all", "ok") in kinds(recorded)
+
+
+def test_the_web_reports_events_as_the_account_it_names(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    configure_prices(
+        Prices.parse('{"claude-x": {"input_per_million": 3, "output_per_million": 15}}')
+    )
+    app = FastAPI()
+    app.include_router(router(Studio(tmp_path, b"x" * 32, FakeProvider()), "test-only-token"))
+    client = TestClient(app)
+    auth = {"Authorization": "Bearer test-only-token"}
+    batch = {
+        "events": [
+            {
+                "kind": "provider_call",
+                "operation": "consultation",
+                "provider": "anthropic",
+                "model": "claude-x",
+                "input_tokens": 1000,
+                "output_tokens": 200,
+                "cost_usd": 999,  # ignored: the worker prices it
+                "account": "someone-else",  # ignored: the header names the account
+            },
+            {"kind": "consultation_turn", "operation": "message", "text": "Un lobo"},
+            {"kind": "made_up", "operation": "x"},
+            {"kind": "sign_in", "operation": "NOT VALID"},
+        ]
+    }
+
+    assert client.post("/studio/events", json=batch).status_code == 401
+    answer = client.post("/studio/events", json=batch, headers={**auth, "X-Owner-Id": ACCOUNT})
+    assert answer.json() == {"accepted": 2}
+
+    call, turn = reversed(recorded.events(datetime.now(UTC) - timedelta(hours=1)))
+    assert call["account"] == turn["account"] == ACCOUNT
+    assert call["cost_usd"] == pytest.approx(0.006)
+    assert turn["text"] == "Un lobo"
+    # A failed sign-in has no account yet: the header may be absent, never malformed.
+    anonymous = {"events": [{"kind": "sign_in", "operation": "password", "outcome": "refused"}]}
+    assert client.post("/studio/events", json=anonymous, headers=auth).json() == {"accepted": 1}
+    bad = {**auth, "X-Owner-Id": "not-an-account"}
+    assert client.post("/studio/events", json=anonymous, headers=bad).status_code == 401

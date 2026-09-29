@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0054 (ADR-0024): `tick` runs each job inside `telemetry.activity(owner, job)`, so every call it
+makes is attributed, and records a `job` event with its outcome, duration and brief summary.
+
 TASK-0047: `history(owner)` is no longer windowed to 24 hours; it returns the owner's 50 newest
 successful versions. Designs do not expire (ADR-0023), so neither does the list of them.
 
@@ -64,7 +67,7 @@ failure reason, attempt count. Records outlive the assets they reference for aud
 
 ## Dependencies
 
-`contracts`.
+`contracts`, `telemetry`.
 
 ## External integrations
 

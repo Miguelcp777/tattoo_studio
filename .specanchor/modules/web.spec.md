@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0054 (ADR-0024): `lib/telemetry.ts` forwards the consultation's model calls, each turn (what
+the client wrote and what the studio answered) and each sign-in to the worker's event route. The
+account is set in the handler (`attribute`) and passed explicitly to turn events; a refused
+sign-in carries neither address nor account. Tests route events to a collector (`test-setup.ts`).
+The sign-in page states what is recorded.
+
 TASK-0047 (ADR-0023): the history note says versions are kept and body photos expire after 24
 hours. When a version's skin view has gone with its photo, the design dialog shows a notice in its
 place and hides that download, instead of a broken image.

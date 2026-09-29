@@ -32,6 +32,8 @@ from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
+from telemetry.meter import provider_call
+
 from .studio import StudioProvider
 
 DEFAULT_BASE_URL = "https://api.eu.bfl.ai"
@@ -118,14 +120,19 @@ class BflStudioProvider(StudioProvider):
             key = "input_image" if index == 0 else f"input_image_{index + 1}"
             payload[key] = base64.b64encode(data).decode()
 
-        response = self.client.post(
-            f"{self.base_url}/v1/{model}", json=payload, headers=self._headers()
-        )
-        self._check_bfl(response)
-        polling_url = self._json(response).get("polling_url")
-        if not _trusted_bfl_url(polling_url):
-            raise ValueError("BFL devolvió una respuesta inválida.")
-        return self.accept_output(self._download(self._poll(str(polling_url))))
+        # Submit, wait and download are one paid image from the client's point of view.
+        with provider_call("bfl", "background", model) as call:
+            response = self.client.post(
+                f"{self.base_url}/v1/{model}", json=payload, headers=self._headers()
+            )
+            self._check_bfl(response)
+            polling_url = self._json(response).get("polling_url")
+            if not _trusted_bfl_url(polling_url):
+                raise ValueError("BFL devolvió una respuesta inválida.")
+            image = self._download(self._poll(str(polling_url)))
+            call.images = 1
+            call.detail["cluster"] = self.base_url
+        return self.accept_output(image)
 
     def _headers(self) -> dict[str, str]:
         return {"x-key": self.bfl_key, "accept": "application/json"}

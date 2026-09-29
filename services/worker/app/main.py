@@ -9,6 +9,8 @@ from __future__ import annotations
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI
@@ -16,6 +18,8 @@ from pydantic import BaseModel
 
 from app.settings import Settings, SettingsError, load_settings
 from app.studio import build_studio, router
+from telemetry import configure, open_store
+from telemetry.usage import Prices, configure_prices
 
 
 class HealthResponse(BaseModel):
@@ -34,6 +38,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     resolved = settings if settings is not None else load_settings()
 
     studio = build_studio(resolved)
+    # TASK-0054: events go to Postgres when configured, SQLite otherwise. A wrong connection
+    # string or bad prices stop the worker here, not on the first request (PLAT-INV-005).
+    events = None
+    if studio:
+        configure_prices(Prices.parse(resolved.prices))
+        events = open_store(
+            resolved.telemetry_dsn.get_secret_value() if resolved.telemetry_dsn else None,
+            Path(resolved.data_dir),
+            retention=timedelta(days=resolved.telemetry_retention_days),
+        )
+        configure(events)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -45,6 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             studio.jobs.thread.join(timeout=2)
             if not studio.jobs.thread.is_alive():
                 studio.provider.close()
+        if events:
+            events.close()
 
     app = FastAPI(
         title="Tattoo Creator Worker",

@@ -4,6 +4,7 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '../agents/researcher';
 import type { ConsultationSlots, ConsultationTurn, ReferenceImage } from '../types';
 import { CONSULTATION_SYSTEM_PROMPT } from './system-prompt';
 import type { ConsultationProvider, ProviderExtractionOutput } from './types';
+import { metered } from '../usage';
 
 /**
  * Claude reasoning backend for the consultation (TASK-0032/0033, ADR-0015).
@@ -196,18 +197,23 @@ export class ClaudeConsultationProvider implements ConsultationProvider {
 
     let message: Anthropic.Message;
     try {
-      message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: this.maxTokens,
-        system: `${CONSULTATION_SYSTEM_PROMPT}\n\nSlots extraídos acumulados hasta ahora: ${JSON.stringify(
-          currentSlots ?? {},
-        )}`,
-        messages: turns.map((turn) => this.formatTurn(turn)),
-        output_config: {
-          effort: this.effort,
-          format: { type: 'json_schema', schema: CONSULTATION_OUTPUT_SCHEMA },
-        },
-      });
+      const client = this.client;
+      message = await metered(
+        { provider: 'anthropic', operation: 'consultation', model: this.model },
+        () =>
+          client.messages.create({
+            model: this.model,
+            max_tokens: this.maxTokens,
+            system: `${CONSULTATION_SYSTEM_PROMPT}\n\nSlots extraídos acumulados hasta ahora: ${JSON.stringify(
+              currentSlots ?? {},
+            )}`,
+            messages: turns.map((turn) => this.formatTurn(turn)),
+            output_config: {
+              effort: this.effort,
+              format: { type: 'json_schema', schema: CONSULTATION_OUTPUT_SCHEMA },
+            },
+          }),
+      );
     } catch (error) {
       // Typed SDK errors carry the status; never forward the body, which can echo the request.
       const status = error instanceof Anthropic.APIError ? ` (${error.status ?? 'network'})` : '';

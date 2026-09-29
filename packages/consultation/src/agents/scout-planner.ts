@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import { completedText } from '../providers/claude';
+import { metered } from '../usage';
 import type {
   JudgeCandidate,
   PlannedQuery,
@@ -97,13 +98,21 @@ export class ClaudeScoutQueryPlanner implements ScoutQueryPlanner {
 
   async plan(subject: string): Promise<PlannedQuery[]> {
     if (!this.client) throw new Error('ANTHROPIC_API_KEY is not configured for the scout.');
-    const message = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 4096,
-      system: PLANNER_PROMPT,
-      messages: [{ role: 'user', content: subject.slice(0, 500) }],
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: PLANNER_SCHEMA } },
-    });
+    const client = this.client;
+    const message = await metered(
+      { provider: 'anthropic', operation: 'scout_plan', model: this.model },
+      () =>
+        client.messages.create({
+          model: this.model,
+          max_tokens: 4096,
+          system: PLANNER_PROMPT,
+          messages: [{ role: 'user', content: subject.slice(0, 500) }],
+          output_config: {
+            effort: 'low',
+            format: { type: 'json_schema', schema: PLANNER_SCHEMA },
+          },
+        }),
+    );
     const parsed = JSON.parse(completedText(message)) as { queries?: unknown };
     if (!Array.isArray(parsed.queries)) throw new Error('Scout planner did not return queries.');
     return parsed.queries
@@ -145,13 +154,18 @@ export class ClaudeReferenceJudge implements ReferenceJudge {
         source: { type: 'base64', media_type: candidate.mediaType, data: candidate.data },
       });
     });
-    const message = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 4096,
-      system: JUDGE_PROMPT,
-      messages: [{ role: 'user', content }],
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: JUDGE_SCHEMA } },
-    });
+    const client = this.client;
+    const message = await metered(
+      { provider: 'anthropic', operation: 'scout_judge', model: this.model },
+      () =>
+        client.messages.create({
+          model: this.model,
+          max_tokens: 4096,
+          system: JUDGE_PROMPT,
+          messages: [{ role: 'user', content }],
+          output_config: { effort: 'low', format: { type: 'json_schema', schema: JUDGE_SCHEMA } },
+        }),
+    );
     const parsed = JSON.parse(completedText(message)) as { keep?: unknown };
     if (!Array.isArray(parsed.keep)) throw new Error('Reference judge did not return a list.');
     return parsed.keep.filter(

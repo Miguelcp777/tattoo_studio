@@ -21,7 +21,9 @@ WORKER_ROOT = Path(__file__).resolve().parents[2]
 #: `generation` owns image-model calls; `safety` owns moderation calls. Routing
 #: moderation through `generation` was rejected because it would let that module's
 #: failure disable the gate that constrains it.
-EGRESS_ALLOWED = {"generation", "safety"}
+#: `telemetry` (TASK-0054) reaches only its own event database, never a model; it is listed
+#: here so that its connection is a declared exception rather than one the scan cannot see.
+EGRESS_ALLOWED = {"generation", "safety", "telemetry"}
 
 #: HTTP clients and provider SDKs. Importing any of these is outbound capability.
 NETWORK_MODULES = {
@@ -37,6 +39,7 @@ NETWORK_MODULES = {
     "openai",
     "replicate",
     "anthropic",
+    "psycopg",
 }
 
 #: Directories that are worker modules rather than tooling or virtualenvs.
@@ -159,7 +162,17 @@ def test_the_allowlist_is_not_vacuous(module: str) -> None:
 SPEC_ROOT = WORKER_ROOT.parents[1] / ".specanchor" / "modules"
 
 #: Modules that live in this worker. Others (web, consultation) are TypeScript.
-WORKER_MODULES = {"generation", "flash", "media", "safety", "app", "jobs", "stencil", "mockup"}
+WORKER_MODULES = {
+    "generation",
+    "flash",
+    "media",
+    "safety",
+    "app",
+    "jobs",
+    "stencil",
+    "mockup",
+    "telemetry",
+}
 
 
 def _declared_dependencies() -> dict[str, set[str]]:

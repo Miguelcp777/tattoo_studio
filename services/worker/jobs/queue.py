@@ -14,6 +14,8 @@ from typing import Any
 
 from tattoo_contracts.validation import validate
 
+from telemetry import activity, record
+
 
 class JobQueue:
     def __init__(
@@ -178,16 +180,34 @@ class JobQueue:
             if row is None:
                 return False
             db.execute("UPDATE jobs SET state='running' WHERE id=?", (row["id"],))
-        try:
-            result = self.execute(row["owner"], json.loads(row["payload"]))
-            state, error = "succeeded", None
-        except ValueError as failure:
-            result, state, error = None, "failed", str(failure)[:400]
-        except Exception:
-            result, state, error = (
-                None,
-                "failed",
-                "No se pudo completar el trabajo. No hay un resultado válido.",
+        payload = json.loads(row["payload"])
+        started = time.monotonic()
+        # Every provider call made for this job is attributed to its owner and to it (TASK-0054).
+        with activity(row["owner"], row["id"]):
+            try:
+                result = self.execute(row["owner"], payload)
+                state, error = "succeeded", None
+            except ValueError as failure:
+                result, state, error = None, "failed", str(failure)[:400]
+            except Exception:
+                result, state, error = (
+                    None,
+                    "failed",
+                    "No se pudo completar el trabajo. No hay un resultado válido.",
+                )
+            brief = payload.get("brief") or {}
+            record(
+                "job",
+                "edit" if payload.get("edit") else "generate",
+                outcome="ok" if state == "succeeded" else "error",
+                duration_ms=int((time.monotonic() - started) * 1000),
+                detail={
+                    "error": error,
+                    "style": (brief.get("style") or {}).get("primary"),
+                    "zone": (brief.get("placement") or {}).get("bodyPart"),
+                    "colour": (brief.get("colour") or {}).get("mode"),
+                    "ownPhoto": bool(payload.get("bodyPhotoId")),
+                },
             )
         with self.connect() as db:
             db.execute(

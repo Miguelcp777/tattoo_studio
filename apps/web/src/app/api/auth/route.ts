@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import {
   accessTokenOf,
+  accountFor,
   AuthError,
   authenticate,
   clearAuthCookies,
@@ -11,6 +12,7 @@ import {
   signOut,
 } from '../../../lib/auth';
 import { forgetConsultation } from '../../../lib/studio-server';
+import { report } from '../../../lib/telemetry';
 
 /**
  * Who is signed in: for the login page to decide where to send the browser, and for the studio to
@@ -45,7 +47,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (email.length > 320 || password.length > 200)
       throw new AuthError('Solicitud inválida.', 400);
 
-    const tokens = await signIn(email, password);
+    let tokens;
+    try {
+      tokens = await signIn(email, password);
+    } catch (error) {
+      // TASK-0054: a refused sign-in is counted, with neither address nor account: recording
+      // which addresses were tried would itself be a list of who has an account.
+      report(
+        {
+          kind: 'sign_in',
+          operation: 'password',
+          outcome: error instanceof AuthError && error.status === 401 ? 'refused' : 'error',
+        },
+        null,
+      );
+      throw error;
+    }
+    const account = await accountFor(tokens.accessToken);
+    if (account) report({ kind: 'sign_in', operation: 'password' }, account.id);
     return setAuthCookies(
       NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } }),
       tokens,

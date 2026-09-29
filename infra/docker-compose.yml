@@ -31,6 +31,10 @@ services:
       # https://api.bfl.ai to route round an EU incident. Only a text prompt goes to BFL, never a
       # photograph, so this moves no client image out of Europe.
       TATTOO_BFL_BASE_URL: ${TATTOO_BFL_BASE_URL:-https://api.eu.bfl.ai}
+      # TASK-0054: monitoring. Without a DSN, events are kept in SQLite on the worker's volume.
+      TATTOO_TELEMETRY_DSN: ${TATTOO_TELEMETRY_DSN:-}
+      TATTOO_PRICES: ${TATTOO_PRICES:-}
+      TATTOO_TELEMETRY_RETENTION_DAYS: ${TATTOO_TELEMETRY_RETENTION_DAYS:-365}
     volumes:
       - worker-data:/data
     restart: unless-stopped

@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0054 (ADR-0024): `usage.ts` announces every model call — the consultation, the scout's
+planner and judge — with tokens, duration and outcome, to one listener the web tier installs. A
+listener that throws is ignored; a call's outcome never changes.
+
 TASK-0039: a message naming both black-and-grey and colour reads as
 `black_and_grey_with_accent`; "sin color" is not a colour cue. **Supersedes the TASK-0033 merge rule
 for style, colour and zone:** `textReadings` finds what the keyword rules read from the current

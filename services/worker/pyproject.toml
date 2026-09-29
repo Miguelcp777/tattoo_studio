@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.9.0",
     "pydantic-settings>=2.5.0",
     "uvicorn>=0.31.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [dependency-groups]
@@ -36,7 +37,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup", "orchestration"]
+packages = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup", "orchestration", "telemetry"]
 
 [tool.ruff]
 line-length = 100
@@ -57,4 +58,4 @@ module = ["piexif.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup", "orchestration"]
+testpaths = ["app", "generation", "flash", "media", "safety", "jobs", "stencil", "mockup", "orchestration", "telemetry"]
