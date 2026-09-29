@@ -12,6 +12,8 @@ import { briefSignature, buildMasterPrompt } from '@tattoo/consultation/master-p
 
 import { Brand } from '@/components/Brand';
 
+import { SessionMenu } from '@/components/SessionMenu';
+
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { StepFlow } from '@/components/StepFlow';
@@ -556,7 +558,10 @@ export default function ConsultationPage(): ReactNode {
       <header className="studio-header">
         <Brand variant="header" />
 
-        <span className="model-badge">Diseño · Piel · Stencil</span>
+        <div className="header-end">
+          <span className="model-badge">Diseño · Piel · Stencil</span>
+          <SessionMenu />
+        </div>
       </header>
 
       <StepFlow steps={steps} onSelect={goToStep} />

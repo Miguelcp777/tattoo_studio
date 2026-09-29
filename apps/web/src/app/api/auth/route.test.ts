@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DELETE, GET, POST } from './route';
 import { GET as consultation } from '../consultation/route';
+import { displayName } from '../../../lib/auth';
 import { configureAuth, SUPABASE_ORIGIN, TEST_ACCOUNT } from '../../../lib/auth.testing';
 
 afterEach(() => {
@@ -84,10 +85,46 @@ describe('signing in (TASK-0045)', () => {
     expect((await POST(login({ email: 'a@b.test', password: 'x' }))).status).toBe(503);
   });
 
-  it('signing out clears both cookies', async () => {
-    const response = await DELETE();
-    for (const name of ['inkcraft_at', 'inkcraft_rt'])
-      expect(cookieFor(response, name)).toMatch(/Max-Age=0/i);
+  const signOut = (cookie?: string) =>
+    DELETE(
+      new Request('http://localhost:3000/api/auth', {
+        method: 'DELETE',
+        ...(cookie ? { headers: { cookie } } : {}),
+      }),
+    );
+
+  it('signing out ends the session at Supabase and clears every cookie (TASK-0049)', async () => {
+    const calls: { url: string; bearer: string | null }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        calls.push({ url: String(url), bearer: new Headers(init?.headers).get('Authorization') });
+        return new Response(null, { status: 204 });
+      }),
+    );
+    const response = await signOut('inkcraft_at=access-1; inkcraft_rt=refresh-1; inkcraft=abc');
+    expect(response.status).toBe(200);
+    // The refresh token stops working, rather than merely being forgotten by this browser.
+    expect(calls).toEqual([
+      { url: `${SUPABASE_ORIGIN}/auth/v1/logout?scope=local`, bearer: 'Bearer access-1' },
+    ]);
+    // Both tokens and the consultation go: the next person on this browser starts clean.
+    for (const name of ['inkcraft_at', 'inkcraft_rt', 'inkcraft'])
+      expect(cookieFor(response, name)).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
+  });
+
+  it('signing out still works when Supabase cannot be reached', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('network down');
+      }),
+    );
+    const response = await signOut('inkcraft_at=access-1');
+    expect(response.status).toBe(200);
+    expect(cookieFor(response, 'inkcraft_at')).toMatch(/Max-Age=0/i);
+    // And with no session at all there is nothing to revoke and nothing to fail.
+    expect((await signOut()).status).toBe(200);
   });
 
   it('reports who is signed in, and nobody when the cookie is absent', async () => {
@@ -98,10 +135,35 @@ describe('signing in (TASK-0045)', () => {
     const signed = await GET(
       new Request('http://localhost:3000/api/auth', { headers: { cookie: 'inkcraft_at=t' } }),
     );
-    expect((await signed.json()).account).toEqual({ email: TEST_ACCOUNT.email });
+    // TASK-0049: a name to greet them by; the account id stays on the server.
+    expect((await signed.json()).account).toEqual({
+      email: TEST_ACCOUNT.email,
+      displayName: 'owner',
+    });
 
     const anonymous = await GET(new Request('http://localhost:3000/api/auth'));
     expect((await anonymous.json()).account).toBeNull();
+  });
+
+  it('greets by the name set on the account when there is one', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ...TEST_ACCOUNT, user_metadata: { full_name: 'Miguel' } })),
+    );
+    const signed = await GET(
+      new Request('http://localhost:3000/api/auth', { headers: { cookie: 'inkcraft_at=t' } }),
+    );
+    expect((await signed.json()).account.displayName).toBe('Miguel');
+  });
+});
+
+describe('what to call someone (TASK-0049)', () => {
+  it('prefers the account name, then the address before the @, never the whole address', () => {
+    expect(displayName({ name: '  Ana  ', email: 'ana.lopez@example.com' })).toBe('Ana');
+    expect(displayName({ name: '', email: 'ana.lopez@example.com' })).toBe('ana.lopez');
+    expect(displayName({ email: 'ana.lopez@example.com' })).not.toContain('@');
+    expect(displayName({ email: undefined })).toBe('de nuevo');
+    expect(displayName({ name: 'x'.repeat(200), email: undefined })).toHaveLength(60);
   });
 });
 

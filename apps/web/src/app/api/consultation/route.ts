@@ -33,7 +33,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return errorResponse(error);
   }
   try {
-    const current = session(request);
+    const current = session(request, false, caller.account.id);
     carryRenewal(current, caller);
 
     return reply(
@@ -75,7 +75,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
       throw new RequestError('Acción inválida.');
 
-    current = session(request, true);
+    current = session(request, true, caller.account.id);
     carryRenewal(current, caller);
 
     if (current.busy) throw new RequestError('Espera a que termine el mensaje anterior.', 409);

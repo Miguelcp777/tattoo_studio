@@ -22,7 +22,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0045: generation is the expensive path; it never runs unauthenticated.
     const caller = await requireAccount(request);
     const body = await input(request);
-    current = session(request);
+    current = session(request, false, caller.account.id);
     carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;

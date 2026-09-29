@@ -21,6 +21,22 @@ import type { NextResponse } from 'next/server';
 export interface Account {
   id: string;
   email: string | undefined;
+  /** The name set on the account in Supabase, when there is one (TASK-0049). */
+  name?: string | undefined;
+}
+
+/**
+ * What to call the person in a greeting (TASK-0049).
+ *
+ * The name set on the account when there is one; otherwise the part of the address before the @,
+ * which is at least something they chose. Never the whole address: a greeting is on screen for
+ * anyone looking over a shoulder.
+ */
+export function displayName(account: Pick<Account, 'email' | 'name'>): string {
+  const named = account.name?.trim();
+  if (named) return named.slice(0, 60);
+  const local = account.email?.split('@')[0]?.trim();
+  return local ? local.slice(0, 60) : 'de nuevo';
 }
 
 export interface Tokens {
@@ -116,8 +132,40 @@ export async function accountFor(accessToken: string): Promise<Account | null> {
     return null;
   }
   if (!response.ok) return null;
-  const body = (await response.json()) as { id?: string; email?: string };
-  return body.id ? { id: body.id, email: body.email } : null;
+  const body = (await response.json()) as {
+    id?: string;
+    email?: string;
+    user_metadata?: Record<string, unknown>;
+  };
+  if (!body.id) return null;
+  const metadata = body.user_metadata ?? {};
+  const name = [metadata['name'], metadata['full_name'], metadata['display_name']].find(
+    (value): value is string => typeof value === 'string' && value.trim() !== '',
+  );
+  return { id: body.id, email: body.email, name };
+}
+
+/**
+ * End this session at Supabase too (TASK-0049), so the refresh token stops working rather than
+ * merely being forgotten by this browser. Best effort: signing out locally must never fail because
+ * the account service is unreachable, so errors are swallowed and the caller clears the cookies
+ * regardless.
+ */
+export async function signOut(accessToken: string | undefined): Promise<void> {
+  if (!accessToken || !authConfigured()) return;
+  try {
+    await auth('/logout?scope=local', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    // The cookies are cleared either way; an unrevoked token expires on its own.
+  }
+}
+
+/** The access token this request carries, if any. */
+export function accessTokenOf(request: Request): string | undefined {
+  return cookie(request, ACCESS);
 }
 
 /** A fresh pair from a refresh token, or null when it no longer works. */

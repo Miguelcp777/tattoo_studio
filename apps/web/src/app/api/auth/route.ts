@@ -1,18 +1,29 @@
 import { NextResponse } from 'next/server';
 
 import {
+  accessTokenOf,
   AuthError,
   authenticate,
   clearAuthCookies,
+  displayName,
   setAuthCookies,
   signIn,
+  signOut,
 } from '../../../lib/auth';
+import { forgetConsultation } from '../../../lib/studio-server';
 
-/** Who is signed in, for the login page to decide where to send the browser. */
+/**
+ * Who is signed in: for the login page to decide where to send the browser, and for the studio to
+ * greet them (TASK-0049). The account id is not exposed; nothing on the page needs it.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const found = await authenticate(request);
   const response = NextResponse.json(
-    { account: found ? { email: found.account.email } : null },
+    {
+      account: found
+        ? { email: found.account.email, displayName: displayName(found.account) }
+        : null,
+    },
     { headers: { 'Cache-Control': 'no-store' } },
   );
   return found?.renewed ? setAuthCookies(response, found.renewed) : response;
@@ -48,7 +59,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-/** Sign out. Clearing the cookies is enough: without them nothing identifies the caller. */
-export async function DELETE(): Promise<NextResponse> {
-  return clearAuthCookies(NextResponse.json({ ok: true }));
+/**
+ * Sign out (TASK-0049). The session is ended at Supabase as well, so a copied refresh token stops
+ * working instead of staying valid for its thirty days; the cookies are cleared whatever Supabase
+ * answers, because signing out must never be the thing that fails.
+ */
+export async function DELETE(request: Request): Promise<NextResponse> {
+  await signOut(accessTokenOf(request));
+  // The conversation in this browser is the signed-out person's; the next one starts clean.
+  forgetConsultation(request);
+  const response = clearAuthCookies(NextResponse.json({ ok: true }));
+  response.cookies.delete('inkcraft');
+  return response;
 }

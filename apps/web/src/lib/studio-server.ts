@@ -23,6 +23,12 @@ import {
 } from './auth';
 
 interface Session {
+  /**
+   * The account that started this consultation (TASK-0049). The consultation lives in the browser,
+   * so without this a second person signing in on the same browser would be handed the first
+   * person's conversation.
+   */
+  owner?: string;
   state: OrchestrationSession;
   touched: number;
   busy: boolean;
@@ -91,29 +97,48 @@ export async function jobStatus(response: Response): Promise<StudioJobStatus> {
   if (!result.valid) throw new RequestError('El worker devolvió un estado inválido.', 502);
   return result.value;
 }
-export function session(request: Request, create = false): Session {
-  const cookie = request.headers
+function consultationCookie(request: Request): string | undefined {
+  return request.headers
     .get('cookie')
     ?.split(';')
     .map((s) => s.trim())
     .find((s) => s.startsWith('inkcraft='))
     ?.slice(9);
+}
+
+/**
+ * The consultation in progress in this browser.
+ *
+ * `owner` is the signed-in account (TASK-0049). A consultation started by a different account is
+ * treated as absent — never handed over — so the next person on a shared browser starts clean.
+ */
+export function session(request: Request, create = false, owner?: string): Session {
+  const cookie = consultationCookie(request);
   for (const [id, value] of sessions)
     if (Date.now() - value.touched > 86400000) sessions.delete(id);
-  const current = cookie ? sessions.get(cookie) : undefined;
+  const found = cookie ? sessions.get(cookie) : undefined;
+  const current = found && (!owner || !found.owner || found.owner === owner) ? found : undefined;
   if (current) {
     current.touched = Date.now();
+    if (owner && !current.owner) current.owner = owner;
     return current;
   }
   if (!create) throw new RequestError('La sesión ha caducado. Inicia una nueva consulta.', 401);
   if (sessions.size >= 1000) throw new RequestError('El servicio está ocupado.', 503);
-  const fresh = {
+  const fresh: Session = {
+    ...(owner ? { owner } : {}),
     state: orchestrator.createSession(randomUUID()),
     touched: Date.now(),
     busy: false,
   };
   sessions.set(fresh.state.sessionId, fresh);
   return fresh;
+}
+
+/** Forget this browser's consultation, if it has one (sign-out, TASK-0049). */
+export function forgetConsultation(request: Request): void {
+  const cookie = consultationCookie(request);
+  if (cookie) sessions.delete(cookie);
 }
 export function clearSession(id: string): void {
   sessions.delete(id);

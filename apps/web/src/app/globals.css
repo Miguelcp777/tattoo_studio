@@ -1024,6 +1024,57 @@ body::after {
   white-space: nowrap;
 }
 
+/* TASK-0049: the greeting and the way out, at the header's far end. */
+.header-end {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.session-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.session-greeting {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+.session-greeting strong {
+  color: #f4ece6;
+  font-weight: 600;
+}
+
+.session-leave {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(216, 171, 147, 0.35);
+  background: transparent;
+  color: var(--rose-gold);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.session-leave:hover:not(:disabled) {
+  background: rgba(216, 171, 147, 0.12);
+}
+
+@media (max-width: 480px) {
+  .session-greeting {
+    max-width: 6.5rem;
+    font-size: 0.78rem;
+  }
+}
+
 /* On a phone the brand is the header; the capability badge would only push it onto two lines. */
 @media (max-width: 480px) {
   .studio-header .model-badge {

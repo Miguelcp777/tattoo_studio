@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0049: the header greets the signed-in person ("Hola, <name>": the account's name in Supabase,
+else the address before the @) and offers "Salir". Signing out ends the session at Supabase
+(`/auth/v1/logout?scope=local`), clears both tokens and the consultation cookie, and cannot fail
+for want of Supabase. A consultation now records the account that started it; another account on
+the same browser gets none of it and starts clean. Before this, stored work followed the account
+(TASK-0046) but the conversation followed the browser.
+
 TASK-0048: the product is "Inkcraft by Aurevanta Labs". `components/Brand.tsx` renders it in two
 forms — the Aurevanta symbol as a hallmark in the studio header, the full lockup as a signature on
 the sign-in card — with both assets recoloured to the rose gold of the background's veins. The

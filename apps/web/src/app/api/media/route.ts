@@ -19,7 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0045: an upload is screened by a paid moderation call, so it needs an account too.
     const caller = await requireAccount(request);
     const body = await input(request, 12000000);
-    current = session(request, true);
+    current = session(request, true, caller.account.id);
     carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;
@@ -93,7 +93,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     await input(request);
     await worker(caller.account.id, '/session', 'DELETE');
     try {
-      clearSession(session(request).state.sessionId);
+      clearSession(session(request, false, caller.account.id).state.sessionId);
     } catch {
       // No consultation in this browser. The account's work is deleted either way.
     }

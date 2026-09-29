@@ -8,6 +8,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { GET as consultation, POST as consult } from './consultation/route';
 import { GET as readJobs } from './generate/route';
 import { DELETE as eraseAll, GET as readMedia, POST as upload } from './media/route';
 import {
@@ -158,5 +159,49 @@ describe('who owns the work (TASK-0046)', () => {
     expect(calls).toEqual([
       { url: expect.stringContaining('/studio/session'), owner: TEST_ACCOUNT.id },
     ]);
+  });
+});
+
+describe('the conversation in a shared browser (TASK-0049)', () => {
+  it('is never handed to a different account', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        const target = String(url);
+        const authenticated = answerAuth(target, init);
+        if (authenticated) return authenticated;
+        if (target.includes('commons.wikimedia.org/w/api')) return Response.json({ query: {} });
+        throw new Error(`Unexpected request ${target}`);
+      }),
+    );
+    const read = (cookie: string) =>
+      consultation(new Request('http://localhost:3000/api/consultation', { headers: { cookie } }));
+    const talk = (cookie: string) =>
+      consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify({ action: 'orchestrate', userMessage: 'Un lobo en el antebrazo' }),
+        }),
+      );
+
+    // The first person starts a consultation; the browser now holds its cookie.
+    const started = await talk(signedInAs(TEST_ACCOUNT));
+    expect(started.status).toBe(200);
+    const browser = started.headers.getSetCookie().find((c) => c.startsWith('inkcraft='))!;
+    const shared = browser.split(';')[0]!;
+    expect((await (await read(signedInAs(TEST_ACCOUNT, shared))).json()).session).not.toBeNull();
+
+    // Someone else signs in on the same browser: they see no conversation at all.
+    expect((await (await read(signedInAs(OTHER_ACCOUNT, shared))).json()).session).toBeNull();
+
+    // If they start talking, it is a new consultation, not a continuation of the first one.
+    const theirs = await talk(signedInAs(OTHER_ACCOUNT, shared));
+    expect(theirs.status).toBe(200);
+    const theirCookie = theirs.headers.getSetCookie().find((c) => c.startsWith('inkcraft='))!;
+    expect(theirCookie.split(';')[0]).not.toBe(shared);
+
+    // And the first person's conversation is untouched.
+    expect((await (await read(signedInAs(TEST_ACCOUNT, shared))).json()).session).not.toBeNull();
   });
 });
