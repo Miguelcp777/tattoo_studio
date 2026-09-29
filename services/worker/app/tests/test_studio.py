@@ -1375,3 +1375,96 @@ def test_the_web_reports_events_as_the_account_it_names(
     assert client.post("/studio/events", json=anonymous, headers=auth).json() == {"accepted": 1}
     bad = {**auth, "X-Owner-Id": "not-an-account"}
     assert client.post("/studio/events", json=anonymous, headers=bad).status_code == 401
+
+
+# --- TASK-0055: the administrator ------------------------------------------------------------
+
+ADMIN = "33333333-3333-4333-8333-333333333333"
+
+
+def admin_client(studio: Studio, store: EventStore | None) -> tuple[TestClient, dict[str, str]]:
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token", store))
+    return TestClient(app), {"Authorization": "Bearer test-only-token", "X-Admin-Id": ADMIN}
+
+
+def test_the_administrator_sees_metrics_and_is_recorded_seeing_them(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    a_design(studio)
+    client, headers = admin_client(studio, recorded)
+
+    assert client.get("/studio/admin/overview").status_code == 401
+    no_admin = {"Authorization": "Bearer test-only-token"}
+    assert client.get("/studio/admin/overview", headers=no_admin).status_code == 401
+
+    report = client.get("/studio/admin/overview?days=7", headers=headers).json()
+    assert report["days"] == 7
+    assert report["totals"]["generations"] == 1
+    assert [person["account"] for person in report["byAccount"]] == [ACCOUNT]
+
+    audit = [
+        e for e in recorded.events(datetime.now(UTC) - timedelta(hours=1)) if e["kind"] == "admin"
+    ]
+    assert [(e["operation"], e["account"]) for e in audit] == [("overview", ADMIN)]
+
+
+def test_without_monitoring_the_panel_says_so(tmp_path: Path) -> None:
+    client, headers = admin_client(Studio(tmp_path, b"x" * 32, FakeProvider()), None)
+    assert client.get("/studio/admin/overview", headers=headers).status_code == 503
+
+
+def test_the_administrator_sees_a_design_and_never_a_body(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    studio = Studio(tmp_path, b"x" * 32, RecordingProvider())
+    # One design on a generated plate, one on the client's own photo, and a kept camera photo.
+    plate_job = a_design(studio)
+    reference = studio.ingest(ACCOUNT, an_upload())
+    photo = a_body_photo(studio)
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    request["bodyPhotoId"] = photo
+    request["idempotencyKey"] = "12121212-1212-4121-8121-121212121212"
+    own = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    kept = studio.capture(ACCOUNT, a_capture(plate_job))
+    client, headers = admin_client(studio, recorded)
+
+    detail = client.get(f"/studio/admin/accounts/{ACCOUNT}", headers=headers).json()
+    hidden = {v["jobId"]: v["adminHidden"] for v in detail["versions"]}
+    assert hidden[plate_job] == []
+    assert hidden[own["jobId"]] == ["mockup", "background"]
+    assert hidden[kept["jobId"]] == ["capture"]
+
+    def fetch(asset_id: str) -> int:
+        return client.get(f"/studio/admin/media/{asset_id}", headers=headers).status_code
+
+    plate = studio.jobs.get(ACCOUNT, plate_job)["result"]
+    on_photo = studio.jobs.get(ACCOUNT, own["jobId"])["result"]
+    # The design, its stencil and a composite on a generated plate: shown.
+    for asset_id in (
+        plate["master"]["assetId"],
+        plate["stencil"]["assetId"],
+        plate["mockup"]["assetId"],
+    ):
+        assert fetch(asset_id) == 200
+    # The same design's master on an own-photo version: shown, it never contained the photo.
+    assert fetch(on_photo["master"]["assetId"]) == 200
+    # The photograph, what was composed on it, and a kept camera photo: refused.
+    for asset_id in (
+        photo,
+        on_photo["mockup"]["assetId"],
+        on_photo["background"]["assetId"],
+        kept["result"]["capture"]["photo"]["assetId"],
+    ):
+        assert fetch(asset_id) == 403
+    assert fetch("f" * 32) == 404
+
+    # Each look is recorded, with whose activity or which file.
+    audit = [
+        e for e in recorded.events(datetime.now(UTC) - timedelta(hours=1)) if e["kind"] == "admin"
+    ]
+    assert {e["operation"] for e in audit} == {"view_account", "view_asset"}
+    assert all(e["account"] == ADMIN for e in audit)

@@ -42,6 +42,9 @@ from stencil.engine import (
     trace_native_lineart,
 )
 from telemetry import activity, forget, record, usage
+from telemetry.report import activity as account_activity
+from telemetry.report import overview, window
+from telemetry.store import EventStore
 
 
 class _StudioBlend:
@@ -319,6 +322,32 @@ class Studio:
         if gone:
             with self.jobs.connect() as db:
                 db.executemany("DELETE FROM jobs WHERE id=?", [(job,) for job in gone])
+
+    def admin_asset(self, asset_id: str) -> tuple[bytes, str]:
+        """
+        A file of any account, for the administrator (TASK-0055) - never one that shows a body.
+
+        A body photograph, a kept camera photo and anything composed on them are refused whoever
+        owns them: the owner decided the administrator does not see those. So is anything stored
+        before TASK-0047, when every file was written as a photograph and nothing distinguishes a
+        design from a body.
+        """
+        if not re.fullmatch("[a-f0-9]{32}", asset_id):
+            raise KeyError("Archivo no encontrado")
+        with self.db() as db:
+            row = db.execute("SELECT kind FROM assets WHERE id=?", (asset_id,)).fetchone()
+        if not row:
+            raise KeyError("Archivo no encontrado")
+        try:
+            stored = self.media.metadata(asset_id)
+        except AssetNotFoundError as error:
+            raise KeyError("Archivo no disponible") from error
+        if row[0] == "body" or stored.retention in (
+            RetentionClass.PHOTO,
+            RetentionClass.PHOTO_DERIVED,
+        ):
+            raise PermissionError("Las fotos del cuerpo no se muestran al administrador.")
+        return self.media.read(asset_id), stored.media_type
 
     def own_photo(self, owner: str, asset_id: str) -> bytes:
         """The client's own body photo, or a clear refusal once it has expired (TASK-0047)."""
@@ -908,7 +937,13 @@ def web_event(item: Any) -> dict[str, Any] | None:
     return clean
 
 
-def router(studio: Studio, token: str) -> APIRouter:
+#: Files in a version that show a body, which the administrator is not shown (TASK-0055).
+def hidden_from_admin(result: dict[str, Any]) -> list[str]:
+    hidden = ["mockup", "background"] if result.get("backgroundKind") == "own_photo" else []
+    return [*hidden, "capture"] if result.get("capture") else hidden
+
+
+def router(studio: Studio, token: str, events: EventStore | None = None) -> APIRouter:
     routes = APIRouter(prefix="/studio")
 
     def owner(request: Request) -> str:
@@ -935,6 +970,63 @@ def router(studio: Studio, token: str) -> APIRouter:
             return await run_in_threadpool(studio.ingest, who, body)
         except ValueError as error:
             raise HTTPException(422, str(error)) from error
+
+    def admin(request: Request) -> str:
+        """
+        Who the administrator is, for the audit trail. The web tier has already checked the role
+        with Supabase; the worker checks that the call carries the service token and an id.
+        """
+        if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {token}"):
+            raise HTTPException(401, "No autorizado")
+        who = request.headers.get("x-admin-id", "")
+        if not re.fullmatch(OWNER_ID, who):
+            raise HTTPException(401, "Administrador inválido")
+        if events is None:
+            raise HTTPException(503, "La monitorización no está configurada.")
+        return who
+
+    @routes.get("/admin/overview")
+    def admin_overview(request: Request, days: int = 30) -> dict[str, Any]:
+        who = admin(request)
+        days = min(max(days, 1), 365)
+        since, until = window(days, datetime.now(UTC))
+        assert events is not None
+        report = overview(events.events(since, until))
+        record("admin", "overview", account=who, detail={"days": days})
+        return {"days": days, **report}
+
+    @routes.get("/admin/accounts/{account}")
+    def admin_account(account: str, request: Request, days: int = 90) -> dict[str, Any]:
+        who = admin(request)
+        if not re.fullmatch(OWNER_ID, account):
+            raise HTTPException(404, "Cuenta no encontrada")
+        days = min(max(days, 1), 365)
+        since, until = window(days, datetime.now(UTC))
+        assert events is not None
+        found = account_activity(events.events(since, until), account)
+        versions = [
+            {**version, "adminHidden": hidden_from_admin(version.get("result") or {})}
+            for version in studio.jobs.history(account)
+        ]
+        # Every look at a person's activity is itself recorded, with who looked.
+        record("admin", "view_account", account=who, detail={"subject": account})
+        return {**found, "versions": versions}
+
+    @routes.get("/admin/media/{asset_id}")
+    def admin_media(asset_id: str, request: Request) -> Response:
+        who = admin(request)
+        try:
+            data, media_type = studio.admin_asset(asset_id)
+        except PermissionError as refusal:
+            raise HTTPException(403, str(refusal)) from refusal
+        except KeyError as error:
+            raise HTTPException(404, "Archivo no disponible") from error
+        record("admin", "view_asset", account=who, detail={"asset": asset_id})
+        return Response(
+            data,
+            media_type=media_type,
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+        )
 
     @routes.get("/media/{asset_id}")
     def media(asset_id: str, request: Request) -> Response:
@@ -988,7 +1080,7 @@ def router(studio: Studio, token: str) -> APIRouter:
             raise HTTPException(422, str(error)) from error
 
     @routes.post("/events", status_code=202)
-    async def events(request: Request) -> dict[str, int]:
+    async def web_events(request: Request) -> dict[str, int]:
         """
         Events the web tier observed: its own provider calls, consultation turns, sign-ins
         (TASK-0054). The account is the header's, never the body's, and a cost is computed here

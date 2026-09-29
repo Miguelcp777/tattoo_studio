@@ -23,7 +23,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   const response = NextResponse.json(
     {
       account: found
-        ? { email: found.account.email, displayName: displayName(found.account) }
+        ? {
+            email: found.account.email,
+            displayName: displayName(found.account),
+            // TASK-0055: only decides whether the header offers the panel; the panel's own routes
+            // check the role with Supabase on every request.
+            ...(found.account.admin ? { admin: true } : {}),
+          }
         : null,
     },
     { headers: { 'Cache-Control': 'no-store' } },
@@ -64,7 +70,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       throw error;
     }
     const account = await accountFor(tokens.accessToken);
-    if (account) report({ kind: 'sign_in', operation: 'password' }, account.id);
+    // TASK-0055: the address, so the administrator can tell accounts apart. It sits in the text,
+    // which erasing the account's data clears.
+    if (account)
+      report(
+        {
+          kind: 'sign_in',
+          operation: 'password',
+          ...(account.email ? { text: account.email } : {}),
+        },
+        account.id,
+      );
     return setAuthCookies(
       NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } }),
       tokens,

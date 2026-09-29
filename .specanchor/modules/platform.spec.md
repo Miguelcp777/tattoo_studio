@@ -23,6 +23,11 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0055 (ADR-0025): `/studio/admin/overview`, `/studio/admin/accounts/{id}` and
+`/studio/admin/media/{id}`, behind the service token and an administrator id, each recording an
+`admin` event. `Studio.admin_asset` serves a file of any account and refuses, with 403, a body
+photograph and anything in the photo lifecycle.
+
 TASK-0054 (ADR-0024): the worker opens the event store at startup (`TATTOO_TELEMETRY_DSN` for
 Postgres, SQLite otherwise), loads `TATTOO_PRICES`, and exposes `POST /studio/events` for the web
 tier. Uploads, kept photos and erasures are recorded; erasure anonymises the account's events.

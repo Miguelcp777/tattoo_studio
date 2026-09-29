@@ -9,6 +9,10 @@ last_reviewed: 2026-09-30
 
 # Module: telemetry
 
+TASK-0055: `report.py` computes the administrator's views from rows: totals and timings,
+consumption by model, activity by day, per-account summaries with the last sign-in address, recent
+errors, and one account's activity. Administrator events are audit, not use, and are left out.
+
 TASK-0054: created. An append-only record of what the studio did, for whom, how long it took and
 what it cost, so the service can be monitored and an administrator can see its use (TASK-0055).
 

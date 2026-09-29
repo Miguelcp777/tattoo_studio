@@ -69,7 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     if studio and resolved.worker_token:
-        app.include_router(router(studio, resolved.worker_token.get_secret_value()))
+        app.include_router(router(studio, resolved.worker_token.get_secret_value(), events))
 
     @app.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:

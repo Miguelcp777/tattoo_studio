@@ -157,6 +157,47 @@ export async function requireAccount(request: Request): Promise<Authenticated> {
   return found;
 }
 
+/**
+ * An administrator of the studio (TASK-0055). Checked with Supabase on every request, like any
+ * account, and then against `app_metadata.role`; the header's link to the panel decides nothing.
+ */
+export async function requireAdmin(request: Request): Promise<Authenticated> {
+  const caller = await requireAccount(request);
+  if (!caller.account.admin)
+    throw new RequestError('Esta sección es solo para administración.', 403);
+  return caller;
+}
+
+/**
+ * Ask the worker's administrator routes, as this administrator. The worker records every look in
+ * the audit trail under this id; the body photographs it refuses to serve stay refused here.
+ */
+export async function adminWorker(admin: string, path: string): Promise<Response> {
+  const token = process.env['TATTOO_WORKER_TOKEN'];
+  if (!token) throw new RequestError('El worker no está configurado.', 503);
+  let response: Response;
+  try {
+    response = await fetch(
+      `${process.env['TATTOO_WORKER_URL'] ?? 'http://127.0.0.1:8000'}/studio/admin${path}`,
+      {
+        headers: { Authorization: `Bearer ${token}`, 'X-Admin-Id': admin },
+        signal: AbortSignal.timeout(30000),
+        cache: 'no-store',
+      },
+    );
+  } catch {
+    throw new RequestError('No se puede conectar con el worker.', 503);
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new RequestError(
+      typeof data.detail === 'string' ? data.detail : 'El worker rechazó la solicitud.',
+      response.status,
+    );
+  }
+  return response;
+}
+
 /** Re-issue renewed tokens on a response built outside `reply`. */
 export function applyRenewal(response: NextResponse, caller: Authenticated): NextResponse {
   return caller.renewed ? setAuthCookies(response, caller.renewed) : response;

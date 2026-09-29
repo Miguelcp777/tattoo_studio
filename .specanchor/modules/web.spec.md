@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0055 (ADR-0025): `/admin` is the administrator's panel. `requireAdmin` checks
+`app_metadata.role` with Supabase on every request; `user_metadata` never grants it. The three
+`/api/admin/*` routes proxy the worker's admin routes as the administrator (`X-Admin-Id`), and the
+panel never requests a file a version marks as showing a body. The header offers "Panel" to
+administrators. A successful sign-in records its address, which erasure clears.
+
 TASK-0054 (ADR-0024): `lib/telemetry.ts` forwards the consultation's model calls, each turn (what
 the client wrote and what the studio answered) and each sign-in to the worker's event route. The
 account is set in the handler (`attribute`) and passed explicitly to turn events; a refused

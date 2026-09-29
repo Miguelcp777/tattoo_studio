@@ -23,6 +23,13 @@ export interface Account {
   email: string | undefined;
   /** The name set on the account in Supabase, when there is one (TASK-0049). */
   name?: string | undefined;
+  /**
+   * An administrator of the studio (TASK-0055): `app_metadata.role` is `"admin"`. Only
+   * `app_metadata` counts - it is written with Supabase's administrative access. `user_metadata`
+   * is writable by the user with their own session, so a role there would let anyone promote
+   * themselves.
+   */
+  admin?: boolean;
 }
 
 /**
@@ -136,13 +143,15 @@ export async function accountFor(accessToken: string): Promise<Account | null> {
     id?: string;
     email?: string;
     user_metadata?: Record<string, unknown>;
+    app_metadata?: Record<string, unknown>;
   };
   if (!body.id) return null;
   const metadata = body.user_metadata ?? {};
   const name = [metadata['name'], metadata['full_name'], metadata['display_name']].find(
     (value): value is string => typeof value === 'string' && value.trim() !== '',
   );
-  return { id: body.id, email: body.email, name };
+  const admin = body.app_metadata?.['role'] === 'admin';
+  return { id: body.id, email: body.email, name, ...(admin ? { admin } : {}) };
 }
 
 /**

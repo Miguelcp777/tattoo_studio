@@ -10,14 +10,18 @@ import { useEffect, useState, type ReactNode } from 'react';
  */
 export function SessionMenu(): ReactNode {
   const [name, setName] = useState('');
+  const [admin, setAdmin] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void fetch('/api/auth', { cache: 'no-store' })
       .then((response) => response.json())
-      .then((body: { account?: { displayName?: string } | null }) => {
-        if (!cancelled && body.account?.displayName) setName(body.account.displayName);
+      .then((body: { account?: { displayName?: string; admin?: boolean } | null }) => {
+        if (cancelled) return;
+        if (body.account?.displayName) setName(body.account.displayName);
+        // TASK-0055: only a link; the panel's routes check the role themselves.
+        setAdmin(body.account?.admin === true);
       })
       .catch(() => undefined);
     return () => {
@@ -41,6 +45,11 @@ export function SessionMenu(): ReactNode {
         <span className="session-greeting">
           Hola, <strong>{name}</strong>
         </span>
+      )}
+      {admin && (
+        <a className="session-leave" href="/admin">
+          Panel
+        </a>
       )}
       <button
         type="button"

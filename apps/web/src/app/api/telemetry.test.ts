@@ -120,13 +120,18 @@ describe('monitoring from the web tier (TASK-0054)', () => {
     expect((await attempt('nobody@studio.test')).status).toBe(401);
 
     expect(sent).toEqual([
-      { account: TEST_ACCOUNT.id, event: { kind: 'sign_in', operation: 'password' } },
+      // TASK-0055: a successful sign-in names its address, so the panel can tell accounts apart.
+      {
+        account: TEST_ACCOUNT.id,
+        event: { kind: 'sign_in', operation: 'password', text: TEST_ACCOUNT.email },
+      },
       {
         account: undefined,
         event: { kind: 'sign_in', operation: 'password', outcome: 'refused' },
       },
     ]);
-    expect(JSON.stringify(sent)).not.toContain('@studio.test');
+    // The refused attempt names nobody: not the address tried, not an account.
+    expect(JSON.stringify(sent)).not.toContain('nobody@studio.test');
   });
 
   it('delivers to the worker with the service token, and never fails a request', async () => {

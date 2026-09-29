@@ -1827,3 +1827,246 @@ body::after {
   font-size: 0.75rem;
   line-height: 1.5;
 }
+
+/* TASK-0055: the administrator's panel. */
+.admin-main {
+  max-width: 1450px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-title h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.admin-range {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.admin-range button {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+
+.admin-range button.active {
+  border-color: rgba(216, 171, 147, 0.5);
+  color: var(--rose-gold);
+  background: rgba(216, 171, 147, 0.1);
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-card,
+.admin-panel {
+  background: rgba(14, 15, 20, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+}
+
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-card-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.admin-card strong {
+  font-size: 1.6rem;
+  color: #f4ece6;
+}
+
+.admin-card small {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.admin-panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-days {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 160px;
+  overflow-x: auto;
+}
+
+.admin-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  min-width: 34px;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+.admin-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--rose-gold-sheen);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.admin-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.admin-table tr.selected td {
+  background: rgba(216, 171, 147, 0.08);
+}
+
+.admin-errors {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.admin-errors time,
+.admin-timeline time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.admin-account h3 {
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0.6rem;
+  color: var(--text-secondary);
+}
+
+.admin-versions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-version-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.admin-version-images img,
+.admin-hidden {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-sm);
+}
+
+.admin-hidden {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.admin-versions figcaption {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.3rem;
+}
+
+.admin-timeline {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 520px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.admin-event {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.admin-event.error p,
+.admin-event.refused p {
+  color: #fda4af;
+}
+
+.admin-message strong {
+  color: var(--rose-gold);
+}
+
+.admin-reply strong {
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  .admin-main {
+    padding: 1rem;
+  }
+
+  .admin-event {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+}

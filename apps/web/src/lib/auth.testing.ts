@@ -25,7 +25,21 @@ export const OTHER_ACCOUNT = {
   email: 'other@studio.test',
 };
 
-const ACCOUNTS = [TEST_ACCOUNT, OTHER_ACCOUNT];
+/** An administrator: the role is in `app_metadata`, which only Supabase's admin access writes. */
+export const ADMIN_ACCOUNT = {
+  id: '33333333-3333-4333-8333-333333333333',
+  email: 'admin@studio.test',
+  app_metadata: { role: 'admin' },
+};
+
+/** Someone who wrote the role into their own `user_metadata`, which any user can do. */
+export const SELF_PROMOTED = {
+  id: '44444444-4444-4444-8444-444444444444',
+  email: 'mallory@studio.test',
+  user_metadata: { role: 'admin' },
+};
+
+const ACCOUNTS = [TEST_ACCOUNT, OTHER_ACCOUNT, ADMIN_ACCOUNT, SELF_PROMOTED];
 
 /** The access token a browser signed in as this account would hold. */
 export function tokenFor(account: { id: string }): string {
