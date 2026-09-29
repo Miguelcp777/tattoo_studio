@@ -76,6 +76,12 @@ brief + finalized prompt (from Tier 1)
    -> assemble_result       (media: store artifacts with derivation lineage)
 ```
 
+> **Amended by TASK-0052 (2026-09-29).** A `skin_plate` node now leads the graph: the plate — own
+> photo, parent plate, or a new one from a text-only prompt — is settled before `master_artwork`.
+> BFL's EU cluster timed out a plate that day after the artwork had been paid for, and the artwork
+> was discarded. Failing first costs the plate and nothing else. The constraints this ADR sets on
+> the rest of the order are unchanged.
+
 The `orchestration` module introduces **no new outbound egress**: it calls image models only
 through `generation` and moderation only through `safety`. All reasoning-LLM calls stay in Tier 1.
 `app/studio.py` becomes a thin entrypoint that builds the graph and invokes it.

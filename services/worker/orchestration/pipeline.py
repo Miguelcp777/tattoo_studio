@@ -1,7 +1,10 @@
 """Assemble the creation graph in the ADR-0015 order.
 
-    master_artwork -> stencil_trace -> surface_warp -> ai_blend -> geometry_check
-        -> output_gate -> assemble
+    skin_plate -> master_artwork -> stencil_trace -> surface_warp -> ai_blend
+        -> geometry_check -> output_gate -> assemble
+
+``skin_plate`` leads (TASK-0052): a plate provider that fails must fail before the artwork is paid
+for, not after it.
 
 The order is the contract: the stencil is traced from the master (never the mockup), the blend
 runs on the geometric warp and only proposes, the geometry check alone may accept it, and nothing
@@ -18,6 +21,7 @@ from .nodes import (
     geometry_check_node,
     master_artwork_node,
     output_gate_node,
+    skin_plate_node,
     stencil_trace_node,
     surface_warp_node,
 )
@@ -36,6 +40,7 @@ def build_generation_graph(
     A blend without a ``geometry`` check can propose but never be accepted.
     """
     graph: Graph[PipelineState] = Graph()
+    graph.add_node("skin_plate", skin_plate_node(deps))
     graph.add_node("master_artwork", master_artwork_node(deps))
     graph.add_node("stencil_trace", stencil_trace_node(deps))
     graph.add_node("surface_warp", surface_warp_node(deps))
@@ -44,7 +49,8 @@ def build_generation_graph(
     graph.add_node("output_gate", output_gate_node(output_gate))
     graph.add_node("assemble", assemble_node())
 
-    graph.set_entry_point("master_artwork")
+    graph.set_entry_point("skin_plate")
+    graph.add_edge("skin_plate", "master_artwork")
     graph.add_edge("master_artwork", "stencil_trace")
     graph.add_edge("stencil_trace", "surface_warp")
     graph.add_edge("surface_warp", "ai_blend")

@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 INFRA = Path(__file__).resolve().parents[4] / "infra"
 
 
@@ -119,3 +121,20 @@ def test_the_build_context_is_the_repository_root() -> None:
     # The images they point at have to exist, or the failure only shows up on the server.
     for name in blocks:
         assert (INFRA / f"Dockerfile.{name}").is_file()
+
+
+def test_the_bfl_cluster_can_be_chosen_from_the_host() -> None:
+    """
+    TASK-0052. On 2026-09-29 BFL's EU cluster slowed until plates timed out, and BFL's advice was
+    to use the global endpoint. The worker could already take a different URL; the compose file
+    never handed it one, so switching needed a code change. It is passed through now, EU by default.
+    """
+    from generation.bfl_studio import BflStudioProvider
+
+    worker = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))["worker"]
+    assert "TATTOO_BFL_BASE_URL: ${TATTOO_BFL_BASE_URL:-https://api.eu.bfl.ai}" in worker
+    # Both the EU default and the global endpoint are accepted; anything else is refused at startup.
+    for url in ("https://api.eu.bfl.ai", "https://api.bfl.ai"):
+        BflStudioProvider("openai-test", "bfl-test", base_url=url)
+    with pytest.raises(ValueError):
+        BflStudioProvider("openai-test", "bfl-test", base_url="https://api.example.com")

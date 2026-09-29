@@ -1120,3 +1120,29 @@ def test_the_capture_route(tmp_path: Path) -> None:
     )
     refused = {**a_capture(parent_id, "88888888-8888-4888-8888-888888888888"), "consent": False}
     assert client.post("/studio/captures", json=refused, headers=headers).status_code == 422
+
+
+def test_a_plate_that_fails_costs_no_artwork(tmp_path: Path) -> None:
+    """
+    TASK-0052. On 2026-09-29 BFL's EU cluster timed out the skin plate after OpenAI had already
+    drawn the artwork, which was paid for and thrown away. The plate now comes first.
+    """
+
+    class NoPlate(FakeProvider):
+        def background(self, brief: dict[str, Any]) -> bytes:
+            raise ValueError("FLUX ha superado el tiempo máximo de espera.")
+
+    provider = NoPlate()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    job = studio.jobs.enqueue(ACCOUNT, request)
+
+    assert studio.jobs.tick()
+    failed = studio.jobs.get(ACCOUNT, job["jobId"])
+    assert failed["state"] == "failed"
+    # The client is told what actually happened.
+    assert failed["error"] == "FLUX ha superado el tiempo máximo de espera."
+    # And no drawing was paid for.
+    assert provider.calls == 0

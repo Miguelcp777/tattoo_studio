@@ -100,6 +100,7 @@ def _state(**kw: object) -> PipelineState:
 def test_node_order_matches_the_adr() -> None:
     graph = build_generation_graph(FakeDeps())
     assert graph.node_order() == [
+        "skin_plate",
         "master_artwork",
         "stencil_trace",
         "surface_warp",
@@ -272,3 +273,34 @@ def test_module_opens_no_socket() -> None:
         if roots & network:
             offenders.append(f"{path.name}: {sorted(roots & network)}")
     assert not offenders, offenders
+
+
+class FailingPlate(FakeDeps):
+    """A plate provider that times out, as BFL's EU cluster did on 2026-09-29."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.artwork_calls = 0
+
+    def ensure_background(self, state: PipelineState) -> bytes:
+        raise ValueError("FLUX ha superado el tiempo máximo de espera.")
+
+    def make_artwork(self, state: PipelineState) -> bytes:
+        self.artwork_calls += 1
+        return super().make_artwork(state)
+
+
+def test_a_failing_plate_costs_no_artwork() -> None:
+    """TASK-0052: the plate is settled first, so its failure is not paid for with a drawing."""
+    deps = FailingPlate()
+    with pytest.raises(ValueError, match="tiempo máximo"):
+        build_generation_graph(deps).invoke(_state())
+    assert deps.artwork_calls == 0
+
+
+def test_a_plate_already_in_hand_is_not_asked_for_again() -> None:
+    """An own photo, or an edit's parent plate, arrives as the background and is used as it is."""
+    deps = FailingPlate()
+    out = build_generation_graph(deps).invoke(_state(background=b"PARENT_PLATE"))
+    assert out.background == b"PARENT_PLATE"
+    assert deps.artwork_calls == 1

@@ -21,6 +21,23 @@ from .state import (
 Node = Callable[[PipelineState], PipelineState]
 
 
+def skin_plate_node(deps: GenerationDeps) -> Node:
+    """Settle the skin the design will sit on, before anything expensive is drawn (TASK-0052).
+
+    The client's own photograph, a parent version's plate, or a new plate from a text-only prompt.
+    It runs first because a new plate is the cheap, slow call that can fail: on 2026-09-29 the plate
+    provider timed out after the artwork had already been paid for, and the artwork was thrown
+    away. Failing here costs the plate and nothing else. No photograph is sent anywhere by this
+    node: an own photo is used as it is, and a generated plate is asked for in words.
+    """
+
+    def run(state: PipelineState) -> PipelineState:
+        state.background = state.background or deps.ensure_background(state)
+        return state
+
+    return run
+
+
 def master_artwork_node(deps: GenerationDeps) -> Node:
     """Produce the flat master and its rasterisation. No body photograph is an input here.
 
@@ -52,12 +69,13 @@ def stencil_trace_node(deps: GenerationDeps) -> Node:
 
 
 def surface_warp_node(deps: GenerationDeps) -> Node:
-    """Resolve the background and produce the authoritative geometric composite (pre-blend warp)."""
+    """Produce the authoritative geometric composite (pre-blend warp) on the settled plate."""
 
     def run(state: PipelineState) -> PipelineState:
         if state.raster is None:
             raise ValueError("surface_warp requires a raster; master_artwork must run first")
-        state.background = state.background or deps.ensure_background(state)
+        if state.background is None:
+            raise ValueError("surface_warp requires a background; skin_plate must run first")
         state.mockup, state.transform = deps.compose(state, state.raster, state.background)
         return state
 

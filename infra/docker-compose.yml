@@ -27,6 +27,10 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set it in Coolify}
       TATTOO_IMAGE_BACKEND: ${TATTOO_IMAGE_BACKEND:-openai}
       BFL_API_KEY: ${BFL_API_KEY:-}
+      # TASK-0052: which BFL cluster draws the skin plates. EU by default; set it in Coolify to
+      # https://api.bfl.ai to route round an EU incident. Only a text prompt goes to BFL, never a
+      # photograph, so this moves no client image out of Europe.
+      TATTOO_BFL_BASE_URL: ${TATTOO_BFL_BASE_URL:-https://api.eu.bfl.ai}
     volumes:
       - worker-data:/data
     restart: unless-stopped

@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0052: `TATTOO_BFL_BASE_URL` is passed to the worker, EU by default, so the BFL cluster can be
+switched from Coolify (to `https://api.bfl.ai` during an EU incident) without a code change. Only a
+text prompt goes to BFL. Any URL outside bfl.ai/bfl.ml is refused when the provider is built.
+
 TASK-0050 (ADR-0022): `POST /studio/captures` keeps a camera try-on photograph as a version of the
 caller's own design. `Studio.capture` checks the key (a retry returns the stored version without
 screening again), the parent (the caller's, succeeded), then stores the photo through `ingest` as a
