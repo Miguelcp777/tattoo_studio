@@ -1767,3 +1767,42 @@ body::after {
   padding-top: 1.25rem;
   border-top: 1px solid rgba(216, 171, 147, 0.18);
 }
+
+/* TASK-0053: the try-on's way back, always in reach (an installed app has no back button). */
+.try-on-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: -1rem -1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.try-on-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(216, 171, 147, 0.35);
+  color: var(--rose-gold);
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.try-on-back:hover {
+  background: rgba(216, 171, 147, 0.12);
+}
+
+@media (max-width: 400px) {
+  .try-on-bar .brand-by {
+    display: none;
+  }
+}

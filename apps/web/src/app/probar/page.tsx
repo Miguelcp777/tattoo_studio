@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { Brand } from '@/components/Brand';
 import { VISUALIZATION_DISCLAIMER_ES } from '@/content/disclaimers';
 import { CaptureRefused, saveCapture, snapshot, type Snapshot } from '@/lib/capture';
 import { DEFAULT_FRESHNESS } from '@/lib/skin-blend';
@@ -221,6 +222,13 @@ export default function TryOnPage(): ReactNode {
 
   return (
     <main className="try-on">
+      {/* TASK-0053: installed as an app there is no browser back button, so the way out is here. */}
+      <nav className="try-on-bar" aria-label="Navegación">
+        <a className="try-on-back" href="/">
+          <span aria-hidden="true">←</span> Volver al estudio
+        </a>
+        <Brand variant="header" />
+      </nav>
       <header>
         <h1>Pruébalo con la cámara</h1>
         <p className="privacy">

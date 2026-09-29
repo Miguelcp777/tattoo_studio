@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0053: `/probar` opens with a sticky bar holding "← Volver al estudio" and the brand. As an
+installed app there is no browser back button, and the try-on was a dead end without it.
+
 TASK-0051: the studio header is sticky and nothing may override that (a shared `position: relative`
 once did, so the brand scrolled away). The design dialog reads images first, then downloads and
 the camera, then the change form, so a finished design opens on its pictures. Both are held by

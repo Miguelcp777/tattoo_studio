@@ -39,3 +39,15 @@ describe('a finished design opens on its pictures', () => {
     expect(downloads).toBeLessThan(changes);
   });
 });
+
+describe('the camera try-on has a way back (TASK-0053)', () => {
+  it('offers a link to the studio in a bar that stays in view', () => {
+    // Installed as an app there is no browser back button: without this the page is a dead end.
+    const tryOn = readFileSync(resolve(here, 'src/app/probar/page.tsx'), 'utf8');
+    expect(tryOn).toMatch(/className="try-on-back"\s+href="\/"/);
+    const bar = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(
+      ([, selectors]) => selectors!.trim() === '.try-on-bar',
+    );
+    expect(bar?.[2]).toMatch(/position:\s*sticky/);
+  });
+});
