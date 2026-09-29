@@ -11,17 +11,30 @@ import {
 import { validateTattooBrief } from '@tattoo/contracts';
 
 import {
+  applyRenewal,
+  carryRenewal,
   errorResponse,
   input,
   orchestrator,
   reply,
+  requireAccount,
   RequestError,
   session,
 } from '../../../lib/studio-server';
 
 export async function GET(request: Request): Promise<NextResponse> {
+  // TASK-0045: an unauthenticated read is refused, not answered with an empty studio. Only a
+  // missing consultation is a legitimate `null`; the page tells the two apart to know whether to
+  // send the visitor to sign in.
+  let caller;
+  try {
+    caller = await requireAccount(request);
+  } catch (error) {
+    return errorResponse(error);
+  }
   try {
     const current = session(request);
+    carryRenewal(current, caller);
 
     return reply(
       { session: current.state, bodyPhotoId: current.bodyPhotoId, jobId: current.jobId },
@@ -29,7 +42,12 @@ export async function GET(request: Request): Promise<NextResponse> {
       current,
     );
   } catch {
-    return NextResponse.json({ session: null }, { headers: { 'Cache-Control': 'no-store' } });
+    // Signed in, but no consultation started yet. Still a good response, and still the place to
+    // hand back tokens that were renewed while identifying the caller.
+    return applyRenewal(
+      NextResponse.json({ session: null }, { headers: { 'Cache-Control': 'no-store' } }),
+      caller,
+    );
   }
 }
 
@@ -39,6 +57,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   let locked = false;
 
   try {
+    // TASK-0045: nothing here runs for a stranger; the orchestrator calls a paid model.
+    const caller = await requireAccount(request);
     const body = await input(request);
 
     if (
@@ -56,6 +76,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       throw new RequestError('Acción inválida.');
 
     current = session(request, true);
+    carryRenewal(current, caller);
 
     if (current.busy) throw new RequestError('Espera a que termine el mensaje anterior.', 409);
 

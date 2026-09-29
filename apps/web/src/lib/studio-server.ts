@@ -13,6 +13,15 @@ import {
 } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 
+import {
+  authConfigured,
+  authenticate,
+  setAuthCookies,
+  type Account,
+  type Authenticated,
+  type Tokens,
+} from './auth';
+
 interface Session {
   state: OrchestrationSession;
   touched: number;
@@ -21,6 +30,8 @@ interface Session {
   jobId?: string;
   /** Signature of the brief the client accepted (TASK-0037). Stale as soon as the brief moves. */
   acceptedBrief?: string;
+  /** Tokens renewed while identifying the caller, to be re-issued with the next reply (TASK-0045). */
+  renewedAuth?: Tokens;
 }
 const root = globalThis as typeof globalThis & { inkcraftSessions?: Map<string, Session> };
 const sessions = (root.inkcraftSessions ??= new Map<string, Session>());
@@ -107,8 +118,37 @@ export function session(request: Request, create = false): Session {
 export function clearSession(id: string): void {
   sessions.delete(id);
 }
+/**
+ * The account behind this request (TASK-0045, ADR-0021).
+ *
+ * Every route that can spend money or read stored work calls this first. An unconfigured
+ * deployment refuses rather than opening: a studio that cannot tell who is asking must say no.
+ */
+export async function requireAccount(request: Request): Promise<Authenticated> {
+  if (!authConfigured())
+    throw new RequestError('La autenticación no está configurada en el servidor.', 503);
+  const found = await authenticate(request);
+  if (!found) throw new RequestError('Inicia sesión para continuar.', 401);
+  return found;
+}
+
+/** Re-issue renewed tokens on a response built outside `reply`. */
+export function applyRenewal(response: NextResponse, caller: Authenticated): NextResponse {
+  return caller.renewed ? setAuthCookies(response, caller.renewed) : response;
+}
+
+/** Remember tokens renewed during this request so the next reply re-issues them. */
+export function carryRenewal(current: Session, caller: Authenticated): Account {
+  if (caller.renewed) current.renewedAuth = caller.renewed;
+  return caller.account;
+}
+
 export function reply(value: unknown, current: Session, status = 200): NextResponse {
   const response = NextResponse.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
+  if (current.renewedAuth) {
+    setAuthCookies(response, current.renewedAuth);
+    delete current.renewedAuth;
+  }
   response.cookies.set('inkcraft', current.state.sessionId, {
     httpOnly: true,
     sameSite: 'strict',

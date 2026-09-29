@@ -1,0 +1,32 @@
+import { NextResponse, type NextRequest } from 'next/server';
+
+/**
+ * Keeps strangers off the studio's pages (TASK-0045, ADR-0021).
+ *
+ * This is a cheap gate, not the security boundary: it only looks for a session cookie, so it costs
+ * no network call and adds no latency to a page load. Anyone can forge a cookie and get the HTML
+ * shell, which is why **every API route verifies the account properly with Supabase**. That is
+ * where money is spent and stored work is read, and that is where the real check belongs.
+ *
+ * Its job is narrower and still worth doing: a visitor who is not signed in lands on the sign-in
+ * page instead of a studio that fails on every action.
+ */
+export function middleware(request: NextRequest): NextResponse {
+  const signedIn = request.cookies.has('inkcraft_at') || request.cookies.has('inkcraft_rt');
+  if (signedIn) return NextResponse.next();
+
+  const url = request.nextUrl.clone();
+  url.pathname = '/entrar';
+  url.search = '';
+  return NextResponse.redirect(url);
+}
+
+export const config = {
+  /*
+   * Pages only. `/api` is excluded because those routes answer with 401 rather than a redirect —
+   * a fetch that receives login HTML instead of JSON is a confusing failure. `/entrar` is excluded
+   * for the obvious reason, and the PWA's own files so an installed app can still start and show
+   * the sign-in page offline.
+   */
+  matcher: ['/((?!api|entrar|_next|icons|sw.js|manifest.webmanifest|favicon.ico).*)'],
+};

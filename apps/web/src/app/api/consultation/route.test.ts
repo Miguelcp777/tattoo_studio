@@ -1,17 +1,30 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
-afterEach(() => vi.unstubAllGlobals());
+import { answerAuth, authOnlyFetch, configureAuth, signedIn } from '../../../lib/auth.testing';
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+// TASK-0045: the route requires an account, so every request here carries one and the stubs
+// answer the auth module. A caller without the cookie is refused; that case has its own test.
+beforeEach(() => {
+  configureAuth();
+  vi.stubGlobal('fetch', authOnlyFetch());
+});
 const req = (body: unknown, cookie = '') =>
   new Request('http://localhost:3000/api/consultation', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', cookie },
+    headers: { 'Content-Type': 'application/json', cookie: signedIn(cookie) },
     body: JSON.stringify(body),
   });
 describe('consultation server ownership', () => {
   it('ignores forged state and counts questions on the server', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => Response.json({ query: { pages: {} } })),
+      vi.fn(
+        async (url: string | URL | Request) =>
+          answerAuth(String(url)) ?? Response.json({ query: { pages: {} } }),
+      ),
     );
     const first = await POST(
       req({

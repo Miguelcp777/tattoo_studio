@@ -61,6 +61,9 @@ services:
       # The consultation agent runs inside the web app, not the worker.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       TATTOO_CONSULTATION_BACKEND: ${TATTOO_CONSULTATION_BACKEND:-}
+      # TASK-0045: without these the studio refuses every caller rather than opening the door.
+      SUPABASE_URL: ${SUPABASE_URL:?set it in Coolify}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set it in Coolify}
       TATTOO_SCOUT_PLANNER: ${TATTOO_SCOUT_PLANNER:-}
     expose:
       - '3000'

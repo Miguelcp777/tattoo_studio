@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
+import { answerAuth, authOnlyFetch, configureAuth, signedIn } from '../../../lib/auth.testing';
 import { POST as consult } from '../consultation/route';
 import { briefSignature, buildMasterPrompt, type OrchestrationSession } from '@tattoo/consultation';
 
@@ -7,11 +8,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
+// TASK-0045: these routes require an account. Every request below carries one and every stub
+// answers the auth module, so the real guard runs in each test rather than being mocked away.
+beforeEach(() => {
+  configureAuth();
+  vi.stubGlobal('fetch', authOnlyFetch());
+});
 describe('generation boundary', () => {
   it('rejects client-authored dossier without server session', async () => {
     const response = await POST(
       new Request('http://localhost:3000/api/generate', {
         method: 'POST',
+        headers: { cookie: signedIn() },
         body: JSON.stringify({
           dossier: { masterDiffusionPrompt: 'forged' },
           slots: { subject: { description: 'forged' } },
@@ -23,7 +31,11 @@ describe('generation boundary', () => {
   });
   it('rejects malformed JSON', async () => {
     const response = await POST(
-      new Request('http://localhost:3000/api/generate', { method: 'POST', body: '{' }),
+      new Request('http://localhost:3000/api/generate', {
+        method: 'POST',
+        headers: { cookie: signedIn() },
+        body: '{',
+      }),
     );
     expect(response.status).toBe(400);
   });
@@ -34,6 +46,8 @@ describe('generation boundary', () => {
       let submitted: Record<string, unknown> | undefined;
       const request = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
         const target = String(url);
+        const authenticated = answerAuth(target);
+        if (authenticated) return authenticated;
         if (target.includes('commons.wikimedia.org/w/api'))
           return Response.json({
             query: {
@@ -66,6 +80,7 @@ describe('generation boundary', () => {
       const started = await consult(
         new Request('http://localhost:3000/api/consultation', {
           method: 'POST',
+          headers: { cookie: signedIn() },
           body: JSON.stringify({
             action: 'orchestrate',
             userMessage: `Un león de línea fina en el antebrazo izquierdo de un hombre, ${colour}, 8 x 15 cm`,
@@ -77,7 +92,7 @@ describe('generation boundary', () => {
       const refused = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             adult: true,
             consent: true,
@@ -93,7 +108,7 @@ describe('generation boundary', () => {
       const accepted = await consult(
         new Request('http://localhost:3000/api/consultation', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             action: 'accept_brief',
             signature: briefSignature(buildMasterPrompt(state.slots, state.references)),
@@ -104,7 +119,7 @@ describe('generation boundary', () => {
       const response = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             adult: true,
             consent: true,
@@ -125,7 +140,7 @@ describe('generation boundary', () => {
       const resized = await consult(
         new Request('http://localhost:3000/api/consultation', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             action: 'preferences',
             preferences: { size: { widthMm: 60, heightMm: 110 } },
@@ -140,7 +155,7 @@ describe('generation boundary', () => {
       const withdrawn = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             adult: true,
             consent: true,
@@ -156,7 +171,7 @@ describe('generation boundary', () => {
       const edited = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({
             adult: true,
             consent: true,
@@ -176,7 +191,7 @@ describe('generation boundary', () => {
       const denied = await POST(
         new Request('http://localhost:3000/api/generate', {
           method: 'POST',
-          headers: { cookie },
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify({ adult: false, consent: true, edit }),
         }),
       );
@@ -191,6 +206,8 @@ describe('generation boundary', () => {
       'fetch',
       vi.fn(async (url: string | URL | Request) => {
         const target = String(url);
+        const authenticated = answerAuth(target);
+        if (authenticated) return authenticated;
         calls.push(target);
         if (target.includes('commons.wikimedia.org/w/api')) return Response.json({ query: {} });
         throw new Error(`Unexpected request ${target}`);
@@ -200,7 +217,7 @@ describe('generation boundary', () => {
       consult(
         new Request('http://localhost:3000/api/consultation', {
           method: 'POST',
-          headers: cookie ? { cookie } : {},
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify(body),
         }),
       );
@@ -252,6 +269,8 @@ describe('generation boundary', () => {
       'fetch',
       vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
         const target = String(url);
+        const authenticated = answerAuth(target);
+        if (authenticated) return authenticated;
         if (target.includes('commons.wikimedia.org/w/api'))
           return Response.json({
             query: {
@@ -285,7 +304,7 @@ describe('generation boundary', () => {
       consult(
         new Request('http://localhost:3000/api/consultation', {
           method: 'POST',
-          headers: cookie ? { cookie } : {},
+          headers: { cookie: signedIn(cookie) },
           body: JSON.stringify(body),
         }),
       );
@@ -321,7 +340,7 @@ describe('generation boundary', () => {
     const response = await POST(
       new Request('http://localhost:3000/api/generate', {
         method: 'POST',
-        headers: { cookie },
+        headers: { cookie: signedIn(cookie) },
         body: JSON.stringify({
           adult: true,
           consent: true,

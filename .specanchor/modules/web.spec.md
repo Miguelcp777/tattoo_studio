@@ -9,6 +9,15 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0045 (ADR-0021): the studio requires an account. `lib/auth.ts` exchanges credentials for
+`HttpOnly`, `SameSite=strict` cookies server side and asks Supabase who a token belongs to rather
+than verifying a signature here, so no signing secret lives in this deployment. `requireAccount`
+guards every route that spends money or reads stored work; an unconfigured deployment answers 503
+rather than opening. An expired access token is renewed from the refresh token and re-issued on the
+same response. `middleware.ts` is a cheap cookie-presence gate, **not** the boundary: a forged
+cookie reaches the HTML shell and nothing else. There is no sign-up; accounts are created in
+Supabase. Designs are still owned by the studio session, not the account (TASK-0046).
+
 TASK-0042 (ADR-0019): `/probar` is the live camera try-on. `lib/skin-blend.ts` ports the worker's
 ink treatment (multiply, ADR-0014 attenuation, TASK-0031 ring) as pure functions; `lib/try-on.ts`
 does one frame (placement, rotation box, blend) and the page owns the camera and the loop. **No
@@ -139,6 +148,9 @@ return a `JobRef` immediately; the UI polls or subscribes for completion.
 
 ## Domain invariants
 
+- WEB-INV-006: Every route that spends money or reads stored work verifies the account with
+  Supabase before acting, and refuses when authentication is unconfigured (TASK-0045, ADR-0021).
+  The middleware is a convenience and never the check.
 - WEB-INV-001: No business rule lives here. Anything that needs testing without a browser belongs
   in another module.
 - WEB-INV-002: Every request crossing into the worker is validated against its contract schema at
@@ -190,7 +202,8 @@ upload to deletion. Accessibility checks to WCAG 2.1 AA on the primary flows.
 
 ## Known uncertainties and debt
 
-- Authentication approach is undecided.
+- Authentication is Supabase, decided by ADR-0021 (TASK-0045). Never exercised against the real
+  service: the suite fakes its answers.
 - Whether job completion uses polling or server-sent events is undecided.
 - The placement editor interaction model is undesigned.
 - The shell has no styling, no layout system and no accessibility work. The WCAG 2.1 AA
@@ -221,7 +234,7 @@ handoff sheet remain planned for future tasks.
 | Disclaimer copy exists and is non-empty | VERIFIED | `src/content/disclaimers.test.ts`, 4 tests | PASS |
 | Consultation turn exchange route | VERIFIED | `src/app/api/consultation/route.test.ts` | PASS |
 | Disclaimer shown on every artifact | INTENT | WEB-INV-003; no artifacts exist yet | NOT_RUN |
-| Authentication approach | UNKNOWN | Undecided | NOT_RUN |
+| Authentication approach | INTENT | ADR-0021: Supabase, server-side cookies | NOT_RUN against the real service |
 
 ## TASK-0019 current implementation and remaining intent
 

@@ -124,7 +124,15 @@ export default function ConsultationPage(): ReactNode {
     let cancelled = false;
 
     void fetch('/api/consultation')
-      .then((r) => r.json())
+      .then((r) => {
+        // TASK-0045: a stale or forged cookie gets past the cheap page gate; the API is the real
+        // check, so its refusal is what sends the visitor to sign in.
+        if (r.status === 401) {
+          window.location.replace('/entrar');
+          return { session: null };
+        }
+        return r.json();
+      })
 
       .then(async (data) => {
         if (!cancelled && data.session) {

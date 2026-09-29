@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
+  carryRenewal,
   clearSession,
   errorResponse,
   input,
@@ -7,6 +8,7 @@ import {
   reply,
   RequestError,
   session,
+  requireAccount,
   worker,
 } from '../../../lib/studio-server';
 
@@ -14,8 +16,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   let current: ReturnType<typeof session> | undefined;
   let locked = false;
   try {
+    // TASK-0045: an upload is screened by a paid moderation call, so it needs an account too.
+    const caller = await requireAccount(request);
     const body = await input(request, 12000000);
     current = session(request, true);
+    carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;
     locked = true;
@@ -56,6 +61,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 export async function GET(request: Request): Promise<Response> {
   try {
+    // Stored work is private to its owner; a media id is not a capability.
+    await requireAccount(request);
     const current = session(request);
     const id = new URL(request.url).searchParams.get('id');
     if (!id || !/^[a-f0-9]{32}$/.test(id)) throw new RequestError('Archivo inválido.');
@@ -73,6 +80,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 export async function DELETE(request: Request): Promise<NextResponse> {
   try {
+    await requireAccount(request);
     await input(request);
     const current = session(request);
     await worker(current.state.sessionId, '/session', 'DELETE');

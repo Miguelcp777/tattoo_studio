@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { briefSignature, buildMasterPrompt } from '@tattoo/consultation';
 import { validateAgainst, type StudioJob } from '@tattoo/contracts';
 import {
+  carryRenewal,
   errorResponse,
   input,
   reply,
+  requireAccount,
   RequestError,
   session,
   worker,
@@ -15,8 +17,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   let current: ReturnType<typeof session> | undefined;
   let locked = false;
   try {
+    // TASK-0045: generation is the expensive path; it never runs unauthenticated.
+    const caller = await requireAccount(request);
     const body = await input(request);
     current = session(request);
+    carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;
     locked = true;
@@ -87,7 +92,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 export async function GET(request: Request): Promise<NextResponse> {
   try {
+    const caller = await requireAccount(request);
     const current = session(request);
+    carryRenewal(current, caller);
     if (new URL(request.url).searchParams.get('history') === 'true') {
       const response = await worker(current.state.sessionId, '/jobs');
       const items = await response.json();

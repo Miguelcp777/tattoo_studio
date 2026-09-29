@@ -77,6 +77,7 @@ exist and its field set is unproven against any consumer.
 | ADR-0018 | The AI finish runs on generated plates, chosen by measurement, and falls back (amends ADR-0016) | accepted |
 | ADR-0019 | The camera try-on runs entirely on the client's device | accepted |
 | ADR-0020 | One self-hosted node, on the owner's own hardware (decides hosting and region) | accepted |
+| ADR-0021 | Accounts come from Supabase; the studio asks it who is calling | accepted |
 
 ## Invariant ownership
 
