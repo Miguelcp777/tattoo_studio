@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0047 (ADR-0023): the history note says versions are kept and body photos expire after 24
+hours. When a version's skin view has gone with its photo, the design dialog shows a notice in its
+place and hides that download, instead of a broken image.
+
 TASK-0053: `/probar` opens with a sticky bar holding "← Volver al estudio" and the brand. As an
 installed app there is no browser back button, and the try-on was a dead end without it.
 

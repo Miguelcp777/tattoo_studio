@@ -1077,7 +1077,8 @@ export default function ConsultationPage(): ReactNode {
             <section aria-label="Historial de propuestas">
               <h2>Tus versiones</h2>
               <p className="small-note">
-                Conservadas durante 24 horas. Abre cualquiera para seguir cambiándola.
+                Se guardan en tu cuenta. Las fotos de tu cuerpo, y lo que se ve sobre ellas, se
+                borran a las 24 horas. Abre cualquiera para seguir cambiándola.
               </p>
               {versions.map(
                 (version, index) =>

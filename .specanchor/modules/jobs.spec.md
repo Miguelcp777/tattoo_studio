@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0047: `history(owner)` is no longer windowed to 24 hours; it returns the owner's 50 newest
+successful versions. Designs do not expire (ADR-0023), so neither does the list of them.
+
 TASK-0050 (ADR-0022): `record(owner, payload, result)` stores work finished outside the queue — a
 kept camera photograph — as a succeeded job, so it lives in the owner's history under the same
 retention and deletion as every other version. The result is validated against `studio-status`

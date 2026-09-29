@@ -23,6 +23,13 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0047 (ADR-0023): each stored file follows the lifecycle of what it shows (`lifecycle()` in
+`app/studio.py`): composites and backgrounds on the client's own photo are `PHOTO_DERIVED` and
+descend from it; everything else is `DESIGN` and descends from the first reference. The purge takes
+an optional `now`, keeps successful versions, sweeps failed and cancelled runs after 24 hours, and
+drops a kept camera photo's version once its photo is gone. An expired own photo is reported as
+`PHOTO_GONE` on generation and on the submit route, instead of an unexplained failure.
+
 TASK-0052: `TATTOO_BFL_BASE_URL` is passed to the worker, EU by default, so the BFL cluster can be
 switched from Coolify (to `https://api.bfl.ai` during an EU incident) without a code change. Only a
 text prompt goes to BFL. Any URL outside bfl.ai/bfl.ml is refused when the provider is built.

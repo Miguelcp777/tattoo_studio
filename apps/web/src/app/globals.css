@@ -1806,3 +1806,18 @@ body::after {
     display: none;
   }
 }
+
+/* TASK-0047: where a skin view was, once the body photo it was composed on has expired. */
+.skin-gone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 220px;
+  padding: 1.25rem;
+  border: 1px dashed rgba(216, 171, 147, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}

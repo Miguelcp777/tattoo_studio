@@ -44,6 +44,9 @@ export function TattooPreviewModal({
   const url = (id: string) => `/api/media?id=${id}`;
   // TASK-0050: a version kept from the camera shows the photograph; the design is the parent's.
   const skin = artifact.capture?.photo ?? artifact.mockup;
+  // TASK-0047: a design lasts, a photo of the body expires after 24 hours. When the skin view was
+  // composed on that photo it goes with it, and the design is shown without it, saying why.
+  const [skinGone, setSkinGone] = useState(false);
   return (
     <dialog
       ref={dialog}
@@ -89,41 +92,53 @@ export function TattooPreviewModal({
         />
       )}
       <div className="result-grid" hidden={Boolean(detail)}>
-        <figure>
-          <button
-            className="image-open"
-            aria-label="Ampliar mockup"
-            onClick={(event) => {
-              detailTrigger.current = event.currentTarget;
-              setDetail('mockup');
-            }}
-          >
-            <img
-              src={url(skin.assetId)}
-              alt={
-                artifact.capture
-                  ? 'Tu foto con la cámara, con el tatuaje superpuesto'
-                  : 'Diseño maestro colocado geométricamente sobre piel'
-              }
-            />
-            <span>{artifact.capture ? 'Ampliar foto ↗' : 'Ampliar mockup ↗'}</span>
-          </button>
-          <figcaption>
-            {artifact.capture ? (
-              'Tu foto con la cámara · el tatuaje está superpuesto, no hecho'
-            ) : (
-              <>
-                {artifact.backgroundKind === 'own_photo'
-                  ? 'Tu fotografía'
-                  : 'Anatomía generada, no es tu fotografía'}{' '}
-                ·{' '}
-                {artifact.transform.scaleCalibrated
-                  ? 'Escala según tu calibración'
-                  : 'Tamaño sobre piel orientativo'}
-              </>
-            )}
-          </figcaption>
-        </figure>
+        {skinGone ? (
+          <figure className="skin-gone">
+            <p>
+              La foto de tu cuerpo se borró a las 24 horas, y con ella esta vista sobre la piel.
+            </p>
+            <p>
+              El diseño y la plantilla siguen aquí. Sube otra foto si quieres volver a verlo puesto.
+            </p>
+          </figure>
+        ) : (
+          <figure>
+            <button
+              className="image-open"
+              aria-label="Ampliar mockup"
+              onClick={(event) => {
+                detailTrigger.current = event.currentTarget;
+                setDetail('mockup');
+              }}
+            >
+              <img
+                src={url(skin.assetId)}
+                onError={() => setSkinGone(true)}
+                alt={
+                  artifact.capture
+                    ? 'Tu foto con la cámara, con el tatuaje superpuesto'
+                    : 'Diseño maestro colocado geométricamente sobre piel'
+                }
+              />
+              <span>{artifact.capture ? 'Ampliar foto ↗' : 'Ampliar mockup ↗'}</span>
+            </button>
+            <figcaption>
+              {artifact.capture ? (
+                'Tu foto con la cámara · el tatuaje está superpuesto, no hecho'
+              ) : (
+                <>
+                  {artifact.backgroundKind === 'own_photo'
+                    ? 'Tu fotografía'
+                    : 'Anatomía generada, no es tu fotografía'}{' '}
+                  ·{' '}
+                  {artifact.transform.scaleCalibrated
+                    ? 'Escala según tu calibración'
+                    : 'Tamaño sobre piel orientativo'}
+                </>
+              )}
+            </figcaption>
+          </figure>
+        )}
         <figure>
           <button
             className="image-open"
@@ -190,7 +205,7 @@ export function TattooPreviewModal({
           <a href={url(artifact.stencilMirror.assetId)} download="inkcraft-stencil-espejo.svg">
             SVG espejo
           </a>
-          {artifact.capture ? (
+          {skinGone ? null : artifact.capture ? (
             <a href={url(artifact.capture.photo.assetId)} download="inkcraft-foto.jpg">
               Foto
             </a>

@@ -10,7 +10,7 @@ import re
 import sqlite3
 import threading
 import time
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -76,6 +76,32 @@ FINISH_NOTICE = (
     "Acabado de piel con IA sobre la composición; el diseño se ha comparado con la plantilla "
     "antes de mostrarlo. "
 )
+
+# TASK-0047: what a client sees when a version's own-body photo has expired.
+PHOTO_GONE = (
+    "La foto de tu cuerpo ya no está: se borra a las 24 horas. Súbela de nuevo para volver a "
+    "ver el diseño sobre ella."
+)
+
+#: The files that show the client's body when the background is their own photo.
+LIKENESS_FILES = frozenset({"mockup", "background"})
+
+
+def lifecycle(name: str, payload: dict[str, Any]) -> tuple[RetentionClass, str]:
+    """
+    Which lifecycle a stored file follows, and what it descends from (TASK-0047, MEDIA-INV-006).
+
+    On the client's own photo, the composite and its background show their body: they follow the
+    photograph, expire with it and are erased with it. Everything else is the design - master,
+    stencils, PDFs, the vector, a generated plate and a mockup on it - which shows nobody and stays
+    until its owner deletes it. It descends from the first reference, itself design material, so
+    no photograph's expiry can cascade into it.
+    """
+    photo = payload.get("bodyPhotoId")
+    if photo and name in LIKENESS_FILES:
+        return RetentionClass.PHOTO_DERIVED, str(photo)
+    return RetentionClass.DESIGN, str(payload["referenceIds"][0])
+
 
 # ADR-0022: the version a kept camera photograph becomes. The ink is superimposed on the device, so
 # the notice says what the picture is and what it is not.
@@ -248,9 +274,18 @@ class Studio:
             )
         self.jobs = JobQueue(root / "jobs.sqlite", self.generate, self.purge_expired)
 
-    def purge_expired(self) -> None:
+    def purge_expired(self, now: datetime | None = None) -> None:
+        """
+        Erase what has outlived its lifecycle (TASK-0047).
+
+        Photographs of a body and everything composed on them expire; designs do not. Versions
+        are kept, so a design made weeks ago still opens, with a notice where its photo was. Only
+        runs that produced nothing - failed or cancelled - are swept, and a kept camera photo's
+        version goes with its photo, because without it there is nothing left to show.
+        """
+        moment = now or datetime.now(UTC)
         with self.lock:
-            for asset in self.media.expired():
+            for asset in self.media.expired(moment):
                 try:
                     receipt = self.media.delete_cascade(asset.asset_id)
                 except AssetNotFoundError:
@@ -259,11 +294,37 @@ class Studio:
                     db.executemany("DELETE FROM assets WHERE id=?", [(a,) for a in receipt.removed])
             with self.jobs.connect() as db:
                 db.execute(
-                    "DELETE FROM jobs WHERE created < ? AND state NOT IN ('running','queued')",
-                    (time.time() - 86400,),
+                    "DELETE FROM jobs WHERE created < ? AND state IN ('failed','cancelled')",
+                    (moment.timestamp() - 86400,),
                 )
+            self.drop_orphaned_captures()
             with self.db() as db:
                 db.execute("DELETE FROM consent WHERE created < datetime('now','-1 day')")
+
+    def drop_orphaned_captures(self) -> None:
+        """A kept camera photo's version whose photo has expired shows nothing: remove it."""
+        with self.jobs.connect() as db:
+            rows = db.execute(
+                "SELECT id, result FROM jobs WHERE state='succeeded' AND result LIKE ?",
+                ('%"capture"%',),
+            ).fetchall()
+        gone: list[str] = []
+        with self.db() as db:
+            for row in rows:
+                photo = (json.loads(row["result"]).get("capture") or {}).get("photo") or {}
+                held = db.execute("SELECT 1 FROM assets WHERE id=?", (photo.get("assetId"),))
+                if not held.fetchone():
+                    gone.append(row["id"])
+        if gone:
+            with self.jobs.connect() as db:
+                db.executemany("DELETE FROM jobs WHERE id=?", [(job,) for job in gone])
+
+    def own_photo(self, owner: str, asset_id: str) -> bytes:
+        """The client's own body photo, or a clear refusal once it has expired (TASK-0047)."""
+        try:
+            return self.owned(owner, asset_id, "body")
+        except (KeyError, ValueError) as error:
+            raise ValueError(PHOTO_GONE) from error
 
     def db(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path, timeout=10)
@@ -358,7 +419,13 @@ class Studio:
                     "INSERT INTO consent(owner,version) VALUES (?,?)",
                     (owner, "studio-own-photo-v1" if kind == "body" else "studio-reference-v1"),
                 )
-            asset = self.media.ingest_photo(normalized, gate.clearance)
+            # A reference passed a gate that refuses any person, so it shows nobody and follows
+            # the design lifecycle; a body photo is a photograph and expires (TASK-0047).
+            asset = self.media.ingest_photo(
+                normalized,
+                gate.clearance,
+                retention=RetentionClass.PHOTO if kind == "body" else RetentionClass.DESIGN,
+            )
             self.register(owner, asset.asset_id, kind)
         return {"assetId": asset.asset_id, "mimeType": asset.media_type}
 
@@ -378,9 +445,7 @@ class Studio:
             self.owned(owner, asset_id, "reference") for asset_id in payload["referenceIds"]
         ]
         background = (
-            self.owned(owner, payload["bodyPhotoId"], "body")
-            if payload.get("bodyPhotoId")
-            else None
+            self.own_photo(owner, payload["bodyPhotoId"]) if payload.get("bodyPhotoId") else None
         )
         edit = payload.get("edit")
         parent = self.jobs.get(owner, edit["parentJobId"])["result"] if edit else None
@@ -466,7 +531,7 @@ class Studio:
             for asset_id in payload["referenceIds"]:
                 self.owned(owner, asset_id, "reference")
             if payload.get("bodyPhotoId"):
-                self.owned(owner, payload["bodyPhotoId"], "body")
+                self.own_photo(owner, payload["bodyPhotoId"])
             for name, (data, mime) in files.items():
                 with Image.open(io.BytesIO(mockup)) as rendered:
                     dimensions = rendered.size if name in ("mockup", "background") else raster.size
@@ -475,8 +540,8 @@ class Studio:
                     media_type=mime,
                     width_px=dimensions[0],
                     height_px=dimensions[1],
-                    retention=RetentionClass.PHOTO,
-                    parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
+                    retention=lifecycle(name, payload)[0],
+                    parent_id=lifecycle(name, payload)[1],
                 )
                 result[name] = {
                     "assetId": self.register(owner, asset.asset_id, "artifact"),
@@ -492,8 +557,9 @@ class Studio:
             media_type="application/json",
             width_px=0,
             height_px=0,
-            retention=RetentionClass.PHOTO,
-            parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
+            # The geometry shows nobody: it is the design itself (TASK-0047).
+            retention=RetentionClass.DESIGN,
+            parent_id=payload["referenceIds"][0],
         )
         with self.db() as db:
             db.execute(
@@ -678,8 +744,8 @@ class Studio:
                     media_type=mime,
                     width_px=dimensions[0],
                     height_px=dimensions[1],
-                    retention=RetentionClass.PHOTO,
-                    parent_id=payload.get("bodyPhotoId") or payload["referenceIds"][0],
+                    retention=lifecycle(name, payload)[0],
+                    parent_id=lifecycle(name, payload)[1],
                 )
                 result[name] = {
                     "assetId": self.register(owner, asset.asset_id, "artifact"),
@@ -852,7 +918,7 @@ def router(studio: Studio, token: str) -> APIRouter:
             for asset_id in body["referenceIds"]:
                 studio.owned(who, asset_id, "reference")
             if body.get("bodyPhotoId"):
-                studio.owned(who, body["bodyPhotoId"], "body")
+                studio.own_photo(who, body["bodyPhotoId"])
             return studio.jobs.enqueue(who, body)
         except (KeyError, ValueError) as error:
             raise HTTPException(422, str(error)) from error

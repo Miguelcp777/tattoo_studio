@@ -150,11 +150,12 @@ class JobQueue:
             )
 
     def history(self, owner: str) -> list[dict[str, Any]]:
+        """The owner's versions, newest first. Not windowed: designs do not expire (TASK-0047)."""
         with self.connect() as db:
             rows = db.execute(
                 "SELECT * FROM jobs WHERE owner=? AND state='succeeded' "
-                "AND created > ? ORDER BY created DESC LIMIT 20",
-                (owner, time.time() - 86400),
+                "ORDER BY created DESC LIMIT 50",
+                (owner,),
             ).fetchall()
         return [self.public(row) for row in rows]
 

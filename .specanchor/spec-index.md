@@ -78,6 +78,7 @@ exist and its field set is unproven against any consumer.
 | ADR-0019 | The camera try-on runs entirely on the client's device | accepted |
 | ADR-0020 | One self-hosted node, on the owner's own hardware (decides hosting and region) | accepted |
 | ADR-0021 | Accounts come from Supabase; the studio asks it who is calling | accepted |
+| ADR-0023 | Designs last; photographs of a body expire (refines MEDIA-INV-006) | accepted |
 | ADR-0022 | One camera photograph may be kept, when the client takes it and chooses to (amends ADR-0019) | accepted |
 
 ## Invariant ownership

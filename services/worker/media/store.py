@@ -113,12 +113,24 @@ class EncryptedFileStore:
     # Writing
     # ------------------------------------------------------------------
 
-    def ingest_photo(self, upload: bytes, clearance: SafetyClearance) -> StoredAsset:
+    def ingest_photo(
+        self,
+        upload: bytes,
+        clearance: SafetyClearance,
+        *,
+        retention: RetentionClass = RetentionClass.PHOTO,
+    ) -> StoredAsset:
         """Sanitise, encrypt and store an uploaded photograph.
 
         Refuses unless the clearance was issued for exactly these bytes. Nothing is
         written on refusal (MEDIA-INV-003, SEC-INV-007).
+
+        ``retention`` is ``PHOTO`` unless the caller knows the image carries no likeness: a
+        reference the safety gate screened as containing no person follows the design lifecycle
+        instead (TASK-0047, MEDIA-INV-006). A photograph of a body is always ``PHOTO``.
         """
+        if retention not in (RetentionClass.PHOTO, RetentionClass.DESIGN):
+            raise ValueError("an upload is either a photograph or design material")
         if not isinstance(clearance, SafetyClearance):
             raise ClearanceRequiredError("ingest requires a safety clearance; refusing")
         if not clearance.covers(upload):
@@ -127,7 +139,7 @@ class EncryptedFileStore:
             raise ClearanceRequiredError("clearance does not cover these bytes; refusing to ingest")
 
         clean = sanitize(upload)
-        return self._write(clean, retention=RetentionClass.PHOTO, parent_id=None)
+        return self._write(clean, retention=retention, parent_id=None)
 
     def store_artifact(
         self,

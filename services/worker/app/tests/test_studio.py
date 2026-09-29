@@ -6,6 +6,7 @@ import base64
 import io
 import json
 import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 from xml.etree import ElementTree
@@ -19,6 +20,7 @@ from PIL import Image, ImageDraw
 from app.studio import Studio, router
 from generation.studio import StudioProvider
 from jobs.queue import JobQueue
+from media.store import EncryptedFileStore
 from mockup.anatomy import ZONE_SPAN_MM
 from mockup.engine import composite, visible_size
 from mockup.placement import Coverage, coverage_request, fit_coverage
@@ -1146,3 +1148,130 @@ def test_a_plate_that_fails_costs_no_artwork(tmp_path: Path) -> None:
     assert failed["error"] == "FLUX ha superado el tiempo máximo de espera."
     # And no drawing was paid for.
     assert provider.calls == 0
+
+
+# --- TASK-0047: designs last; photographs of a body do not -------------------------------------
+
+LATER = datetime.now(UTC) + timedelta(hours=25)
+
+
+def a_body_photo(studio: Studio) -> str:
+    uploaded = studio.ingest(
+        ACCOUNT,
+        {
+            "data": base64.b64encode(picture(lines=False)).decode(),
+            "kind": "body",
+            "adult": True,
+            "consent": True,
+        },
+    )
+    return str(uploaded["assetId"])
+
+
+def design_files(result: dict[str, Any]) -> list[str]:
+    return [result[name]["assetId"] for name in ("master", "stencil", "stencilMirror", "pdf")]
+
+
+def test_a_design_outlives_the_photo_window(tmp_path: Path) -> None:
+    """MEDIA-INV-006: a design shows nobody, so it follows the design lifecycle, not the photo's."""
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    job_id = a_design(studio)
+    result = studio.jobs.get(ACCOUNT, job_id)["result"]
+    reference = studio.jobs.source_payload(ACCOUNT, job_id)["referenceIds"][0]
+
+    studio.purge_expired(now=LATER)
+
+    # The version is still listed, and every file it shows still opens.
+    assert [item["jobId"] for item in studio.jobs.history(ACCOUNT)] == [job_id]
+    for asset_id in [*design_files(result), result["mockup"]["assetId"], reference]:
+        assert studio.owned(ACCOUNT, asset_id)
+    assert studio.media.metadata(result["master"]["assetId"]).expires_at is None
+
+
+def test_a_body_photo_and_what_shows_it_expire_but_the_design_stays(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    reference = studio.ingest(ACCOUNT, an_upload())
+    photo = a_body_photo(studio)
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    request["bodyPhotoId"] = photo
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    result = studio.jobs.get(ACCOUNT, job["jobId"])["result"]
+    assert result["backgroundKind"] == "own_photo"
+
+    studio.purge_expired(now=LATER)
+
+    # The photograph, and the composite and background that show the body, are gone...
+    for asset_id in (photo, result["mockup"]["assetId"], result["background"]["assetId"]):
+        with pytest.raises(KeyError):
+            studio.owned(ACCOUNT, asset_id)
+    # ...while the design, which never contained the photo (ADR-0007), is intact and listed.
+    for asset_id in design_files(result):
+        assert studio.owned(ACCOUNT, asset_id)
+    assert [item["jobId"] for item in studio.jobs.history(ACCOUNT)] == [job["jobId"]]
+
+
+def test_a_change_to_a_design_whose_photo_expired_says_why(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    request["bodyPhotoId"] = a_body_photo(studio)
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    studio.purge_expired(now=LATER)
+
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    response = TestClient(app).post(
+        "/studio/jobs",
+        json={
+            "edit": {"parentJobId": job["jobId"], "instruction": "Añade azul"},
+            "idempotencyKey": "99999999-9999-4999-8999-999999999999",
+        },
+        headers={"Authorization": "Bearer test-only-token", "X-Owner-Id": ACCOUNT},
+    )
+    assert response.status_code == 422
+    assert "se borra a las 24 horas" in response.json()["detail"]
+
+
+def test_a_kept_camera_photo_goes_with_its_photo(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, RecordingProvider())
+    parent_id = a_design(studio)
+    kept = studio.capture(ACCOUNT, a_capture(parent_id))
+
+    studio.purge_expired(now=LATER)
+
+    # Without its photo the version would show nothing; the design it belonged to remains.
+    listed = [item["jobId"] for item in studio.jobs.history(ACCOUNT)]
+    assert kept["jobId"] not in listed
+    assert listed == [parent_id]
+
+
+def test_only_runs_that_produced_nothing_are_swept(tmp_path: Path) -> None:
+    class Failing(FakeProvider):
+        def lineart(self, brief: dict[str, Any], references: list[bytes], analysis: str) -> bytes:
+            raise ValueError("Proveedor no disponible")
+
+    studio = Studio(tmp_path, b"x" * 32, Failing())
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    failed = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+
+    studio.purge_expired(now=LATER)
+
+    with pytest.raises(KeyError):
+        studio.jobs.get(ACCOUNT, failed["jobId"])
+
+
+def test_an_upload_is_a_photograph_or_design_material() -> None:
+    from media.store import RetentionClass
+
+    store = EncryptedFileStore(
+        Path("unused-never-written"), b"x" * 32, retention=timedelta(hours=1)
+    )
+    with pytest.raises(ValueError):
+        store.ingest_photo(b"", object(), retention=RetentionClass.PHOTO_DERIVED)  # type: ignore[arg-type]

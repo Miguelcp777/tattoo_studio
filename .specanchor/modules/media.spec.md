@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: media
 
+TASK-0047 (ADR-0023): `ingest_photo` takes a `retention` of `PHOTO` (the default) or `DESIGN`, and
+refuses anything else. The studio passes `DESIGN` for references, which the safety gate admits only
+when they show no person, so they no longer expire and cannot cascade into the designs made from
+them.
+
 ## Responsibility
 
 Own the lifecycle of every binary asset: ingest, sanitize, store, serve and delete. It is the only
@@ -45,8 +50,10 @@ cross a module boundary; references do.
   (SEC-INV-004).
 - MEDIA-INV-005: Served URLs are signed and expiring. Access is authorization-checked, never
   obscurity alone.
-- MEDIA-INV-006: Stencils and flash, which contain no likeness, follow the design lifecycle;
-  photos and mockups follow the photo lifecycle.
+- MEDIA-INV-006: Whatever shows no person follows the design lifecycle - stencils, flash, the
+  master and its vector, generated skin plates and the composites on them, and references the
+  gate admitted as showing no person. A photograph of a body, and everything composed on it,
+  follows the photo lifecycle (refined by ADR-0023, TASK-0047).
 
 ## Data / persistence
 
