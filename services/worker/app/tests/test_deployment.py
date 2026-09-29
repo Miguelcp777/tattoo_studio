@@ -99,3 +99,16 @@ def test_the_web_image_pins_the_pnpm_that_wrote_the_lockfile() -> None:
     # pnpm 9 and 10 also read lockfileVersion 9, but the repository is maintained on 12; pinning
     # below it risks a resolver difference that only appears in the image.
     assert int(pinned[1]) >= 12
+
+
+def test_the_build_context_is_the_repository_root() -> None:
+    """The context is resolved against the compose *project directory*, which the deploy sets to
+    the repository root -- not against this file's folder. `context: ..` pointed above the root and
+    the first real deploy failed with `lstat /artifacts/infra: no such file or directory`."""
+    blocks = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))
+    for name, block in blocks.items():
+        assert re.search(r"^\s+context: \.$", block, re.M), f"{name}: context must be the root"
+        assert re.search(rf"dockerfile: infra/Dockerfile\.{name}$", block, re.M)
+    # The images they point at have to exist, or the failure only shows up on the server.
+    for name in blocks:
+        assert (INFRA / f"Dockerfile.{name}").is_file()

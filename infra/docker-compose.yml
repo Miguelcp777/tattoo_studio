@@ -15,7 +15,9 @@ name: tattoo-studio
 services:
   worker:
     build:
-      context: ..
+      # Relative to the compose *project directory*, which Coolify sets to the repository root
+      # (not to this file's folder). `..` pointed above the root and the build could not resolve.
+      context: .
       dockerfile: infra/Dockerfile.worker
     environment:
       TATTOO_ENVIRONMENT: production
@@ -47,7 +49,7 @@ services:
 
   web:
     build:
-      context: ..
+      context: .
       dockerfile: infra/Dockerfile.web
     environment:
       NODE_ENV: production
