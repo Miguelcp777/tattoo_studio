@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0051: the studio header is sticky and nothing may override that (a shared `position: relative`
+once did, so the brand scrolled away). The design dialog reads images first, then downloads and
+the camera, then the change form, so a finished design opens on its pictures. Both are held by
+`components/reading-order.test.ts`.
+
 TASK-0049: the header greets the signed-in person ("Hola, <name>": the account's name in Supabase,
 else the address before the @) and offers "Salir". Signing out ends the session at Supabase
 (`/auth/v1/logout?scope=local`), clears both tokens and the consultation cookie, and cannot fail

@@ -1126,7 +1126,8 @@ body::after {
   display: block;
 }
 
-.studio-header,
+/* The header is not in this list: it is sticky (see `.studio-header`), and `position: relative`
+   here silently overrode that, so the brand scrolled away with the page (TASK-0051). */
 .step-flow,
 .studio-container,
 .studio-footer {
@@ -1758,4 +1759,11 @@ body::after {
 .try-on-saved a {
   color: var(--rose-gold);
   margin-left: 0.25rem;
+}
+
+/* TASK-0051: the change form sits after the design, set apart so it reads as a next step. */
+.proposal-edit-last {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(216, 171, 147, 0.18);
 }

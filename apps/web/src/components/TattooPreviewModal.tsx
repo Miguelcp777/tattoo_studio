@@ -66,9 +66,146 @@ export function TattooPreviewModal({
         </button>
       </header>
       <p className="notice-banner">{artifact.notice}</p>
+      {artifact.edit && (
+        <p>
+          Cambio solicitado: {artifact.edit.instruction}
+          {artifact.edit.referenceIds?.length
+            ? ` · con ${artifact.edit.referenceIds.length} foto${artifact.edit.referenceIds.length > 1 ? 's' : ''} adjunta${artifact.edit.referenceIds.length > 1 ? 's' : ''}`
+            : ''}
+        </p>
+      )}
+      {detail && (
+        <ImageDetail
+          key={detail}
+          src={url(detail === 'mockup' ? skin.assetId : artifact.stencil.assetId)}
+          label={
+            detail === 'mockup'
+              ? artifact.capture
+                ? 'Foto con la cámara'
+                : 'Mockup sobre piel'
+              : 'Plantilla a escala'
+          }
+          onClose={closeDetail}
+        />
+      )}
+      <div className="result-grid" hidden={Boolean(detail)}>
+        <figure>
+          <button
+            className="image-open"
+            aria-label="Ampliar mockup"
+            onClick={(event) => {
+              detailTrigger.current = event.currentTarget;
+              setDetail('mockup');
+            }}
+          >
+            <img
+              src={url(skin.assetId)}
+              alt={
+                artifact.capture
+                  ? 'Tu foto con la cámara, con el tatuaje superpuesto'
+                  : 'Diseño maestro colocado geométricamente sobre piel'
+              }
+            />
+            <span>{artifact.capture ? 'Ampliar foto ↗' : 'Ampliar mockup ↗'}</span>
+          </button>
+          <figcaption>
+            {artifact.capture ? (
+              'Tu foto con la cámara · el tatuaje está superpuesto, no hecho'
+            ) : (
+              <>
+                {artifact.backgroundKind === 'own_photo'
+                  ? 'Tu fotografía'
+                  : 'Anatomía generada, no es tu fotografía'}{' '}
+                ·{' '}
+                {artifact.transform.scaleCalibrated
+                  ? 'Escala según tu calibración'
+                  : 'Tamaño sobre piel orientativo'}
+              </>
+            )}
+          </figcaption>
+        </figure>
+        <figure>
+          <button
+            className="image-open"
+            aria-label="Ampliar plantilla"
+            onClick={(event) => {
+              detailTrigger.current = event.currentTarget;
+              setDetail('stencil');
+            }}
+          >
+            <img
+              src={url(artifact.stencil.assetId)}
+              alt="Stencil vectorial del mismo diseño maestro"
+            />
+            <span>Ampliar plantilla ↗</span>
+          </button>
+          <figcaption>
+            Plantilla · formato {artifact.size.widthMm} × {artifact.size.heightMm} mm
+            {artifact.transform.sourceCropPx && ' · puede incluir márgenes blancos'}
+          </figcaption>
+        </figure>
+      </div>
+      <p className="small-note">
+        Ambos archivos proceden del mismo maestro. Esto acredita el origen compartido, no la
+        exactitud cultural ni la idoneidad para tatuar.
+      </p>
+      <details>
+        <summary>Referencias y trazabilidad</summary>
+        <p>{artifact.referenceAnalysis}</p>
+        <p className="hash">Diseño: {artifact.designId}</p>
+        <p>Colocación geométrica; sin regeneración de líneas después de colocar.</p>
+      </details>
+      {/* TASK-0042: the try-on runs on the client's own device; the design travels as its id. */}
+      <p className="try-on-link">
+        <a
+          className="btn-primary"
+          href={`/probar?design=${artifact.master.assetId}${jobId ? `&job=${jobId}` : ''}`}
+        >
+          Pruébalo con la cámara
+        </a>
+        <small>
+          Se procesa en tu dispositivo. Solo se guarda una foto si tú la haces y decides guardarla.
+        </small>
+      </p>
+      <label className="check-row">
+        <input type="checkbox" checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} />
+        He revisado los símbolos. El tatuador debe validar el trazo y la impresión antes de
+        utilizarlo.
+      </label>
+      {reviewed && (
+        <div className="download-row">
+          <a
+            className="btn-primary"
+            href={url(artifact.pdf.assetId)}
+            download="inkcraft-stencil.pdf"
+          >
+            PDF a escala 1:1
+          </a>
+          <a href={url(artifact.pdfMirror.assetId)} download="inkcraft-stencil-espejo.pdf">
+            PDF espejo
+          </a>
+          <a href={url(artifact.stencil.assetId)} download="inkcraft-stencil.svg">
+            SVG
+          </a>
+          <a href={url(artifact.stencilMirror.assetId)} download="inkcraft-stencil-espejo.svg">
+            SVG espejo
+          </a>
+          {artifact.capture ? (
+            <a href={url(artifact.capture.photo.assetId)} download="inkcraft-foto.jpg">
+              Foto
+            </a>
+          ) : (
+            <a href={url(artifact.mockup.assetId)} download="inkcraft-mockup.png">
+              Mockup
+            </a>
+          )}
+        </div>
+      )}
+      <p>Imprime a tamaño real, sin “ajustar a página”, y mide la barra de 50 mm del PDF.</p>
+      {/* TASK-0051: changes come after the design, so a new version opens on its pictures. */}
       {onEdit && (
         <form
-          className="proposal-edit"
+          className="proposal-edit proposal-edit-last"
           onSubmit={(event) => {
             event.preventDefault();
             if (instruction.trim().length >= 3 && !editingDisabled && !attaching)
@@ -191,142 +328,6 @@ export function TattooPreviewModal({
           </button>
         </form>
       )}
-      {artifact.edit && (
-        <p>
-          Cambio solicitado: {artifact.edit.instruction}
-          {artifact.edit.referenceIds?.length
-            ? ` · con ${artifact.edit.referenceIds.length} foto${artifact.edit.referenceIds.length > 1 ? 's' : ''} adjunta${artifact.edit.referenceIds.length > 1 ? 's' : ''}`
-            : ''}
-        </p>
-      )}
-      {detail && (
-        <ImageDetail
-          key={detail}
-          src={url(detail === 'mockup' ? skin.assetId : artifact.stencil.assetId)}
-          label={
-            detail === 'mockup'
-              ? artifact.capture
-                ? 'Foto con la cámara'
-                : 'Mockup sobre piel'
-              : 'Plantilla a escala'
-          }
-          onClose={closeDetail}
-        />
-      )}
-      <p>
-        Ambos archivos proceden del mismo maestro. Esto acredita el origen compartido, no la
-        exactitud cultural ni la idoneidad para tatuar.
-      </p>
-      <div className="result-grid" hidden={Boolean(detail)}>
-        <figure>
-          <button
-            className="image-open"
-            aria-label="Ampliar mockup"
-            onClick={(event) => {
-              detailTrigger.current = event.currentTarget;
-              setDetail('mockup');
-            }}
-          >
-            <img
-              src={url(skin.assetId)}
-              alt={
-                artifact.capture
-                  ? 'Tu foto con la cámara, con el tatuaje superpuesto'
-                  : 'Diseño maestro colocado geométricamente sobre piel'
-              }
-            />
-            <span>{artifact.capture ? 'Ampliar foto ↗' : 'Ampliar mockup ↗'}</span>
-          </button>
-          <figcaption>
-            {artifact.capture ? (
-              'Tu foto con la cámara · el tatuaje está superpuesto, no hecho'
-            ) : (
-              <>
-                {artifact.backgroundKind === 'own_photo'
-                  ? 'Tu fotografía'
-                  : 'Anatomía generada, no es tu fotografía'}{' '}
-                ·{' '}
-                {artifact.transform.scaleCalibrated
-                  ? 'Escala según tu calibración'
-                  : 'Tamaño sobre piel orientativo'}
-              </>
-            )}
-          </figcaption>
-        </figure>
-        <figure>
-          <button
-            className="image-open"
-            aria-label="Ampliar plantilla"
-            onClick={(event) => {
-              detailTrigger.current = event.currentTarget;
-              setDetail('stencil');
-            }}
-          >
-            <img
-              src={url(artifact.stencil.assetId)}
-              alt="Stencil vectorial del mismo diseño maestro"
-            />
-            <span>Ampliar plantilla ↗</span>
-          </button>
-          <figcaption>
-            Plantilla · formato {artifact.size.widthMm} × {artifact.size.heightMm} mm
-            {artifact.transform.sourceCropPx && ' · puede incluir márgenes blancos'}
-          </figcaption>
-        </figure>
-      </div>
-      <details>
-        <summary>Referencias y trazabilidad</summary>
-        <p>{artifact.referenceAnalysis}</p>
-        <p className="hash">Diseño: {artifact.designId}</p>
-        <p>Colocación geométrica; sin regeneración de líneas después de colocar.</p>
-      </details>
-      {/* TASK-0042: the try-on runs on the client's own device; the design travels as its id. */}
-      <p className="try-on-link">
-        <a
-          className="btn-primary"
-          href={`/probar?design=${artifact.master.assetId}${jobId ? `&job=${jobId}` : ''}`}
-        >
-          Pruébalo con la cámara
-        </a>
-        <small>
-          Se procesa en tu dispositivo. Solo se guarda una foto si tú la haces y decides guardarla.
-        </small>
-      </p>
-      <label className="check-row">
-        <input type="checkbox" checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} />
-        He revisado los símbolos. El tatuador debe validar el trazo y la impresión antes de
-        utilizarlo.
-      </label>
-      {reviewed && (
-        <div className="download-row">
-          <a
-            className="btn-primary"
-            href={url(artifact.pdf.assetId)}
-            download="inkcraft-stencil.pdf"
-          >
-            PDF a escala 1:1
-          </a>
-          <a href={url(artifact.pdfMirror.assetId)} download="inkcraft-stencil-espejo.pdf">
-            PDF espejo
-          </a>
-          <a href={url(artifact.stencil.assetId)} download="inkcraft-stencil.svg">
-            SVG
-          </a>
-          <a href={url(artifact.stencilMirror.assetId)} download="inkcraft-stencil-espejo.svg">
-            SVG espejo
-          </a>
-          {artifact.capture ? (
-            <a href={url(artifact.capture.photo.assetId)} download="inkcraft-foto.jpg">
-              Foto
-            </a>
-          ) : (
-            <a href={url(artifact.mockup.assetId)} download="inkcraft-mockup.png">
-              Mockup
-            </a>
-          )}
-        </div>
-      )}
-      <p>Imprime a tamaño real, sin “ajustar a página”, y mide la barra de 50 mm del PDF.</p>
     </dialog>
   );
 }
