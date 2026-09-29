@@ -922,3 +922,201 @@ def test_the_worker_only_accepts_an_account_as_the_owner(tmp_path: Path) -> None
     # The old name identifies nobody, so a stale caller fails closed rather than sharing an owner.
     assert client.get("/studio/jobs", headers={**auth, "X-Session-Id": ACCOUNT}).status_code == 401
     assert client.get("/studio/jobs", headers={**auth, "X-Owner-Id": ACCOUNT}).status_code == 200
+
+
+# --- ADR-0022: a camera try-on photograph kept as a version -----------------------------------
+
+
+class RecordingProvider(FakeProvider):
+    """Remembers every image an image model was handed, to prove what never reaches one."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.model_inputs: list[bytes] = []
+        self.screened = 0
+        self.explicit = False
+
+    def classify(self, data: bytes) -> ModerationOutcome:
+        self.screened += 1
+        # The skin-toned test photo shows a person; the line-art reference does not. The gate
+        # accepts a person only in an own-body photo with consent, which is what a capture is.
+        with Image.open(io.BytesIO(data)) as image:
+            person = image.convert("RGB").getpixel((0, 0)) == (194, 152, 128)
+        return ModerationOutcome(explicit=self.explicit, contains_person=person)
+
+    def analyze(self, references: list[bytes], subject: str) -> str:
+        self.model_inputs.extend(references)
+        return super().analyze(references, subject)
+
+    def edit_artwork(
+        self,
+        brief: dict[str, Any],
+        master: bytes,
+        references: list[bytes],
+        instruction: str,
+        *,
+        rendered: bool,
+        attached: int = 0,
+    ) -> bytes:
+        self.model_inputs.extend([master, *references])
+        return colour_picture("blue")
+
+
+def a_design(studio: Studio) -> str:
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    assert studio.jobs.get(ACCOUNT, job["jobId"])["state"] == "succeeded"
+    return str(job["jobId"])
+
+
+def a_capture(parent: str, key: str = "66666666-6666-4666-8666-666666666666") -> dict[str, Any]:
+    return {
+        "parentJobId": parent,
+        "idempotencyKey": key,
+        "data": base64.b64encode(picture(lines=False)).decode(),
+        "adult": True,
+        "consent": True,
+    }
+
+
+def test_a_kept_photo_is_a_version_of_the_same_design(tmp_path: Path) -> None:
+    provider = RecordingProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    parent_id = a_design(studio)
+    parent = studio.jobs.get(ACCOUNT, parent_id)["result"]
+
+    kept = studio.capture(ACCOUNT, a_capture(parent_id))
+
+    assert kept["state"] == "succeeded"
+    version = kept["result"]
+    # The design is untouched: same master, same stencil, same size.
+    for field in ("designId", "master", "stencil", "pdf", "size", "mockup"):
+        assert version[field] == parent[field], field
+    # The only new things are the photograph and what the notice says about it.
+    photo = version["capture"]["photo"]
+    assert version["capture"]["parentJobId"] == parent_id
+    assert studio.owned(ACCOUNT, photo["assetId"], "body")
+    assert "superpuesto" in version["notice"] and "ilustrativa" in version["notice"]
+    # It is listed with the account's other versions, newest first.
+    assert studio.jobs.history(ACCOUNT)[0]["jobId"] == kept["jobId"]
+    # And the parent version is exactly what it was.
+    assert studio.jobs.get(ACCOUNT, parent_id)["result"] == parent
+
+
+def test_a_kept_photo_needs_consent_and_passes_the_safety_gate(tmp_path: Path) -> None:
+    provider = RecordingProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    parent_id = a_design(studio)
+    before = len(studio.jobs.history(ACCOUNT))
+
+    for missing in ("adult", "consent"):
+        with pytest.raises(ValueError):
+            studio.capture(ACCOUNT, {**a_capture(parent_id), missing: False})
+
+    provider.explicit = True
+    with pytest.raises(ValueError):
+        studio.capture(ACCOUNT, a_capture(parent_id))
+
+    # Nothing was stored for any of them: no version and no photograph.
+    assert len(studio.jobs.history(ACCOUNT)) == before
+    with studio.db() as db:
+        assert (
+            db.execute(
+                "SELECT count(*) FROM assets WHERE owner=? AND kind='body'", (ACCOUNT,)
+            ).fetchone()[0]
+            == 0
+        )
+
+
+def test_a_retried_save_keeps_one_photo(tmp_path: Path) -> None:
+    provider = RecordingProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    parent_id = a_design(studio)
+    screened = provider.screened
+
+    first = studio.capture(ACCOUNT, a_capture(parent_id))
+    again = studio.capture(ACCOUNT, a_capture(parent_id))
+
+    assert first["jobId"] == again["jobId"]
+    # Screened and stored once, not once per attempt.
+    assert provider.screened == screened + 1
+    with studio.db() as db:
+        assert (
+            db.execute(
+                "SELECT count(*) FROM assets WHERE owner=? AND kind='body'", (ACCOUNT,)
+            ).fetchone()[0]
+            == 1
+        )
+
+
+def test_only_your_own_design_can_be_photographed(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, RecordingProvider())
+    parent_id = a_design(studio)
+    stranger = "22222222-2222-4222-8222-222222222222"
+    with pytest.raises(KeyError):
+        studio.capture(stranger, a_capture(parent_id))
+
+
+def test_erasing_your_work_takes_the_photos_with_it(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, RecordingProvider())
+    kept = studio.capture(ACCOUNT, a_capture(a_design(studio)))
+    photo_id = kept["result"]["capture"]["photo"]["assetId"]
+
+    studio.delete(ACCOUNT)
+
+    assert studio.jobs.history(ACCOUNT) == []
+    assert studio.media.all_assets() == []
+    with pytest.raises(KeyError):
+        studio.owned(ACCOUNT, photo_id)
+
+
+def test_the_photo_never_reaches_an_image_model(tmp_path: Path) -> None:
+    """
+    ADR-0022 and ADR-0007: a picture of the client's body is shown back to them, and nothing else.
+    A change asked from the photo's version edits the design, whose inputs are the master artwork
+    and the references, never the photograph.
+    """
+    provider = RecordingProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    kept = studio.capture(ACCOUNT, a_capture(a_design(studio)))
+    photo = studio.owned(ACCOUNT, kept["result"]["capture"]["photo"]["assetId"])
+
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": ACCOUNT}
+    change = {
+        "edit": {"parentJobId": kept["jobId"], "instruction": "Añade azul"},
+        "idempotencyKey": "77777777-7777-4777-8777-777777777777",
+    }
+    response = client.post("/studio/jobs", json=change, headers=headers)
+    assert response.status_code == 202, response.text
+    assert studio.jobs.tick()
+    edited = studio.jobs.get(ACCOUNT, response.json()["jobId"])
+    assert edited["state"] == "succeeded", edited
+
+    assert provider.model_inputs, "the edit did reach the model"
+    assert photo not in provider.model_inputs
+
+
+def test_the_capture_route(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, RecordingProvider())
+    parent_id = a_design(studio)
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": ACCOUNT}
+
+    kept = client.post("/studio/captures", json=a_capture(parent_id), headers=headers)
+    assert kept.status_code == 201, kept.text
+    assert kept.json()["result"]["capture"]["parentJobId"] == parent_id
+
+    other = {**headers, "X-Owner-Id": "22222222-2222-4222-8222-222222222222"}
+    assert (
+        client.post("/studio/captures", json=a_capture(parent_id), headers=other).status_code == 404
+    )
+    refused = {**a_capture(parent_id, "88888888-8888-4888-8888-888888888888"), "consent": False}
+    assert client.post("/studio/captures", json=refused, headers=headers).status_code == 422

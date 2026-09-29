@@ -43,8 +43,11 @@ designs on another device" means the last 24 hours until TASK-0047 gives them a 
 TASK-0042 (ADR-0019): `/probar` is the live camera try-on. `lib/skin-blend.ts` ports the worker's
 ink treatment (multiply, ADR-0014 attenuation, TASK-0031 ring) as pure functions; `lib/try-on.ts`
 does one frame (placement, rotation box, blend) and the page owns the camera and the loop. **No
-camera frame leaves the device**: the page's only request is the GET for the client's own design,
-and a source scan (`probar/no-upload.test.ts`) fails the suite if any egress API appears. The app is
+camera frame leaves the device**, with one exception (TASK-0050, ADR-0022): a photograph the client
+takes with the shutter and then keeps, with adult consent, through `lib/capture.ts` and
+`POST /api/captures`, becomes a version of its design (`capture` on the artifact). A source scan
+(`probar/no-upload.test.ts`) fails the suite if the page, compositor or blend gain any egress, or if
+`lib/capture.ts` sends anywhere else, more than once, or on a timer. The app is
 installable (`app/manifest.ts`, `public/sw.js`), and the worker never caches or intercepts `/api/`.
 **Known limitation:** no body segmentation yet, so the design follows the pointer rather than the
 limb and ink placed off the body draws on the background.

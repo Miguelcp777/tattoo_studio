@@ -300,6 +300,48 @@
         "background": {
           "$ref": "#/$defs/asset"
         },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "parentJobId",
+            "photo"
+          ],
+          "description": "A photograph the client took with the camera try-on and chose to keep, saved as a version of the design it shows (ADR-0022). Every other field is the parent's: the design is unchanged. The photograph passed the own-photo gate and is never sent to an image model.",
+          "properties": {
+            "parentJobId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "photo": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "assetId",
+                "designId",
+                "mimeType"
+              ],
+              "description": "Stored as the media store keeps every own-body photograph: JPEG, EXIF stripped, encrypted at rest.",
+              "properties": {
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{32}$"
+                },
+                "designId": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "enum": [
+                    "image/jpeg",
+                    "image/png"
+                  ]
+                }
+              }
+            }
+          }
+        },
         "edit": {
           "type": "object",
           "additionalProperties": false,

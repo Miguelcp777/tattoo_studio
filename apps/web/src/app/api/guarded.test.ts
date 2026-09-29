@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { POST as consult, GET as consultGet } from './consultation/route';
 import { POST as generate, GET as generateGet } from './generate/route';
+import { POST as keepPhoto } from './captures/route';
 import { POST as upload, GET as media, DELETE as forget } from './media/route';
 import { answerAuth, authOnlyFetch, configureAuth, signedIn } from '../../lib/auth.testing';
 
@@ -34,6 +35,8 @@ describe('every paid or private route requires an account', () => {
     ['consultation', () => consult(post('consultation'))],
     ['generate', () => generate(post('generate'))],
     ['media upload', () => upload(post('media'))],
+    // TASK-0050: a kept camera photo is screened by a paid moderation call and stored.
+    ['kept photo', () => keepPhoto(post('captures'))],
   ])('refuses an unauthenticated POST to %s', async (_name, call) => {
     const response = await call();
     expect(response.status).toBe(401);
@@ -60,6 +63,7 @@ describe('every paid or private route requires an account', () => {
     );
     expect((await generate(post('generate'))).status).toBe(401);
     expect((await consult(post('consultation'))).status).toBe(401);
+    expect((await keepPhoto(post('captures'))).status).toBe(401);
     expect(calls).toEqual([]);
   });
 });

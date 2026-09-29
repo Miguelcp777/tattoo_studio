@@ -153,6 +153,41 @@ class Transform(BaseModel):
     ] = None
 
 
+class MimeType1(StrEnum):
+    image_jpeg = 'image/jpeg'
+    image_png = 'image/png'
+
+
+class Photo(BaseModel):
+    """
+    Stored as the media store keeps every own-body photograph: JPEG, EXIF stripped, encrypted at rest.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    assetId: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
+    designId: Annotated[str, Field(pattern='^[a-f0-9]{64}$')]
+    mimeType: MimeType1
+
+
+class Capture(BaseModel):
+    """
+    A photograph the client took with the camera try-on and chose to keep, saved as a version of the design it shows (ADR-0022). Every other field is the parent's: the design is unchanged. The photograph passed the own-photo gate and is never sent to an image model.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    parentJobId: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
+    photo: Annotated[
+        Photo,
+        Field(
+            description='Stored as the media store keeps every own-body photograph: JPEG, EXIF stripped, encrypted at rest.'
+        ),
+    ]
+
+
 class ReferenceId(RootModel[str]):
     root: Annotated[str, Field(pattern='^[a-f0-9]{32}$')]
 
@@ -201,6 +236,12 @@ class Artifact(BaseModel):
     transform: Transform
     notice: Annotated[str, Field(min_length=1)]
     background: Asset | None = None
+    capture: Annotated[
+        Capture | None,
+        Field(
+            description="A photograph the client took with the camera try-on and chose to keep, saved as a version of the design it shows (ADR-0022). Every other field is the parent's: the design is unchanged. The photograph passed the own-photo gate and is never sent to an image model."
+        ),
+    ] = None
     edit: Edit | None = None
 
 

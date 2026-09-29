@@ -79,6 +79,20 @@ export interface GeneratedTattooArtifact {
   };
   notice: string;
   background?: StudioAsset;
+  /**
+   * A photograph the client took with the camera try-on and chose to keep, saved as a version of the design it shows (ADR-0022). Every other field is the parent's: the design is unchanged. The photograph passed the own-photo gate and is never sent to an image model.
+   */
+  capture?: {
+    parentJobId: string;
+    /**
+     * Stored as the media store keeps every own-body photograph: JPEG, EXIF stripped, encrypted at rest.
+     */
+    photo: {
+      assetId: string;
+      designId: string;
+      mimeType: 'image/jpeg' | 'image/png';
+    };
+  };
   edit?: {
     parentJobId: string;
     instruction: string;

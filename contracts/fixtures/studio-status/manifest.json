@@ -114,6 +114,18 @@
       "file": "invalid/generative-without-accepted-check.json",
       "valid": false,
       "why": "a generative finish may only be delivered when the geometry check accepted it"
+    },
+    {
+      "name": "camera-capture",
+      "file": "valid/camera-capture.json",
+      "valid": true,
+      "why": "A camera try-on photo kept as a version of an unchanged design (ADR-0022)."
+    },
+    {
+      "name": "capture-without-photo",
+      "file": "invalid/capture-without-photo.json",
+      "valid": false,
+      "why": "A capture version must carry the photograph it is named for."
     }
   ]
 }

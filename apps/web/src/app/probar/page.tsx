@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * Live camera try-on (TASK-0042, ADR-0019).
+ * Live camera try-on (TASK-0042, ADR-0019), with a shutter (TASK-0050, ADR-0022).
  *
- * The camera frames stay in the page: they are drawn to a canvas, blended with the design by
- * `try-on`/`skin-blend` and thrown away. Nothing here uploads a frame, and the only request the
- * page makes is the GET that fetches the client's own design.
+ * The live frames stay in the page: they are drawn to a canvas, blended with the design by
+ * `try-on`/`skin-blend` and thrown away. The one exception is a photograph the client takes with
+ * the shutter and then chooses to keep, having confirmed their age and consent; `lib/capture` is
+ * the only code that can compose it into bytes or send it, and this page calls it only from those
+ * two buttons. Otherwise the only request is the GET that fetches the client's own design.
  *
  * This file owns the camera, the loop and the controls; the per-frame composite lives in
  * `lib/try-on.ts` so it can be exercised without a camera.
@@ -14,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { VISUALIZATION_DISCLAIMER_ES } from '@/content/disclaimers';
+import { CaptureRefused, saveCapture, snapshot, type Snapshot } from '@/lib/capture';
 import { DEFAULT_FRESHNESS } from '@/lib/skin-blend';
 import {
   cameraAvailable,
@@ -41,6 +44,24 @@ export default function TryOnPage(): ReactNode {
   const [fresh, setFresh] = useState(true);
   const [view, setView] = useState<Placement>(placement.current);
 
+  // TASK-0050: the version this design belongs to, so a kept photo can join it.
+  const [parentJobId, setParentJobId] = useState('');
+  const [shot, setShot] = useState<Snapshot | null>(null);
+  const [adult, setAdult] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [captureError, setCaptureError] = useState('');
+  const saveKey = useRef('');
+  const review = useRef<HTMLElement | null>(null);
+
+  // On a phone the review sits below the camera, out of view: bring it to the client, or the
+  // shutter would seem to have done nothing. An instant jump, not a smooth scroll, which some
+  // browsers skip altogether (a smooth scroll that never moved was observed while testing this).
+  useEffect(() => {
+    if (shot) review.current?.scrollIntoView({ block: 'start' });
+  }, [shot]);
+
   const update = useCallback((next: Partial<Placement>) => {
     placement.current = { ...placement.current, ...next };
     setView(placement.current);
@@ -48,7 +69,10 @@ export default function TryOnPage(): ReactNode {
 
   // The design: the client's own master artwork, fetched once. This is the page's only request.
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('design') ?? '';
+    const query = new URLSearchParams(window.location.search);
+    const job = query.get('job') ?? '';
+    if (/^[a-f0-9]{32}$/.test(job)) setParentJobId(job);
+    const id = query.get('design') ?? '';
     if (!/^[a-f0-9]{32}$/.test(id)) {
       setDesignError('Falta el diseño. Abre esta página desde tu diseño generado.');
       return;
@@ -137,6 +161,59 @@ export default function TryOnPage(): ReactNode {
     };
   }, [paint]);
 
+  /** The shutter: one frame, composed locally. Nothing leaves the phone here. */
+  async function takePhoto(): Promise<void> {
+    const source = video.current;
+    const art = design.current;
+    if (!source || !art) return;
+    setCaptureError('');
+    setSaved(false);
+    const taken = await snapshot({
+      video: source,
+      design: art,
+      placement: placement.current,
+      freshness: freshness.current,
+    });
+    if (!taken) {
+      setCaptureError('No se ha podido hacer la foto. Espera a que se vea la cámara.');
+      return;
+    }
+    if (shot) URL.revokeObjectURL(shot.preview);
+    saveKey.current = crypto.randomUUID();
+    setShot(taken);
+  }
+
+  function discard(): void {
+    if (shot) URL.revokeObjectURL(shot.preview);
+    setShot(null);
+    setCaptureError('');
+  }
+
+  /** Keep it: the only moment a picture from the camera leaves the device (ADR-0022). */
+  async function keep(): Promise<void> {
+    if (!shot) return;
+    setSaving(true);
+    setCaptureError('');
+    try {
+      await saveCapture({
+        blob: shot.blob,
+        parentJobId,
+        adult,
+        consent,
+        idempotencyKey: saveKey.current,
+      });
+      URL.revokeObjectURL(shot.preview);
+      setShot(null);
+      setSaved(true);
+    } catch (error) {
+      setCaptureError(
+        error instanceof CaptureRefused ? error.message : 'No se ha podido guardar la foto.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function pointer(event: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {
     const box = event.currentTarget.getBoundingClientRect();
     return { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
@@ -147,7 +224,8 @@ export default function TryOnPage(): ReactNode {
       <header>
         <h1>Pruébalo con la cámara</h1>
         <p className="privacy">
-          La cámara se procesa en tu propio dispositivo. Ninguna imagen se envía ni se guarda.
+          La cámara se procesa en tu propio dispositivo. Solo se guarda una foto si tú la haces y
+          decides guardarla.
         </p>
       </header>
 
@@ -189,7 +267,61 @@ export default function TryOnPage(): ReactNode {
             </button>
           </div>
         )}
+        {camera === 'live' && parentJobId && !shot && (
+          <button
+            type="button"
+            className="try-on-shutter"
+            onClick={() => void takePhoto()}
+            aria-label="Hacer foto"
+          >
+            <span aria-hidden="true" />
+          </button>
+        )}
       </div>
+
+      {saved && (
+        <p className="try-on-saved" role="status">
+          Foto guardada en tus versiones. <a href="/">Volver al estudio</a>
+        </p>
+      )}
+
+      {shot && (
+        <section ref={review} className="try-on-review" aria-label="Revisa la foto">
+          {/* A local object URL: the picture has not left the phone yet. */}
+          <img src={shot.preview} alt="Tu foto con el tatuaje superpuesto" />
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={adult}
+              onChange={(event) => setAdult(event.target.checked)}
+            />
+            Soy mayor de edad.
+          </label>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+            />
+            Acepto que esta foto de mi cuerpo se guarde en mi cuenta. Se revisa su contenido, se
+            guarda cifrada, no se usa para generar imágenes y se borra al eliminar mis datos.
+          </label>
+          {captureError && <p role="alert">{captureError}</p>}
+          <div className="try-on-review-actions">
+            <button
+              type="button"
+              onClick={() => void keep()}
+              disabled={!adult || !consent || saving}
+            >
+              {saving ? 'Guardando…' : 'Guardar como propuesta'}
+            </button>
+            <button type="button" className="link-button" onClick={discard} disabled={saving}>
+              Descartar
+            </button>
+          </div>
+        </section>
+      )}
+      {!shot && captureError && <p role="alert">{captureError}</p>}
 
       <div className="try-on-controls">
         <label>

@@ -81,6 +81,11 @@ export interface FrameOptions {
   placement: Placement;
   freshness: number;
   surface?: number;
+  /**
+   * The widest the frame is drawn. The live preview keeps the default so the per-frame blend stays
+   * cheap; a kept photograph (ADR-0022) is composed once, at the camera's own resolution up to this.
+   */
+  maxWidth?: number;
 }
 
 /**
@@ -95,10 +100,11 @@ export function composeFrame({
   placement,
   freshness,
   surface = DEFAULT_SURFACE,
+  maxWidth = MAX_CANVAS_WIDTH,
 }: FrameOptions): boolean {
   if (video.readyState < 2 || !video.videoWidth) return false;
 
-  const width = Math.min(MAX_CANVAS_WIDTH, video.videoWidth);
+  const width = Math.min(maxWidth, video.videoWidth);
   const height = Math.round((width * video.videoHeight) / video.videoWidth);
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;

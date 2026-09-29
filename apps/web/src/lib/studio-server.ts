@@ -303,7 +303,8 @@ export async function worker(
           'Content-Type': 'application/json',
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: AbortSignal.timeout(path === '/media' ? 180000 : 15000),
+        // Uploads and kept photos are screened by the moderation provider before they are stored.
+        signal: AbortSignal.timeout(path === '/media' || path === '/captures' ? 180000 : 15000),
         cache: 'no-store',
       },
     );

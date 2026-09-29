@@ -1091,7 +1091,9 @@ export default function ConsultationPage(): ReactNode {
                       }}
                     >
                       Propuesta {versions.length - index} ·{' '}
-                      {version.result.edit?.instruction ?? 'Diseño inicial'}
+                      {version.result.capture
+                        ? 'Foto con la cámara'
+                        : (version.result.edit?.instruction ?? 'Diseño inicial')}
                     </button>
                   ),
               )}
@@ -1142,6 +1144,7 @@ export default function ConsultationPage(): ReactNode {
         <TattooPreviewModal
           key={selectedJobId}
           artifact={artifact}
+          jobId={selectedJobId}
           onClose={() => setShowResult(false)}
           onEdit={(instruction, coverage, referenceIds) =>
             void editProposal(instruction, coverage, referenceIds)

@@ -78,6 +78,49 @@ class JobQueue:
             )
         return self.get(owner, job_id)
 
+    def find(self, owner: str, idempotency_key: str) -> dict[str, Any] | None:
+        """The job already stored under this key, so a retried request does its work only once."""
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT * FROM jobs WHERE owner=? AND idem=?", (owner, idempotency_key)
+            ).fetchone()
+        return self.public(row) if row else None
+
+    def record(self, owner: str, payload: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+        """
+        Store work finished outside the queue as a succeeded job (ADR-0022).
+
+        A kept camera photograph costs no generation, so it is never queued. It is recorded here so
+        that it lives where every other version lives — the owner's history — under the same
+        retention and the same deletion. The result is validated before it is written, not only
+        when it is read back, so an invalid one is never stored.
+        """
+        job_id = uuid.uuid4().hex
+        status = {"jobId": job_id, "state": "succeeded", "result": result, "error": None}
+        if validate("studio-status", status):
+            raise ValueError("La foto no se ha podido guardar como versión.")
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT * FROM jobs WHERE owner=? AND idem=?", (owner, payload["idempotencyKey"])
+            ).fetchone()
+            if existing:
+                return self.public(existing)
+            db.execute(
+                "INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)",
+                (
+                    job_id,
+                    owner,
+                    payload["idempotencyKey"],
+                    json.dumps(payload),
+                    "succeeded",
+                    json.dumps(result),
+                    None,
+                    time.time(),
+                ),
+            )
+        return self.get(owner, job_id)
+
     @staticmethod
     def public(row: sqlite3.Row) -> dict[str, Any]:
         result = {

@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0050 (ADR-0022): `studio-status` artifacts admit an optional `capture` —
+`{ parentJobId, photo: { assetId, designId, mimeType: image/jpeg | image/png } }` — for a camera
+try-on photograph kept as a version of an unchanged design. `photo` has its own definition because
+own-body photographs are stored as JPEG, which the shared `asset` type does not admit; widening
+`asset` would have admitted JPEG for stencils and masters too. Fixtures `valid/camera-capture.json`
+and `invalid/capture-without-photo.json`. Additive: every existing artifact stays valid.
+
 TASK-0041: `placement.bodyType` ("masculine"|"feminine", optional) in both `tattoo-brief` and
 `studio-job` (the job embeds its own copy of the brief). Fixtures `placement-body-type` (valid) and
 `body-type-outside-vocabulary` (invalid).

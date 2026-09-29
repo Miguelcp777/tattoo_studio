@@ -4,6 +4,7 @@ import type { GeneratedTattooArtifact } from '@/types/generation';
 import { ImageDetail } from './ImageDetail';
 export function TattooPreviewModal({
   artifact,
+  jobId,
   onClose,
   onEdit,
   onAttach,
@@ -11,6 +12,8 @@ export function TattooPreviewModal({
   consentControls,
 }: {
   artifact: GeneratedTattooArtifact;
+  /** The version being shown, so a photo taken with the camera can join it (TASK-0050). */
+  jobId?: string;
   onClose: () => void;
   onEdit?: (
     instruction: string,
@@ -39,6 +42,8 @@ export function TattooPreviewModal({
     dialog.current?.showModal();
   }, []);
   const url = (id: string) => `/api/media?id=${id}`;
+  // TASK-0050: a version kept from the camera shows the photograph; the design is the parent's.
+  const skin = artifact.capture?.photo ?? artifact.mockup;
   return (
     <dialog
       ref={dialog}
@@ -197,8 +202,14 @@ export function TattooPreviewModal({
       {detail && (
         <ImageDetail
           key={detail}
-          src={url(artifact[detail].assetId)}
-          label={detail === 'mockup' ? 'Mockup sobre piel' : 'Plantilla a escala'}
+          src={url(detail === 'mockup' ? skin.assetId : artifact.stencil.assetId)}
+          label={
+            detail === 'mockup'
+              ? artifact.capture
+                ? 'Foto con la cámara'
+                : 'Mockup sobre piel'
+              : 'Plantilla a escala'
+          }
           onClose={closeDetail}
         />
       )}
@@ -217,19 +228,29 @@ export function TattooPreviewModal({
             }}
           >
             <img
-              src={url(artifact.mockup.assetId)}
-              alt="Diseño maestro colocado geométricamente sobre piel"
+              src={url(skin.assetId)}
+              alt={
+                artifact.capture
+                  ? 'Tu foto con la cámara, con el tatuaje superpuesto'
+                  : 'Diseño maestro colocado geométricamente sobre piel'
+              }
             />
-            <span>Ampliar mockup ↗</span>
+            <span>{artifact.capture ? 'Ampliar foto ↗' : 'Ampliar mockup ↗'}</span>
           </button>
           <figcaption>
-            {artifact.backgroundKind === 'own_photo'
-              ? 'Tu fotografía'
-              : 'Anatomía generada, no es tu fotografía'}{' '}
-            ·{' '}
-            {artifact.transform.scaleCalibrated
-              ? 'Escala según tu calibración'
-              : 'Tamaño sobre piel orientativo'}
+            {artifact.capture ? (
+              'Tu foto con la cámara · el tatuaje está superpuesto, no hecho'
+            ) : (
+              <>
+                {artifact.backgroundKind === 'own_photo'
+                  ? 'Tu fotografía'
+                  : 'Anatomía generada, no es tu fotografía'}{' '}
+                ·{' '}
+                {artifact.transform.scaleCalibrated
+                  ? 'Escala según tu calibración'
+                  : 'Tamaño sobre piel orientativo'}
+              </>
+            )}
           </figcaption>
         </figure>
         <figure>
@@ -261,10 +282,15 @@ export function TattooPreviewModal({
       </details>
       {/* TASK-0042: the try-on runs on the client's own device; the design travels as its id. */}
       <p className="try-on-link">
-        <a className="btn-primary" href={`/probar?design=${artifact.master.assetId}`}>
+        <a
+          className="btn-primary"
+          href={`/probar?design=${artifact.master.assetId}${jobId ? `&job=${jobId}` : ''}`}
+        >
           Pruébalo con la cámara
         </a>
-        <small>Se procesa en tu dispositivo; ninguna imagen de la cámara se envía.</small>
+        <small>
+          Se procesa en tu dispositivo. Solo se guarda una foto si tú la haces y decides guardarla.
+        </small>
       </p>
       <label className="check-row">
         <input type="checkbox" checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} />
@@ -289,9 +315,15 @@ export function TattooPreviewModal({
           <a href={url(artifact.stencilMirror.assetId)} download="inkcraft-stencil-espejo.svg">
             SVG espejo
           </a>
-          <a href={url(artifact.mockup.assetId)} download="inkcraft-mockup.png">
-            Mockup
-          </a>
+          {artifact.capture ? (
+            <a href={url(artifact.capture.photo.assetId)} download="inkcraft-foto.jpg">
+              Foto
+            </a>
+          ) : (
+            <a href={url(artifact.mockup.assetId)} download="inkcraft-mockup.png">
+              Mockup
+            </a>
+          )}
         </div>
       )}
       <p>Imprime a tamaño real, sin “ajustar a página”, y mide la barra de 50 mm del PDF.</p>

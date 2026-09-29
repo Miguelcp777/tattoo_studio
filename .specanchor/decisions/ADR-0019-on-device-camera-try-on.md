@@ -25,6 +25,11 @@ continuous egress, and would put us behind competitors on the one thing we can b
 frame to a canvas, blends the design into it and discards it. There is no upload, no recording, no
 frame buffer that outlives the animation frame.
 
+> **Amended by ADR-0022 (2026-09-29).** The live stream still never leaves. One photograph may,
+> when the client takes it with the shutter and then chooses to keep it with adult consent; it
+> takes the own-photo path and never reaches an image model. Point 4's source scan now also holds
+> that exception to one module, one route and no timer.
+
 1. **The ink treatment is a port, not a reimplementation.** `lib/skin-blend.ts` is a faithful
    translation of the worker's `mockup/engine.py`: the multiply, the surface attenuation read from
    the frame's own light (ADR-0014), and the fresh-ink ring (TASK-0031). What the client sees in

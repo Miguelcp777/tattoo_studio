@@ -23,6 +23,13 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0050 (ADR-0022): `POST /studio/captures` keeps a camera try-on photograph as a version of the
+caller's own design. `Studio.capture` checks the key (a retry returns the stored version without
+screening again), the parent (the caller's, succeeded), then stores the photo through `ingest` as a
+`body` asset — the own-photo gate, EXIF strip, encryption, the ten-image limit and cascade deletion
+all apply unchanged. The version copies the parent's result and adds `capture`; no generation or
+edit path reads `capture`, so the photo never reaches an image model.
+
 TASK-0046: the studio's `owner` is the account id, taken from the `X-Owner-Id` header and required
 to be a lowercase UUID. The header was `X-Session-Id` and carried the browser's consultation
 session; the name follows the meaning now, and uppercase is refused so one account cannot own two

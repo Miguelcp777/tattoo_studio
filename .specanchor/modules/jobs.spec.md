@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0050 (ADR-0022): `record(owner, payload, result)` stores work finished outside the queue — a
+kept camera photograph — as a succeeded job, so it lives in the owner's history under the same
+retention and deletion as every other version. The result is validated against `studio-status`
+before it is written, and the key is idempotent per owner like `enqueue`. `find(owner, key)` lets a
+caller detect a retry before doing any paid work.
+
 TASK-0021: owner-scoped successful history (latest 20 within 24 hours) and source_payload
 support branching revisions. HTTP validates a completed owned parent's master and reuses its
 brief/references/body/placement before enqueue. Edited master feeds all derived outputs;

@@ -77,6 +77,14 @@ FINISH_NOTICE = (
     "antes de mostrarlo. "
 )
 
+# ADR-0022: the version a kept camera photograph becomes. The ink is superimposed on the device, so
+# the notice says what the picture is and what it is not.
+CAPTURE_NOTICE = (
+    "Foto hecha con la cámara en tu dispositivo: el tatuaje está superpuesto, no hecho. "
+    "El diseño y la plantilla son los de la propuesta original. "
+    "Visualización ilustrativa. Revisa los símbolos y el trazo con tu tatuador."
+)
+
 
 class _StudioGenerationDeps:
     """Per-call `GenerationDeps` for the `orchestration` graph (TASK-0032).
@@ -680,6 +688,55 @@ class Studio:
                 }
         return result
 
+    def capture(self, owner: str, body: dict[str, Any]) -> dict[str, Any]:
+        """
+        Keep a photograph taken with the camera try-on as a version of its design (ADR-0022).
+
+        The photograph is a picture of the client's body, so it takes exactly the own-photo path:
+        adult consent, the safety gate with own-body consent, EXIF stripped, encrypted at rest,
+        counted against the account's images and erased with everything else. It is stored, shown
+        back to its owner and nothing more: no image model ever receives it.
+
+        The design does not change. Every field of the version is the parent's except the
+        photograph and the notice, so an edit started from it edits the same design.
+        """
+        key = body.get("idempotencyKey")
+        parent_id = body.get("parentJobId")
+        if not isinstance(key, str) or not re.fullmatch("[a-f0-9-]{36}", key):
+            raise ValueError("Identificador de solicitud inválido.")
+        if not isinstance(parent_id, str) or not re.fullmatch("[a-f0-9]{32}", parent_id):
+            raise ValueError("Propuesta original inválida.")
+        # A retry of a request that already succeeded does not screen or store the photo twice.
+        existing = self.jobs.find(owner, key)
+        if existing:
+            return existing
+        parent = self.jobs.get(owner, parent_id)
+        if parent["state"] != "succeeded" or not parent["result"]:
+            raise ValueError("La propuesta original no está disponible.")
+        # The parent's stored request, so a change asked from this version finds its brief.
+        source = self.jobs.source_payload(owner, parent_id)
+        photo = self.ingest(
+            owner,
+            {
+                "data": body.get("data", ""),
+                "kind": "body",
+                "adult": body.get("adult"),
+                "consent": body.get("consent"),
+            },
+        )
+        result = {k: v for k, v in parent["result"].items() if k not in ("capture", "edit")}
+        result["capture"] = {
+            "parentJobId": parent_id,
+            "photo": {
+                "assetId": photo["assetId"],
+                "designId": result["designId"],
+                "mimeType": photo["mimeType"],
+            },
+        }
+        result["notice"] = CAPTURE_NOTICE
+        payload = {k: v for k, v in source.items() if k != "edit"}
+        return self.jobs.record(owner, {**payload, "idempotencyKey": key}, result)
+
     def delete(self, owner: str) -> None:
         with self.lock:
             with self.db() as db:
@@ -798,6 +855,21 @@ def router(studio: Studio, token: str) -> APIRouter:
                 studio.owned(who, body["bodyPhotoId"], "body")
             return studio.jobs.enqueue(who, body)
         except (KeyError, ValueError) as error:
+            raise HTTPException(422, str(error)) from error
+
+    @routes.post("/captures", status_code=201)
+    async def capture(request: Request) -> dict[str, Any]:
+        """A camera try-on photograph the client chose to keep (ADR-0022)."""
+        who = owner(request)
+        body = await bounded_json(request)
+        try:
+            from starlette.concurrency import run_in_threadpool
+
+            # The photo is screened by the moderation provider; keep status polling responsive.
+            return await run_in_threadpool(studio.capture, who, body)
+        except KeyError as error:
+            raise HTTPException(404, "La propuesta original no está disponible.") from error
+        except ValueError as error:
             raise HTTPException(422, str(error)) from error
 
     @routes.get("/jobs")
