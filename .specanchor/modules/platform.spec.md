@@ -23,6 +23,14 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0043 (ADR-0020): `infra/` is no longer empty. Three containers — `caddy` (TLS by DNS-01),
+`web`, `worker` — on one self-hosted node; only the proxy publishes ports, the worker is pinned to
+one replica because its queue is in-process, and state is the `worker-data` volume encrypted with
+`TATTOO_MEDIA_KEY`. **Hosting and region are decided: the owner's own hardware.** The web image is
+not a Next `standalone` bundle (DEC-003), and contracts are regenerated during the build so a stale
+schema cannot ship. `app/tests/test_deployment.py` holds the configuration to its promises.
+Sessions stay in memory: a web restart ends every open consultation, documented in the runbook.
+
 TASK-0042: `eslint.config.mjs` gives `**/public/sw.js` the service-worker globals; without it the
 app-shell worker fails `no-undef`. PWA assets (`icons/`, `sw.js`) ship from `apps/web/public`.
 
@@ -193,7 +201,8 @@ repositories without touching this one.
 Aligned as of TASK-0001. The manifests, workspace wiring, worker application shell and CI
 workflow listed in `source_paths` now exist and are verified locally.
 
-`infra/*` is still declared ahead of the code it will own; no deployment configuration exists.
+`infra/*` holds the deployment configuration as of TASK-0043 (ADR-0020): Dockerfiles for the web
+and worker, a compose file, the Caddy proxy and the runbook.
 
 This module owns root configuration files by exact path rather than by a recursive glob, because
 guard patterns use `fnmatch` where `*` matches slashes. Adding a root config file therefore
@@ -236,7 +245,7 @@ files caught by `--baseline`.
 | CI declares five independent jobs | VERIFIED | Executed; jobs enumerated | PASS |
 | CI actually passes | VERIFIED | GitHub Actions run #1, commit 652f938, 5/5 jobs success | PASS |
 | Checks pass on Linux | VERIFIED | CI runs on `ubuntu-latest` | PASS |
-| Hosting and region | UNKNOWN | Undecided | NOT_RUN |
+| Hosting and region | INTENT | ADR-0020: one self-hosted node on the owner's hardware | NOT_RUN (never deployed) |
 
 ## TASK-0019 current implementation and remaining intent
 

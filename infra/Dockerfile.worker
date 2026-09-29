@@ -1,0 +1,31 @@
+# The Python worker: imaging, the encrypted media store and the job queue.
+#
+# The queue runs in a thread inside this process (app/main.py lifespan), so exactly one replica
+# may run. Scaling this service would run two schedulers over one SQLite file.
+FROM python:3.11-slim
+
+# scikit-image and Pillow ship manylinux wheels, but numpy's threading layer wants libgomp.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+
+WORKDIR /repo
+# The contracts package is a path dependency of the worker (ARCH-INV-002), so it must be present
+# before `uv sync` resolves.
+COPY contracts/python contracts/python
+COPY services/worker/pyproject.toml services/worker/uv.lock services/worker/.python-version services/worker/
+WORKDIR /repo/services/worker
+RUN uv sync --frozen --no-dev
+
+COPY services/worker .
+
+# Data lives on a volume: the encrypted media store and both SQLite files (TASK-0043).
+ENV TATTOO_DATA_DIR=/data/studio
+VOLUME ["/data"]
+EXPOSE 8000
+
+# One worker process. See the note above about the in-process queue.
+CMD ["uv", "run", "--no-sync", "uvicorn", "app.main:create_app", "--factory", \
+     "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

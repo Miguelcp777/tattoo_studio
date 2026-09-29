@@ -1,0 +1,78 @@
+# The studio on one host (ADR-0020).
+#
+#   caddy  -> web -> worker
+#
+# Only Caddy publishes a port. The worker is never reachable from outside the compose network:
+# it holds the media store and the generation credentials, and its only caller is the web app,
+# which authenticates with TATTOO_WORKER_TOKEN.
+
+name: tattoo-studio
+
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    env_file: .env
+    environment:
+      TATTOO_ENVIRONMENT: production
+      TATTOO_DATA_DIR: /data/studio
+    volumes:
+      - worker-data:/data
+    restart: unless-stopped
+    # Exactly one replica: the job queue runs in a thread inside this process, and two schedulers
+    # over one SQLite file would hand the same job to both.
+    deploy:
+      replicas: 1
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      TATTOO_WORKER_URL: http://worker:8000
+    depends_on:
+      worker:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+      args:
+        CADDY_DNS_MODULE: ${CADDY_DNS_MODULE:-github.com/caddy-dns/cloudflare}
+    env_file: .env
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  # The encrypted media store and both SQLite files. Losing this volume loses every design; losing
+  # TATTOO_MEDIA_KEY makes what is in it unreadable.
+  worker-data:
+  # Issued certificates and ACME account keys. Keep it, or every redeploy re-issues.
+  caddy-data:
+  caddy-config:

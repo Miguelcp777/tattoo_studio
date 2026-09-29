@@ -114,7 +114,8 @@ User idea
 - Brief state is in-memory; jobs are SQLite; media is AES-GCM encrypted filesystem storage.
   Studio requests and job status/results are validated against canonical shared JSON schemas;
   generated TS/Python types are conveniences, not the validation authority.
-- Deployment topology and region (relevant to GDPR data residency) is undecided.
+- Deployment topology and region: decided by ADR-0020 (TASK-0043) as one self-hosted node on the
+  owner's own hardware, which settles the GDPR residency question. Never yet deployed.
 
 ## Change history
 

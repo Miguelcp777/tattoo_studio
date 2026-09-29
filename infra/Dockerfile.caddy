@@ -1,0 +1,14 @@
+# Caddy with a DNS provider module, so the certificate is issued over a DNS-01 challenge.
+#
+# DNS-01 is the point: the VM never has to expose port 80 or 443 to the internet for validation,
+# which is what makes a certificate on a home server practical (TASK-0043, ADR-0020).
+#
+# Swap the provider with a build argument, e.g.
+#   --build-arg CADDY_DNS_MODULE=github.com/caddy-dns/duckdns
+ARG CADDY_VERSION=2.8
+FROM caddy:${CADDY_VERSION}-builder AS builder
+ARG CADDY_DNS_MODULE=github.com/caddy-dns/cloudflare
+RUN xcaddy build --with ${CADDY_DNS_MODULE}
+
+FROM caddy:${CADDY_VERSION}
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
