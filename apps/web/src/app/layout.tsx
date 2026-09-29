@@ -4,7 +4,7 @@ import { ServiceWorker } from '@/components/ServiceWorker';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Tattoo Creator — Estudio de Consulta con IA',
+  title: 'Inkcraft by Aurevanta Labs — Estudio de tatuaje',
   description:
     'Consulta guiada de tatuajes con OpenAI GPT-6 Astra, stencils 1:1 y simulación en piel.',
 };

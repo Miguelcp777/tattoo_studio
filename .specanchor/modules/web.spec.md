@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0048: the product is "Inkcraft by Aurevanta Labs". `components/Brand.tsx` renders it in two
+forms — the Aurevanta symbol as a hallmark in the studio header, the full lockup as a signature on
+the sign-in card — with both assets recoloured to the rose gold of the background's veins. The
+background photograph and the grain are fixed pseudo-elements under all content. `/brand/*` is
+outside the page gate: the sign-in page shows those images to people who are not signed in yet,
+and gating them once left it with a broken logo on a plain background.
+
 TASK-0045 (ADR-0021): the studio requires an account. `lib/auth.ts` exchanges credentials for
 `HttpOnly`, `SameSite=strict` cookies server side and asks Supabase who a token belongs to rather
 than verifying a signature here, so no signing secret lives in this deployment. `requireAccount`

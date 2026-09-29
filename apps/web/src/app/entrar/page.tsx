@@ -9,6 +9,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
+import { Brand } from '@/components/Brand';
+
 export default function SignInPage(): ReactNode {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +54,7 @@ export default function SignInPage(): ReactNode {
   return (
     <main className="sign-in">
       <form onSubmit={(event) => void submit(event)}>
-        <p className="eyebrow">INKCRAFT</p>
+        <Brand variant="card" />
         <h1>Entra al estudio</h1>
         <p className="sign-in-note">Las cuentas las crea el estudio. Si necesitas uno, pídelo.</p>
 

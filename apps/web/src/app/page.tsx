@@ -10,6 +10,8 @@ import { styleOffers } from '@tattoo/consultation/style-library';
 
 import { briefSignature, buildMasterPrompt } from '@tattoo/consultation/master-prompt';
 
+import { Brand } from '@/components/Brand';
+
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { StepFlow } from '@/components/StepFlow';
@@ -552,9 +554,7 @@ export default function ConsultationPage(): ReactNode {
   return (
     <div>
       <header className="studio-header">
-        <div className="studio-title">
-          INKCRAFT <span className="studio-subtitle">Estudio de tatuaje</span>
-        </div>
+        <Brand variant="header" />
 
         <span className="model-badge">Diseño · Piel · Stencil</span>
       </header>

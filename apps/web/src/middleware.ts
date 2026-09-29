@@ -26,7 +26,8 @@ export const config = {
    * Pages only. `/api` is excluded because those routes answer with 401 rather than a redirect —
    * a fetch that receives login HTML instead of JSON is a confusing failure. `/entrar` is excluded
    * for the obvious reason, and the PWA's own files so an installed app can still start and show
-   * the sign-in page offline.
+   * the sign-in page offline. `brand` holds the background and the logo the sign-in page itself
+   * shows, so it has to load before anyone is signed in (TASK-0048).
    */
-  matcher: ['/((?!api|entrar|_next|icons|sw.js|manifest.webmanifest|favicon.ico).*)'],
+  matcher: ['/((?!api|entrar|_next|icons|brand/|sw.js|manifest.webmanifest|favicon.ico).*)'],
 };

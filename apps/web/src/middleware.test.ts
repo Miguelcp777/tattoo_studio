@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+
+import { config } from './middleware';
+
+/**
+ * Which paths the sign-in gate covers. Next evaluates the matcher as a regular expression over the
+ * pathname, so the same expression is checked here directly.
+ */
+const gated = (path: string): boolean =>
+  config.matcher.some((pattern) => new RegExp(`^${pattern}$`).test(path));
+
+describe('the page gate (TASK-0045, TASK-0048)', () => {
+  it('covers the studio pages', () => {
+    for (const path of ['/', '/probar']) expect(gated(path), path).toBe(true);
+  });
+
+  it('lets the sign-in page and everything it shows load before anyone is signed in', () => {
+    // The brand assets were once redirected to /entrar: the sign-in page showed a broken logo on
+    // a plain background, because its own images required the sign-in it was offering.
+    for (const path of [
+      '/entrar',
+      '/brand/background.webp',
+      '/brand/aurevanta-labs.png',
+      '/brand/aurevanta-mark.png',
+      '/icons/icon-192.png',
+      '/manifest.webmanifest',
+      '/sw.js',
+    ])
+      expect(gated(path), path).toBe(false);
+  });
+
+  it('leaves the API to answer 401 itself rather than redirecting it', () => {
+    expect(gated('/api/generate')).toBe(false);
+  });
+});

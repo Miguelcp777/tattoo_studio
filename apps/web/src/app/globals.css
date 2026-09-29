@@ -930,16 +930,14 @@ summary {
   --ink-deep: #06070a;
 }
 
-/* An ink-and-lamplight room rather than a flat void: one warm light over the work surface,
-   a cold one behind, fine grain so large dark areas are not banded, and a vignette. */
+/* TASK-0048: black marble veined in rose gold. The photograph is the room now; a light veil keeps
+   panels legible over its veins, and the grain stops large dark areas from banding.
+
+   Both layers are fixed pseudo-elements rather than `background-attachment: fixed`, which iOS
+   Safari ignores. They sit at z-index -1, under every page's content, so no page has to lift
+   itself above them to be seen. */
 body {
   background-color: var(--ink-deep);
-  background-image:
-    radial-gradient(900px 520px at 22% -6%, rgba(217, 119, 6, 0.13), transparent 62%),
-    radial-gradient(760px 620px at 96% 8%, rgba(6, 182, 212, 0.07), transparent 60%),
-    radial-gradient(1100px 800px at 50% 108%, rgba(244, 63, 94, 0.05), transparent 66%),
-    linear-gradient(180deg, #0a0b10 0%, var(--ink-deep) 55%, #040507 100%);
-  background-attachment: fixed;
   min-height: 100vh;
   position: relative;
 }
@@ -948,20 +946,133 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
-  opacity: 0.4;
-  /* Fine film grain, inline so the page stays a single request. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background:
+    linear-gradient(180deg, rgba(4, 5, 7, 0.08) 0%, rgba(4, 5, 7, 0.35) 100%),
+    url('/brand/background.webp') center / cover no-repeat var(--ink-deep);
 }
 
 body::after {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
-  box-shadow: inset 0 0 220px 60px rgba(0, 0, 0, 0.75);
+  /* Fine film grain, inline so it costs no request. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 160px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* A phone in portrait sees only the black centre of a landscape photograph. Anchoring it to one
+   side keeps a seam of marble in view. */
+@media (max-width: 720px) and (orientation: portrait) {
+  body::before {
+    background-position:
+      center,
+      18% center;
+  }
+}
+
+/* ── Brand: Inkcraft by Aurevanta Labs ────────────────────────────────────────────────── */
+
+:root {
+  --rose-gold: #d8ab93;
+  --rose-gold-deep: #a8796a;
+  --rose-gold-sheen: linear-gradient(100deg, #b98a74 0%, #f3d4c2 45%, #c89780 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand-header {
+  gap: 0.75rem;
+}
+
+.brand-mark {
+  width: 34px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(216, 171, 147, 0.25));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f4ece6;
+}
+
+.brand-by {
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.brand-header .brand-by {
+  white-space: nowrap;
+}
+
+/* On a phone the brand is the header; the capability badge would only push it onto two lines. */
+@media (max-width: 480px) {
+  .studio-header .model-badge {
+    display: none;
+  }
+}
+
+.brand-by strong {
+  font-weight: 600;
+  background: var(--rose-gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-card {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  width: 100%;
+  border-bottom: 1px solid rgba(216, 171, 147, 0.18);
+}
+
+.brand-card .brand-name {
+  font-size: 1.9rem;
+  letter-spacing: 0.2em;
+  margin: 0;
+}
+
+.brand-card .brand-by {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.brand-card .brand-by span {
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  font-size: 0.8rem;
+}
+
+.brand-card .brand-by img {
+  width: 196px;
+  height: auto;
+  display: block;
 }
 
 .studio-header,
@@ -1482,10 +1593,13 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  /* Glass over the marble (TASK-0048), opaque enough that the veins never cross the text. */
+  background: rgba(14, 15, 20, 0.8);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(216, 171, 147, 0.16);
   border-radius: var(--radius-lg);
   padding: 2rem;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
 }
 
 .sign-in h1 {

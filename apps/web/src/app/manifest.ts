@@ -7,8 +7,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Tattoo Creator — Estudio de tatuaje',
-    short_name: 'Tattoo Creator',
+    name: 'Inkcraft by Aurevanta Labs',
+    short_name: 'Inkcraft',
     description:
       'Diseña tu tatuaje, pruébalo con la cámara en tu propio móvil y llévate la plantilla a tamaño real.',
     start_url: '/',
