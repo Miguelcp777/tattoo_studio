@@ -247,6 +247,13 @@ export async function referenceBytes(source: string): Promise<string> {
   }
   return data.toString('base64');
 }
+/**
+ * Call the worker on behalf of an account (TASK-0046).
+ *
+ * `owner` is the account id, not the consultation session id. It is what the worker scopes every
+ * stored asset, job and vector master by, so it is the reason the same person sees the same work
+ * on a second device — and the reason one account can never reach another's.
+ */
 export async function worker(
   owner: string,
   path: string,
@@ -267,7 +274,7 @@ export async function worker(
         method,
         headers: {
           Authorization: `Bearer ${token}`,
-          'X-Session-Id': owner,
+          'X-Owner-Id': owner,
           'Content-Type': 'application/json',
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),

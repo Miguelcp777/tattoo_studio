@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { briefSignature, buildMasterPrompt } from '@tattoo/consultation';
-import { validateAgainst, type StudioJob } from '@tattoo/contracts';
+import { validateAgainst, type StudioJob, type StudioJobStatus } from '@tattoo/contracts';
 import {
+  applyRenewal,
   carryRenewal,
   errorResponse,
   input,
@@ -13,6 +14,7 @@ import {
   referenceBytes,
   jobStatus,
 } from '../../../lib/studio-server';
+import type { Authenticated } from '../../../lib/auth';
 export async function POST(request: Request): Promise<NextResponse> {
   let current: ReturnType<typeof session> | undefined;
   let locked = false;
@@ -36,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
       throw new RequestError('Identificador de solicitud inválido.', 422);
     if (body['edit']) {
-      const response = await worker(current.state.sessionId, '/jobs', 'POST', {
+      const response = await worker(caller.account.id, '/jobs', 'POST', {
         edit: body['edit'],
         idempotencyKey: body['idempotencyKey'],
         referencesReviewed: true,
@@ -59,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const referenceIds: string[] = [];
     for (const reference of current.state.references) {
       if (!reference.assetId) {
-        const res = await worker(current.state.sessionId, '/media', 'POST', {
+        const res = await worker(caller.account.id, '/media', 'POST', {
           data: await referenceBytes(reference.source),
           kind: 'reference',
           consent: body['consent'] === true,
@@ -80,7 +82,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const validated = validateAgainst<StudioJob>('studio-job', payload);
     if (!validated.valid)
       throw new RequestError('Revisa las referencias, la posición y las medidas.', 422);
-    const response = await worker(current.state.sessionId, '/jobs', 'POST', validated.value);
+    const response = await worker(caller.account.id, '/jobs', 'POST', validated.value);
     const status = await jobStatus(response);
     current.jobId = status.jobId;
     return reply(status, current, 202);
@@ -90,26 +92,42 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (current && locked) current.busy = false;
   }
 }
+/**
+ * Read the account's work (TASK-0046).
+ *
+ * No consultation session is required here. Stored work belongs to the account, so a second
+ * device that has just signed in — and therefore has no `inkcraft` cookie — must still see its
+ * designs rather than be told its session expired.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   try {
     const caller = await requireAccount(request);
-    const current = session(request);
-    carryRenewal(current, caller);
-    if (new URL(request.url).searchParams.get('history') === 'true') {
-      const response = await worker(current.state.sessionId, '/jobs');
-      const items = await response.json();
-      if (!Array.isArray(items)) throw new RequestError('Historial no disponible.', 502);
-      const history = items.map((item) => {
-        const checked = validateAgainst('studio-status', item);
-        if (!checked.valid) throw new RequestError('Historial inválido.', 502);
-        return checked.value;
-      });
-      return reply(history, current);
+    const parameters = new URL(request.url).searchParams;
+    const body = parameters.get('history') === 'true' ? await history(caller.account.id) : null;
+    if (body === null) {
+      const id = parameters.get('id');
+      if (!id || !/^[a-f0-9]{32}$/.test(id)) throw new RequestError('Trabajo inválido.');
+      return read(await jobStatus(await worker(caller.account.id, `/jobs/${id}`)), caller);
     }
-    const id = new URL(request.url).searchParams.get('id');
-    if (!id || !/^[a-f0-9]{32}$/.test(id)) throw new RequestError('Trabajo inválido.');
-    return reply(await jobStatus(await worker(current.state.sessionId, `/jobs/${id}`)), current);
+    return read(body, caller);
   } catch (error) {
     return errorResponse(error);
   }
+}
+
+async function history(owner: string): Promise<StudioJobStatus[]> {
+  const items = await (await worker(owner, '/jobs')).json();
+  if (!Array.isArray(items)) throw new RequestError('Historial no disponible.', 502);
+  return items.map((item) => {
+    const checked = validateAgainst<StudioJobStatus>('studio-status', item);
+    if (!checked.valid) throw new RequestError('Historial inválido.', 502);
+    return checked.value;
+  });
+}
+
+function read(value: unknown, caller: Authenticated): NextResponse {
+  return applyRenewal(
+    NextResponse.json(value, { headers: { 'Cache-Control': 'no-store' } }),
+    caller,
+  );
 }

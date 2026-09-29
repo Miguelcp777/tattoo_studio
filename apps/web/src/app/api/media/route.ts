@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       // TASK-0036: a photo for a change request on an existing design. It is screened and
       // stored like any reference, but does not reopen the consultation or its accepted brief.
       const data = await (
-        await worker(current.state.sessionId, '/media', 'POST', {
+        await worker(caller.account.id, '/media', 'POST', {
           data: body['data'],
           kind: 'reference',
           adult: body['adult'],
@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     if (body['kind'] === 'reference' && current.state.references.length >= 5)
       throw new RequestError('Máximo cinco referencias.');
-    const data = await (await worker(current.state.sessionId, '/media', 'POST', body)).json();
+    const data = await (await worker(caller.account.id, '/media', 'POST', body)).json();
     if (body['kind'] === 'body') current.bodyPhotoId = data.assetId;
     if (body['kind'] === 'reference') {
       current.state = await orchestrator.handleUserInteraction(current.state, '', [
@@ -61,12 +61,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 export async function GET(request: Request): Promise<Response> {
   try {
-    // Stored work is private to its owner; a media id is not a capability.
-    await requireAccount(request);
-    const current = session(request);
+    // Stored work is private to its owner; a media id is not a capability. TASK-0046: the owner
+    // is the account, so an image opens on any device the account is signed in on, and needs no
+    // consultation in progress.
+    const caller = await requireAccount(request);
     const id = new URL(request.url).searchParams.get('id');
     if (!id || !/^[a-f0-9]{32}$/.test(id)) throw new RequestError('Archivo inválido.');
-    const response = await worker(current.state.sessionId, `/media/${id}`);
+    const response = await worker(caller.account.id, `/media/${id}`);
     return new Response(response.body, {
       headers: {
         'Content-Type': response.headers.get('content-type') ?? 'application/octet-stream',
@@ -78,13 +79,24 @@ export async function GET(request: Request): Promise<Response> {
     return errorResponse(error);
   }
 }
+/**
+ * Erase everything this account has stored (TASK-0046).
+ *
+ * The worker now records when it happened rather than blocklisting the owner: with an account id
+ * a blocklist would be a permanent lockout, and what it actually protected — work in flight being
+ * written after the erasure — is protected by the timestamp instead (DEC-002). The consultation in
+ * this browser goes too, because it refers to assets that no longer exist.
+ */
 export async function DELETE(request: Request): Promise<NextResponse> {
   try {
-    await requireAccount(request);
+    const caller = await requireAccount(request);
     await input(request);
-    const current = session(request);
-    await worker(current.state.sessionId, '/session', 'DELETE');
-    clearSession(current.state.sessionId);
+    await worker(caller.account.id, '/session', 'DELETE');
+    try {
+      clearSession(session(request).state.sessionId);
+    } catch {
+      // No consultation in this browser. The account's work is deleted either way.
+    }
     const response = NextResponse.json({ deleted: true });
     response.cookies.delete('inkcraft');
     return response;

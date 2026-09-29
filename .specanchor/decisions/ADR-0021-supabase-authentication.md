@@ -71,8 +71,11 @@ encryption, retention and cascade-deletion carry invariants.
   wants the public to try it.
 - Supabase becomes a hard runtime dependency of the web tier: if it is down, nobody signs in and
   nobody with an expired token can continue. The studio fails closed.
-- Designs are still owned by the anonymous studio session, not by the account. Signing in as
-  yourself on another device shows nothing. That is TASK-0046, deliberately kept separate.
+- Designs were still owned by the anonymous studio session, not by the account, so signing in as
+  yourself on another device showed nothing. **Settled by TASK-0046**: the account id is the owner
+  the worker scopes storage by. That change also had to undo this decision's quietest consequence —
+  erasing your work blocklisted the owner, which is a permanent lockout once the owner is an
+  account — replacing the blocklist with a deletion timestamp.
 - Every route test now drives the real guard, which is why they all had to carry an account. The
   cost is a noisier diff; the gain is that each route proves it refuses a stranger.
 
@@ -86,7 +89,7 @@ encryption, retention and cascade-deletion carry invariants.
 - **Learned in deployment:** `SUPABASE_URL` must be the address Supabase answers on *from inside
   the web container* — not `localhost`, which is the container itself. Recorded in
   `platform.spec.md` so the next deployment does not rediscover it.
-- **Revisit** when designs become user-owned (TASK-0046): the account id becomes the owner the
-  worker scopes storage by, and the cascade-deletion invariant has to follow it.
+- **Revisited by TASK-0046**, as foreseen: the account id is now that owner, and deletion keeps its
+  cascade while ceasing to be a lockout.
 - **This decision is wrong if** the studio needs to let strangers try it before signing up. The
   answer then is a quota per anonymous session, not an open door.

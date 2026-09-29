@@ -226,7 +226,8 @@ class Studio:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, owner TEXT, kind TEXT)"
             )
-            db.execute("CREATE TABLE IF NOT EXISTS revoked (owner TEXT PRIMARY KEY)")
+            # When an owner last erased everything (TASK-0046). Not a blocklist: see `still_mine`.
+            db.execute("CREATE TABLE IF NOT EXISTS deleted (owner TEXT PRIMARY KEY, at REAL)")
             # The authoritative vector geometry (ADR-0007). Internal: it is not a client
             # artifact, so it stays out of the studio-status contract.
             db.execute(
@@ -259,15 +260,28 @@ class Studio:
     def db(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path, timeout=10)
 
-    def active(self, owner: str) -> None:
+    def deletion_mark(self, owner: str) -> float:
+        """When this owner last erased everything, or 0 if they never have (TASK-0046)."""
         with self.db() as db:
-            if db.execute("SELECT owner FROM revoked WHERE owner=?", (owner,)).fetchone():
-                raise ValueError("Esta sesión se ha eliminado. Inicia una nueva consulta.")
+            row = db.execute("SELECT at FROM deleted WHERE owner=?", (owner,)).fetchone()
+        return float(row[0]) if row else 0.0
+
+    def still_mine(self, owner: str, mark: float) -> None:
+        """
+        Refuse to store work for an owner who erased everything while it was being made.
+
+        A generation runs for minutes, so a deletion can land in the middle of one and the work
+        would otherwise be registered after it, outliving the erasure. The guard this replaces
+        refused a deleted owner forever: correct for a throwaway session id, a permanent lockout
+        for an account id (TASK-0046/DEC-002). Comparing against the mark taken when the work
+        started refuses the straddling case and nothing else, so deleting is not a lockout.
+        """
+        if self.deletion_mark(owner) != mark:
+            raise ValueError("Se eliminaron tus datos durante esta operación. Vuelve a empezar.")
 
     def owned(self, owner: str, asset_id: str, kind: str | None = None) -> bytes:
         if not re.fullmatch("[a-f0-9]{32}", asset_id):
             raise KeyError("Archivo no encontrado")
-        self.active(owner)
         with self.db() as db:
             row = db.execute(
                 "SELECT kind FROM assets WHERE id=? AND owner=?", (asset_id, owner)
@@ -288,7 +302,7 @@ class Studio:
         return asset_id
 
     def ingest(self, owner: str, body: dict[str, Any]) -> dict[str, str]:
-        self.active(owner)
+        mark = self.deletion_mark(owner)
         kind = body.get("kind", "reference")
         if (
             kind not in ("reference", "body")
@@ -320,7 +334,7 @@ class Studio:
                 "personas o una foto corporal propia no explícita."
             )
         with self.lock:
-            self.active(owner)
+            self.still_mine(owner, mark)
             with self.db() as db:
                 if (
                     db.execute(
@@ -328,7 +342,10 @@ class Studio:
                     ).fetchone()[0]
                     >= 10
                 ):
-                    raise ValueError("Límite de diez imágenes por sesión. Inicia una nueva sesión.")
+                    raise ValueError(
+                        "Límite de diez imágenes por cuenta. Elimina tus datos para empezar "
+                        "de nuevo."
+                    )
                 db.execute(
                     "INSERT INTO consent(owner,version) VALUES (?,?)",
                     (owner, "studio-own-photo-v1" if kind == "body" else "studio-reference-v1"),
@@ -338,7 +355,9 @@ class Studio:
         return {"assetId": asset.asset_id, "mimeType": asset.media_type}
 
     def generate(self, owner: str, payload: dict[str, Any]) -> dict[str, Any]:
-        self.active(owner)
+        # Taken before any work starts, so a deletion arriving mid-generation is detected at the
+        # storage step rather than silently outlived by it (TASK-0046/REQ-005).
+        mark = self.deletion_mark(owner)
         brief = payload["brief"]
         colour = brief["colour"]["mode"] != "black_and_grey"
         rendered = (
@@ -367,7 +386,7 @@ class Studio:
         if coverage and parent and coverage.placement_only and not attached:
             if background is None:
                 background = self.provider.background(brief)
-            return self.reposition(owner, payload, parent, background, coverage)
+            return self.reposition(owner, payload, parent, background, coverage, mark)
         # A whole-zone request is a statement about the body, so it settles the millimetres
         # before anything is drawn at them (ADR-0008, TASK-0024/REQ-004).
         zone = self.zone_intent(brief, payload, coverage, bool(edit))
@@ -432,7 +451,7 @@ class Studio:
             "tu tatuador. Imprime el PDF al 100 %, sin ajustar a página.",
         }
         with self.lock:
-            self.active(owner)
+            self.still_mine(owner, mark)
             self.store_vector(owner, master, payload)
             if edit:
                 result["edit"] = edit
@@ -485,7 +504,9 @@ class Studio:
             return None
         try:
             return self.owned(owner, row[0], "artifact")
-        except (AssetNotFoundError, HTTPException):
+        except (AssetNotFoundError, HTTPException, KeyError):
+            # The row can outlive its asset (expiry, deletion). A missing vector is a case the
+            # caller already handles; it is not an error.
             return None
 
     def zone_intent(
@@ -521,6 +542,7 @@ class Studio:
         parent: dict[str, Any],
         background: bytes,
         coverage: Coverage,
+        mark: float,
     ) -> dict[str, Any]:
         """Reuse the accepted artwork, with no retracing, no AI editing and no provider call.
 
@@ -631,7 +653,7 @@ class Studio:
             + "La curvatura no es una reconstrucción anatómica.",
         }
         with self.lock:
-            self.active(owner)
+            self.still_mine(owner, mark)
             reused = [("mockup", mockup, "image/png")]
             if not parent.get("background"):
                 reused.append(("background", background, "image/png"))
@@ -661,7 +683,8 @@ class Studio:
     def delete(self, owner: str) -> None:
         with self.lock:
             with self.db() as db:
-                db.execute("INSERT OR IGNORE INTO revoked VALUES (?)", (owner,))
+                # A watermark, not a blocklist: the account keeps working, with a clean slate.
+                db.execute("INSERT OR REPLACE INTO deleted VALUES (?,?)", (owner, time.time()))
                 ids = [
                     row[0] for row in db.execute("SELECT id FROM assets WHERE owner=?", (owner,))
                 ]
@@ -679,6 +702,8 @@ class Studio:
             with self.db() as db:
                 db.execute("DELETE FROM assets WHERE owner=?", (owner,))
                 db.execute("DELETE FROM consent WHERE owner=?", (owner,))
+                # Without this the account keeps rows pointing at artwork it no longer owns.
+                db.execute("DELETE FROM design_vector WHERE owner=?", (owner,))
 
 
 async def bounded_json(request: Request) -> dict[str, Any]:
@@ -700,11 +725,16 @@ def router(studio: Studio, token: str) -> APIRouter:
     routes = APIRouter(prefix="/studio")
 
     def owner(request: Request) -> str:
+        """
+        Whose work this is: the account id, since TASK-0046. The header used to carry the
+        browser's consultation session id, which made the same person on a second device a
+        different owner. The name follows the meaning so the next reader is not misled.
+        """
         if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {token}"):
             raise HTTPException(401, "No autorizado")
-        value = request.headers.get("x-session-id", "")
-        if not re.fullmatch("[a-f0-9-]{36}", value):
-            raise HTTPException(401, "Sesión inválida")
+        value = request.headers.get("x-owner-id", "")
+        if not re.fullmatch("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}", value):
+            raise HTTPException(401, "Propietario inválido")
         return value
 
     @routes.post("/media")

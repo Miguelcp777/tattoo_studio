@@ -19,6 +19,8 @@ import { MasterBrief } from '@/components/MasterBrief';
 import { buildSteps } from '@/lib/steps';
 import { generationBlockers, nextAction } from '@/lib/next-step';
 
+import { openingFor, reopensNewest } from '@/lib/opening';
+
 import type { StudioJobStatus, GeneratedTattooArtifact } from '@/types/generation';
 
 interface Form {
@@ -135,20 +137,24 @@ export default function ConsultationPage(): ReactNode {
       })
 
       .then(async (data) => {
-        if (!cancelled && data.session) {
+        if (cancelled) return;
+        // TASK-0046: designs belong to the account and the conversation to this browser, so the
+        // two are restored independently. `openingFor` holds that branch, tested in lib/opening.
+        const opening = openingFor(data);
+        let jobState: string | undefined;
+
+        if (opening.restore === 'conversation') {
           accept(data.session);
-
           setBodyPhotoId(data.bodyPhotoId ?? '');
-          let restoreLatest = true;
 
-          if (data.jobId) {
-            const response = await fetch(`/api/generate?id=${data.jobId}`);
+          if (opening.jobId) {
+            const response = await fetch(`/api/generate?id=${opening.jobId}`);
 
             if (response.ok && !cancelled) {
               const status: StudioJobStatus = await response.json();
 
               setJob(status);
-              restoreLatest = status.state !== 'queued' && status.state !== 'running';
+              jobState = status.state;
 
               if (status.state === 'succeeded') {
                 setArtifact(status.result);
@@ -156,8 +162,8 @@ export default function ConsultationPage(): ReactNode {
               }
             }
           }
-          if (!cancelled) await refreshVersions(restoreLatest);
         }
+        if (!cancelled) await refreshVersions(reopensNewest(opening, jobState));
       })
 
       .catch(() => {});

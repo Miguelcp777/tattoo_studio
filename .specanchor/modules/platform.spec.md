@@ -23,6 +23,15 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0046: the studio's `owner` is the account id, taken from the `X-Owner-Id` header and required
+to be a lowercase UUID. The header was `X-Session-Id` and carried the browser's consultation
+session; the name follows the meaning now, and uppercase is refused so one account cannot own two
+separate piles of work. Deletion no longer blocklists the owner: it records when it happened
+(`deleted(owner, at)`), and work that started before that moment refuses to store itself after it
+(`still_mine`). A blocklist was harmless for a throwaway session id and a permanent lockout for an
+account id. `delete` also clears `design_vector`, whose rows otherwise outlive the assets they
+point at.
+
 TASK-0045: `SUPABASE_URL` and `SUPABASE_ANON_KEY` are required by the web service; the compose
 file fails the deploy by name when either is missing. The service-role key is deliberately not part
 of this deployment. `SUPABASE_URL` is the address Supabase answers on **from inside the web

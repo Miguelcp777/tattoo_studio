@@ -329,7 +329,7 @@ def test_http_requires_service_auth_and_valid_contract(tmp_path: Path) -> None:
     assert client.post("/studio/jobs", json={}).status_code == 401
     headers = {
         "Authorization": "Bearer test-only-token",
-        "X-Session-Id": "11111111-1111-4111-8111-111111111111",
+        "X-Owner-Id": "11111111-1111-4111-8111-111111111111",
     }
     assert client.post("/studio/jobs", json={"brief": {}}, headers=headers).status_code == 422
     assert (
@@ -381,7 +381,7 @@ def test_edit_versions_are_owned_idempotent_and_keep_previous(tmp_path: Path) ->
     app = FastAPI()
     app.include_router(router(studio, "test-only-token"))
     client = TestClient(app)
-    headers = {"Authorization": "Bearer test-only-token", "X-Session-Id": owner}
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": owner}
     change = {
         "edit": {"parentJobId": parent_id, "instruction": "Añade azul"},
         "idempotencyKey": "22222222-2222-4222-8222-222222222222",
@@ -403,7 +403,7 @@ def test_edit_versions_are_owned_idempotent_and_keep_previous(tmp_path: Path) ->
         child["master"]["designId"] == child["stencil"]["designId"] == child["mockup"]["designId"]
     )
     assert len(client.get("/studio/jobs", headers=headers).json()) == 2
-    other = {**headers, "X-Session-Id": "33333333-3333-4333-8333-333333333333"}
+    other = {**headers, "X-Owner-Id": "33333333-3333-4333-8333-333333333333"}
     assert client.post("/studio/jobs", json=change, headers=other).status_code == 422
     assert client.get("/studio/jobs", headers=other).json() == []
     for instruction in ["  ", "a", "x" * 1001, None]:
@@ -462,7 +462,7 @@ def test_a_change_can_attach_reference_photos(tmp_path: Path) -> None:
     app = FastAPI()
     app.include_router(router(studio, "test-only-token"))
     client = TestClient(app)
-    headers = {"Authorization": "Bearer test-only-token", "X-Session-Id": owner}
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": owner}
     # "todo el gemelo" alone would only reposition; an attached photo means a redraw.
     edit = {
         "parentJobId": parent_id,
@@ -528,7 +528,7 @@ def test_an_edit_of_a_resized_version_keeps_its_size(tmp_path: Path) -> None:
     app = FastAPI()
     app.include_router(router(studio, "test-only-token"))
     client = TestClient(app)
-    headers = {"Authorization": "Bearer test-only-token", "X-Session-Id": owner}
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": owner}
 
     def edit(parent: str, instruction: str, key: str) -> dict[str, Any]:
         response = client.post(
@@ -597,7 +597,7 @@ def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
             "edit": {"parentJobId": parent_id, "instruction": instruction},
             "idempotencyKey": "22222222-2222-4222-8222-222222222222",
         },
-        headers={"Authorization": "Bearer test-only-token", "X-Session-Id": owner},
+        headers={"Authorization": "Bearer test-only-token", "X-Owner-Id": owner},
     )
     assert response.status_code == 202
     assert studio.jobs.tick()
@@ -719,7 +719,7 @@ def test_a_nudge_changes_the_view_and_nothing_that_gets_printed(tmp_path: Path) 
             },
             "idempotencyKey": "33333333-3333-4333-8333-333333333333",
         },
-        headers={"Authorization": "Bearer test-only-token", "X-Session-Id": owner},
+        headers={"Authorization": "Bearer test-only-token", "X-Owner-Id": owner},
     )
     assert response.status_code == 202
     assert studio.jobs.tick()
@@ -821,3 +821,104 @@ def test_an_own_photo_is_never_sent_for_the_finish() -> None:
     provider = LegProvider("same")
     assert _StudioBlend(provider).blend(b"warp", b"PHOTO", object(), "finish") is None
     assert provider.blends == 0
+
+
+ACCOUNT = "11111111-1111-4111-8111-111111111111"
+
+
+def an_upload() -> dict[str, Any]:
+    return {
+        "data": base64.b64encode(picture()).decode(),
+        "kind": "reference",
+        "adult": True,
+        "consent": True,
+    }
+
+
+def test_erasing_your_work_is_not_a_lockout(tmp_path: Path) -> None:
+    """
+    TASK-0046/AC-004.
+
+    The owner used to be a throwaway session id, so blocklisting it on deletion cost nothing: the
+    browser simply started a new session. It is an account id now, and the same blocklist would
+    lock the account out of the studio permanently.
+    """
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    first = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [first["assetId"]]
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    assert studio.jobs.get(ACCOUNT, job["jobId"])["state"] == "succeeded"
+
+    studio.delete(ACCOUNT)
+
+    # Nothing from before the deletion survives it.
+    assert studio.jobs.history(ACCOUNT) == []
+    assert studio.media.all_assets() == []
+    with pytest.raises(KeyError):
+        studio.owned(ACCOUNT, first["assetId"])
+
+    # And the account can still work.
+    second = studio.ingest(ACCOUNT, an_upload())
+    again = payload()
+    again["referenceIds"] = [second["assetId"]]
+    again["idempotencyKey"] = "55555555-5555-4555-8555-555555555555"
+    later = studio.jobs.enqueue(ACCOUNT, again)
+    assert studio.jobs.tick()
+    assert studio.jobs.get(ACCOUNT, later["jobId"])["state"] == "succeeded"
+    assert len(studio.jobs.history(ACCOUNT)) == 1
+
+
+def test_a_deletion_during_a_generation_leaves_nothing_behind(tmp_path: Path) -> None:
+    """
+    TASK-0046/AC-005.
+
+    A generation runs for minutes, so an erasure can land inside one. The artwork is already drawn
+    by then; what must not happen is it being written for an owner who just erased everything.
+    """
+
+    class ErasesMidway(FakeProvider):
+        def lineart(self, brief: dict[str, Any], references: list[bytes], analysis: str) -> bytes:
+            studio.delete(ACCOUNT)
+            return super().lineart(brief, references, analysis)
+
+    studio = Studio(tmp_path, b"x" * 32, ErasesMidway())
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    job = studio.jobs.enqueue(ACCOUNT, request)
+
+    assert studio.jobs.tick()
+    finished = studio.jobs.get(ACCOUNT, job["jobId"])
+    assert finished["state"] != "succeeded"
+    assert finished["result"] is None
+    assert studio.media.all_assets() == []
+    with studio.db() as db:
+        assert (
+            db.execute("SELECT count(*) FROM assets WHERE owner=?", (ACCOUNT,)).fetchone()[0] == 0
+        )
+        assert (
+            db.execute("SELECT count(*) FROM design_vector WHERE owner=?", (ACCOUNT,)).fetchone()[0]
+            == 0
+        )
+
+
+def test_the_worker_only_accepts_an_account_as_the_owner(tmp_path: Path) -> None:
+    """TASK-0046/AC-006. The header carries an account id and is named for it."""
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    auth = {"Authorization": "Bearer test-only-token"}
+
+    assert client.get("/studio/jobs", headers=auth).status_code == 401
+    # Uppercase is refused too: Supabase issues lowercase, and accepting both would let one
+    # account own two separate piles of work.
+    for rejected in ["", "not-a-uuid", "1" * 32, "-" * 36, "AAAAAAAA-1111-4111-8111-111111111111"]:
+        assert (
+            client.get("/studio/jobs", headers={**auth, "X-Owner-Id": rejected}).status_code == 401
+        ), rejected
+    # The old name identifies nobody, so a stale caller fails closed rather than sharing an owner.
+    assert client.get("/studio/jobs", headers={**auth, "X-Session-Id": ACCOUNT}).status_code == 401
+    assert client.get("/studio/jobs", headers={**auth, "X-Owner-Id": ACCOUNT}).status_code == 200

@@ -16,7 +16,15 @@ guards every route that spends money or reads stored work; an unconfigured deplo
 rather than opening. An expired access token is renewed from the refresh token and re-issued on the
 same response. `middleware.ts` is a cheap cookie-presence gate, **not** the boundary: a forged
 cookie reaches the HTML shell and nothing else. There is no sign-up; accounts are created in
-Supabase. Designs are still owned by the studio session, not the account (TASK-0046).
+Supabase.
+
+TASK-0046: stored work belongs to the account. `worker()` sends the account id as `X-Owner-Id` —
+the header the worker scopes every asset, job and vector master by — instead of the consultation
+session id, which made the same person on a second device a stranger to their own designs. The
+consultation itself stays in the browser's session and keeps the `inkcraft` cookie: only ownership
+moved. Reading stored work (history, job status, an image, deletion) therefore no longer requires
+a consultation in progress, and those routes answer without one. Retention is unchanged, so "your
+designs on another device" means the last 24 hours until TASK-0047 gives them a durable home.
 
 TASK-0042 (ADR-0019): `/probar` is the live camera try-on. `lib/skin-blend.ts` ports the worker's
 ink treatment (multiply, ADR-0014 attenuation, TASK-0031 ring) as pure functions; `lib/try-on.ts`
@@ -160,7 +168,9 @@ return a `JobRef` immediately; the UI polls or subscribes for completion.
 - WEB-INV-004: Consent and age affirmation are collected before any upload control is enabled
   (SEC-INV-005, SAFETY-INV-003).
 - WEB-INV-005: A user can reach deletion of their photos and derived artifacts from the UI without
-  contacting support.
+  contacting support, and deleting them does not cost them the account (TASK-0046).
+- WEB-INV-007: The owner the worker is told about is the account id and nothing else. A browser
+  session never determines whose stored work a request reaches (TASK-0046).
 
 ## Data / persistence
 
@@ -202,8 +212,10 @@ upload to deletion. Accessibility checks to WCAG 2.1 AA on the primary flows.
 
 ## Known uncertainties and debt
 
-- Authentication is Supabase, decided by ADR-0021 (TASK-0045). Never exercised against the real
-  service: the suite fakes its answers.
+- Authentication is Supabase, decided by ADR-0021 (TASK-0045). Exercised against the real service
+  once, for sign-in only (TASK-0045/ev-003); renewal is still proven only against the fake.
+- Work owned by an account from TASK-0046 onward is unreachable to work stored before it, which was
+  keyed by session id. Nothing migrates it; it expires on the normal 24-hour schedule.
 - Whether job completion uses polling or server-sent events is undecided.
 - The placement editor interaction model is undesigned.
 - The shell has no styling, no layout system and no accessibility work. The WCAG 2.1 AA
