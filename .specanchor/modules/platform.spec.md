@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0044: both images build with the compose **project directory at the repository root**, so
+`context: .` is correct and `context: ..` points above it; a manual `docker compose` run needs
+`--project-directory ..`. The first real deploy failed on exactly this.
+
 TASK-0044: the VM runs **Coolify**, which owns 80/443 and terminates TLS, so our Caddy layer is
 removed and **no service binds a host port**; the domain is attached to `web:3000` in Coolify and
 secrets live in its environment panel. Required secrets use `${VAR:?}` so a missing one fails the
