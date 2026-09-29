@@ -1,10 +1,14 @@
-# The studio on one host (ADR-0020).
+# The studio, deployed by Coolify (ADR-0020, amended by TASK-0044).
 #
-#   caddy  -> web -> worker
+#   coolify's proxy ──▶ web:3000 ──▶ worker:8000 ──▶ /data (encrypted media, SQLite)
 #
-# Only Caddy publishes a port. The worker is never reachable from outside the compose network:
-# it holds the media store and the generation credentials, and its only caller is the web app,
-# which authenticates with TATTOO_WORKER_TOKEN.
+# No service publishes a host port. Coolify already owns 80 and 443 on this host and terminates
+# TLS itself; binding them here would simply fail to start. The domain is attached to `web` in
+# Coolify, which is also what issues and renews the certificate.
+#
+# The worker is reachable only on this compose network. It holds the media store and the
+# generation credentials, and its only caller is the web app, which authenticates with
+# TATTOO_WORKER_TOKEN.
 
 name: tattoo-studio
 
@@ -13,10 +17,14 @@ services:
     build:
       context: ..
       dockerfile: infra/Dockerfile.worker
-    env_file: .env
     environment:
       TATTOO_ENVIRONMENT: production
       TATTOO_DATA_DIR: /data/studio
+      TATTOO_WORKER_TOKEN: ${TATTOO_WORKER_TOKEN:?set it in Coolify}
+      TATTOO_MEDIA_KEY: ${TATTOO_MEDIA_KEY:?set it in Coolify}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set it in Coolify}
+      TATTOO_IMAGE_BACKEND: ${TATTOO_IMAGE_BACKEND:-openai}
+      BFL_API_KEY: ${BFL_API_KEY:-}
     volumes:
       - worker-data:/data
     restart: unless-stopped
@@ -41,38 +49,24 @@ services:
     build:
       context: ..
       dockerfile: infra/Dockerfile.web
-    env_file: .env
     environment:
       NODE_ENV: production
       TATTOO_WORKER_URL: http://worker:8000
+      TATTOO_WORKER_TOKEN: ${TATTOO_WORKER_TOKEN:?set it in Coolify}
+      # The consultation agent runs inside the web app, not the worker.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      TATTOO_CONSULTATION_BACKEND: ${TATTOO_CONSULTATION_BACKEND:-}
+      TATTOO_SCOUT_PLANNER: ${TATTOO_SCOUT_PLANNER:-}
+      # Coolify fills this with the domain it routes to this service and issues the certificate for.
+      SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
+    expose:
+      - '3000'
     depends_on:
       worker:
         condition: service_healthy
-    restart: unless-stopped
-
-  caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-      args:
-        CADDY_DNS_MODULE: ${CADDY_DNS_MODULE:-github.com/caddy-dns/cloudflare}
-    env_file: .env
-    ports:
-      - '80:80'
-      - '443:443'
-      - '443:443/udp'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - web
     restart: unless-stopped
 
 volumes:
   # The encrypted media store and both SQLite files. Losing this volume loses every design; losing
   # TATTOO_MEDIA_KEY makes what is in it unreadable.
   worker-data:
-  # Issued certificates and ACME account keys. Keep it, or every redeploy re-issues.
-  caddy-data:
-  caddy-config:

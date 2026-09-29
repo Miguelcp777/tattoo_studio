@@ -29,13 +29,16 @@ def service_blocks(compose: str) -> dict[str, str]:
     return blocks
 
 
-def test_only_the_proxy_publishes_ports() -> None:
-    """The worker holds the media store and the generation credentials; nothing outside the
-    compose network may reach it (ADR-0020)."""
+def test_nothing_binds_a_host_port() -> None:
+    """Coolify owns 80 and 443 on this host and terminates TLS (TASK-0044). A service binding a
+    host port here would collide with it and simply fail to start; the worker must additionally
+    never be reachable, since it holds the media store and the generation credentials."""
     blocks = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))
-    assert set(blocks) == {"worker", "web", "caddy"}
+    assert set(blocks) == {"worker", "web"}
     published = {name for name, block in blocks.items() if re.search(r"^\s+ports:", block, re.M)}
-    assert published == {"caddy"}
+    assert published == set()
+    # The web app is reachable on the compose network so the proxy can route to it.
+    assert re.search(r"^\s+expose:", blocks["web"], re.M)
 
 
 def test_the_queue_is_never_scaled() -> None:
@@ -62,12 +65,17 @@ def test_the_committed_template_holds_no_credential() -> None:
     assert filled == [], f"credential-shaped values in the committed template: {filled}"
 
 
-def test_the_certificate_uses_a_dns_challenge() -> None:
-    """DNS-01 is what lets the host keep every inbound port closed and still hold a real
-    certificate, which the camera requires (TASK-0042)."""
-    caddyfile = (INFRA / "Caddyfile").read_text(encoding="utf-8")
-    assert re.search(r"tls\s*\{[^}]*dns ", caddyfile, re.S)
-    assert "xcaddy build --with" in (INFRA / "Dockerfile.caddy").read_text(encoding="utf-8")
+def test_the_proxy_layer_is_not_duplicated() -> None:
+    """Coolify is the proxy (TASK-0044). Leaving our own Caddy configuration in the tree would
+    invite deploying two proxies, or the wrong one."""
+    assert not (INFRA / "Caddyfile").exists()
+    assert not (INFRA / "Dockerfile.caddy").exists()
+
+
+def test_the_domain_is_wired_for_the_web_service() -> None:
+    """HTTPS is not decoration: the camera try-on needs a secure context (TASK-0042)."""
+    compose = (INFRA / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "SERVICE_FQDN_WEB_3000" in compose
 
 
 def test_the_runbook_states_the_exposure_before_the_steps() -> None:
@@ -75,4 +83,4 @@ def test_the_runbook_states_the_exposure_before_the_steps() -> None:
     warning is worth nothing below the instructions."""
     readme = (INFRA / "README.md").read_text(encoding="utf-8")
     warning = readme.index("There is no authentication yet")
-    assert warning < readme.index("## 1. The VM")
+    assert warning < readme.index("## 1. Create the resource")

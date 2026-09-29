@@ -23,8 +23,13 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
-TASK-0043 (ADR-0020): `infra/` is no longer empty. Three containers — `caddy` (TLS by DNS-01),
-`web`, `worker` — on one self-hosted node; only the proxy publishes ports, the worker is pinned to
+TASK-0044: the VM runs **Coolify**, which owns 80/443 and terminates TLS, so our Caddy layer is
+removed and **no service binds a host port**; the domain is attached to `web:3000` in Coolify and
+secrets live in its environment panel. Required secrets use `${VAR:?}` so a missing one fails the
+deploy by name. This amends the TASK-0043 note below.
+
+TASK-0043 (ADR-0020): `infra/` is no longer empty. Two containers —
+`web`, `worker` — on one self-hosted node; no service publishes host ports, the worker is pinned to
 one replica because its queue is in-process, and state is the `worker-data` volume encrypted with
 `TATTOO_MEDIA_KEY`. **Hosting and region are decided: the owner's own hardware.** The web image is
 not a Next `standalone` bundle (DEC-003), and contracts are regenerated during the build so a stale

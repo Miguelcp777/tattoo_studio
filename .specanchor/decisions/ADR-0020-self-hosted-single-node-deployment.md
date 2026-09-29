@@ -32,13 +32,17 @@ The owner has a Proxmox host and can run a VM on it.
 
 **Everything runs on one self-hosted node**, described by `infra/`:
 
-1. **Three containers**: `caddy` terminates TLS, `web` is the Next.js studio, `worker` is the Python
+1. *(Amended by TASK-0044: the VM already runs Coolify, which owns 80/443 and terminates TLS, so
+   our Caddy layer was removed and no service binds a host port.)*
+   **Three containers**: `caddy` terminates TLS, `web` is the Next.js studio, `worker` is the Python
    service. Only Caddy publishes ports. The worker is unreachable from outside the compose network
    and is authenticated by `TATTOO_WORKER_TOKEN` even there.
 2. **The region is the owner's hardware.** This resolves the open question in
    `architecture.spec.md` and `platform.spec.md`: data at rest lives on a machine the owner
    controls, which satisfies the residency claim more strictly than any cloud region would.
-3. **TLS by DNS-01.** The certificate is issued through the DNS provider's API, so no inbound port
+3. *(Amended by TASK-0044: Coolify issues and renews the certificate; the DNS-01 option remains
+   available through Coolify for a hostname that resolves only privately.)*
+   **TLS by DNS-01.** The certificate is issued through the DNS provider's API, so no inbound port
    needs to be open to the internet for validation, and the hostname may resolve only on a private
    network. A private hostname with a genuine certificate is a supported configuration, and it is
    enough for the camera.
