@@ -78,8 +78,14 @@ encryption, retention and cascade-deletion carry invariants.
 
 ## Validation / revisit conditions
 
-- **Owed:** a real sign-in against the Supabase on the VM. The suite fakes Supabase's answers; no
-  credential has been exchanged with the real service.
+- **Settled 2026-09-29:** a real sign-in against the Supabase on the VM, from the deployed studio
+  on its own domain (TASK-0045/ev-003). The decision to let Supabase answer "who is this token"
+  works against the real service, not only against the suite's fake.
+- **Owed:** a renewal against the real Supabase. No live session has yet outlived its access token,
+  so consequence 7 is proven only against the fake.
+- **Learned in deployment:** `SUPABASE_URL` must be the address Supabase answers on *from inside
+  the web container* — not `localhost`, which is the container itself. Recorded in
+  `platform.spec.md` so the next deployment does not rediscover it.
 - **Revisit** when designs become user-owned (TASK-0046): the account id becomes the owner the
   worker scopes storage by, and the cascade-deletion invariant has to follow it.
 - **This decision is wrong if** the studio needs to let strangers try it before signing up. The

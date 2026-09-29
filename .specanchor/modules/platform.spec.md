@@ -25,7 +25,11 @@ last_reviewed: 2026-09-19
 
 TASK-0045: `SUPABASE_URL` and `SUPABASE_ANON_KEY` are required by the web service; the compose
 file fails the deploy by name when either is missing. The service-role key is deliberately not part
-of this deployment.
+of this deployment. `SUPABASE_URL` is the address Supabase answers on **from inside the web
+container**, which is not `localhost` — that is the container itself. On a single host that is the
+machine's own LAN address, the Docker bridge gateway, or a service name on a shared Docker network.
+The image is `node:22-slim` and carries neither `wget` nor `curl`, so the check is Node's own
+`fetch` against `/auth/v1/health` (TASK-0045/ev-003).
 
 TASK-0044: the domain is Coolify's to hold, in **Domains for web** (port 3000); the compose file
 must not declare `SERVICE_FQDN_WEB_3000`, because a value there overwrites Coolify's on every
