@@ -72,10 +72,17 @@ def test_the_proxy_layer_is_not_duplicated() -> None:
     assert not (INFRA / "Dockerfile.caddy").exists()
 
 
-def test_the_domain_is_wired_for_the_web_service() -> None:
-    """HTTPS is not decoration: the camera try-on needs a secure context (TASK-0042)."""
-    compose = (INFRA / "docker-compose.yml").read_text(encoding="utf-8")
-    assert "SERVICE_FQDN_WEB_3000" in compose
+def test_the_domain_is_not_declared_in_the_compose_file() -> None:
+    """The domain belongs to Coolify's own configuration, not to this file.
+
+    Declaring SERVICE_FQDN_WEB_3000 here with an empty default made every compose read overwrite
+    the domain Coolify held, so the UI silently refused to save it and Traefik answered 404 for
+    the real hostname. HTTPS is not decoration -- the camera needs a secure context (TASK-0042) --
+    so this must not regress."""
+    blocks = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))
+    for name, block in blocks.items():
+        declared = re.search(r"^\s+SERVICE_FQDN_\w+\s*:", block, re.M)
+        assert not declared, f"{name}: let Coolify own the domain"
 
 
 def test_the_runbook_states_the_exposure_before_the_steps() -> None:

@@ -100,6 +100,7 @@ SQLite plus the encrypted file store. Migrating to it is its own task.
 | Symptom | Cause |
 |---|---|
 | `lstat /artifacts/infra: no such file or directory` | The build context must be the repository root. Coolify sets the compose project directory there, so `context: .` is correct and `context: ..` points above it. Running compose by hand instead needs `--project-directory ..`. |
+| Traefik answers `404 page not found` for the real hostname | Coolify holds no domain for the `web` service. Set it in **Domains for web** as `http://<host>:3000` and redeploy so the routing labels are regenerated. Never declare `SERVICE_FQDN_WEB_3000` in the compose file: a value there, even an empty default, overwrites Coolify's on every read and the UI silently will not save. |
 | The deploy fails binding a port | Something in the compose file publishes 80 or 443, which Coolify already owns. No service here should have `ports:`. |
 | The site loads but the camera button does nothing | Not a secure context. Confirm the URL is `https://` and the certificate is trusted on that phone. |
 | Generating returns 503 "no se puede conectar con el worker" | The worker container is unhealthy. Check its logs in Coolify. |

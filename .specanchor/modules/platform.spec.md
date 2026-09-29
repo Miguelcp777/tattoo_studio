@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0044: the domain is Coolify's to hold, in **Domains for web** (port 3000); the compose file
+must not declare `SERVICE_FQDN_WEB_3000`, because a value there overwrites Coolify's on every
+read and the UI then refuses to save, leaving Traefik with no route (404).
+
 TASK-0044: both images build with the compose **project directory at the repository root**, so
 `context: .` is correct and `context: ..` points above it; a manual `docker compose` run needs
 `--project-directory ..`. The first real deploy failed on exactly this.

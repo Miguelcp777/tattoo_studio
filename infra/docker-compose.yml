@@ -47,6 +47,9 @@ services:
       retries: 3
       start_period: 20s
 
+  # The domain is attached to this service in Coolify's own UI (Domains for web, port 3000).
+  # Do not declare SERVICE_FQDN_WEB_3000 here: giving it a value -- even an empty default --
+  # makes every compose read overwrite the domain Coolify holds, and it silently will not save.
   web:
     build:
       context: .
@@ -59,8 +62,6 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       TATTOO_CONSULTATION_BACKEND: ${TATTOO_CONSULTATION_BACKEND:-}
       TATTOO_SCOUT_PLANNER: ${TATTOO_SCOUT_PLANNER:-}
-      # Coolify fills this with the domain it routes to this service and issues the certificate for.
-      SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
     expose:
       - '3000'
     depends_on:
