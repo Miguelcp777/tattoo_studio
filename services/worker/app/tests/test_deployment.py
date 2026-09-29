@@ -84,3 +84,18 @@ def test_the_runbook_states_the_exposure_before_the_steps() -> None:
     readme = (INFRA / "README.md").read_text(encoding="utf-8")
     warning = readme.index("There is no authentication yet")
     assert warning < readme.index("## 1. Create the resource")
+
+
+def test_the_web_image_pins_the_pnpm_that_wrote_the_lockfile() -> None:
+    """A different pnpm major refuses the lockfile under --frozen-lockfile. The pin was wrong once
+    already (10.11.0 against a lockfile written by 12.4.2), and nothing caught it because the image
+    has never been built here."""
+    root = INFRA.parent
+    lockfile = (root / "pnpm-lock.yaml").read_text(encoding="utf-8")
+    assert "lockfileVersion: '9.0'" in lockfile
+    dockerfile = (INFRA / "Dockerfile.web").read_text(encoding="utf-8")
+    pinned = re.search(r"corepack prepare pnpm@(\d+)\.", dockerfile)
+    assert pinned, "the web image must pin an explicit pnpm version"
+    # pnpm 9 and 10 also read lockfileVersion 9, but the repository is maintained on 12; pinning
+    # below it risks a resolver difference that only appears in the image.
+    assert int(pinned[1]) >= 12

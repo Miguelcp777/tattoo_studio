@@ -5,7 +5,9 @@
 # only in production. The image is larger and the wiring is the same one the tests run against.
 FROM node:22-slim AS deps
 
-RUN corepack enable && corepack prepare pnpm@10.11.0 --activate
+# Must match the pnpm that wrote pnpm-lock.yaml. A different major refuses the lockfile under
+# --frozen-lockfile, which is a build failure rather than a silent drift, but a failure all the same.
+RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 WORKDIR /repo
 
 # Manifests first, so a dependency change is the only thing that busts this layer.
