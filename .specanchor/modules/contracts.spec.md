@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0057: `studio-job`'s embedded `styleName` gains the six styles TASK-0027 added to
+`tattoo-brief` only. Until then every job in those styles was refused by the web tier with "Revisa
+las referencias, la posición y las medidas." A corpus test now requires the embedded brief and its
+shared definitions to equal `tattoo-brief`'s. Fixture `studio-job/valid/widened-style.json`.
+
 TASK-0050 (ADR-0022): `studio-status` artifacts admit an optional `capture` —
 `{ parentJobId, photo: { assetId, designId, mimeType: image/jpeg | image/png } }` — for a camera
 try-on photograph kept as a version of an unchanged design. `photo` has its own definition because

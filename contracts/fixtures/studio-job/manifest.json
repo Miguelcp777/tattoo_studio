@@ -132,6 +132,12 @@
       "file": "invalid/edit-too-many-references.json",
       "valid": false,
       "why": "TASK-0036 at most three attached references per change"
+    },
+    {
+      "name": "widened-style",
+      "file": "valid/widened-style.json",
+      "valid": true,
+      "why": "TASK-0057: a style added to the brief vocabulary by TASK-0027 (biomechanical) is accepted in a job too."
     }
   ]
 }

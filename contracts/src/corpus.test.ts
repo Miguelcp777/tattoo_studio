@@ -151,3 +151,25 @@ describe('validation surface', () => {
     expect(result.valid).toBe(false);
   });
 });
+
+describe('embedded brief', () => {
+  // TASK-0057: studio-job carries its own copy of the brief. TASK-0027 widened the style
+  // vocabulary in tattoo-brief only, so every job for six styles was refused for months while the
+  // consultation offered them. A copy must stay identical to its source.
+  const schemas = resolve(here, '../schemas');
+  const read = (file: string): Record<string, unknown> =>
+    JSON.parse(readFileSync(resolve(schemas, file), 'utf8'));
+  const source = read('tattoo-brief.schema.json');
+  const sourceDefs = source['$defs'] as Record<string, unknown>;
+  const body = Object.fromEntries(
+    Object.entries(source).filter(([key]) => !['$schema', '$id', 'title', '$defs'].includes(key)),
+  );
+
+  it.each(['studio-job.schema.json'])('%s matches tattoo-brief', (file) => {
+    const schema = read(file);
+    expect((schema['properties'] as Record<string, unknown>)['brief']).toEqual(body);
+    const defs = schema['$defs'] as Record<string, unknown>;
+    for (const name of Object.keys(sourceDefs).filter((key) => key in defs))
+      expect(defs[name], name).toEqual(sourceDefs[name]);
+  });
+});
