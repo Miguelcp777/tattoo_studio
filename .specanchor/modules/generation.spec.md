@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0060 (ADR-0027): `plate_library.py` reads the 52 reviewed plates committed under `plates/`
+(26 zones × man, woman; right side; mirrored for the left except on the centre line; a brief with
+no body gets one of the two by its id) and builds them through the provider's own plate call.
+`BODY_VIEWS` describes a woman's chest and sternum with what covers them.
+
 TASK-0059: the skin plate prompt is a clothed clinical record ("Clinical reference photograph of
 the skin of the ..., non-sexual ... plain opaque clothing covers the body outside this zone")
 instead of "photograph of the bare ...", which OpenAI's safety system refused for a woman's thigh.

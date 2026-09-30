@@ -226,6 +226,43 @@ def test_a_generic_idea_is_drawn_without_references(tmp_path: Path) -> None:
     assert studio.media.all_assets() == []
 
 
+def test_a_library_plate_is_used_before_one_is_generated(tmp_path: Path) -> None:
+    """TASK-0060: with a reviewed plate for the zone, no plate is generated."""
+    from generation.plate_library import PlateLibrary
+
+    class NoPlates(FakeProvider):
+        def background(self, brief: dict[str, Any]) -> bytes:
+            raise AssertionError("the library had this plate")
+
+    plates = tmp_path / "plates"
+    plates.mkdir()
+    Image.new("RGB", (400, 600), (205, 160, 130)).save(
+        plates / "inner_forearm-masculine.webp", format="WEBP"
+    )
+    provider = NoPlates()
+    studio = Studio(tmp_path / "studio", b"x" * 32, provider, PlateLibrary(plates))
+    owner = "11111111-1111-4111-8111-111111111111"
+    ref = studio.ingest(
+        owner,
+        {
+            "data": base64.b64encode(picture()).decode(),
+            "kind": "reference",
+            "adult": True,
+            "consent": True,
+        },
+    )
+    request = payload()
+    request["referenceIds"] = [ref["assetId"]]
+    request["brief"]["placement"]["bodyType"] = "masculine"
+    job = studio.jobs.enqueue(owner, request)
+    assert studio.jobs.tick()
+    result = studio.jobs.get(owner, job["jobId"])
+    assert result["state"] == "succeeded", result
+    background = studio.media.read(result["result"]["background"]["assetId"])
+    with Image.open(io.BytesIO(background)) as image:
+        assert image.size == (400, 600)
+
+
 def test_provider_failure_never_returns_an_artifact(tmp_path: Path) -> None:
     def fail(owner: str, body: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Proveedor no disponible")

@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0060 (ADR-0027): `Studio.plate` serves the library plate and falls back to the provider;
+`build_studio` passes `PlateLibrary()`. `python -m app.build_plate_library [--zone Z] [--body B]
+[--force]` builds the library with OpenAI whatever the configured backend.
+
 TASK-0058 (ADR-0026): a job may carry no reference. `design_parent` returns the first reference or
 none, so a reference-free design is its own lineage root; the analysis call is skipped
 (`NO_REFERENCES`).

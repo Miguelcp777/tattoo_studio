@@ -203,6 +203,22 @@ def test_other_provider_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) 
     provider.close()
 
 
+def test_a_womans_chest_is_described_with_what_covers_it() -> None:
+    """TASK-0060: without it the model drew a bearded man for a woman's chest."""
+    woman = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "chest", "bodyType": "feminine"}}
+    )
+    man = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "chest", "bodyType": "masculine"}}
+    )
+    assert "bandeau top that covers the breasts" in woman
+    assert "bandeau" not in man
+    sternum = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "sternum", "bodyType": "feminine"}}
+    )
+    assert "sports bra" in sternum
+
+
 def test_the_plate_is_a_clothed_clinical_record() -> None:
     prompt = StudioProvider.background_prompt(
         {"placement": {"bodyPart": "thigh_front", "side": "right", "bodyType": "feminine"}}

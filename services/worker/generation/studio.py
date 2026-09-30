@@ -67,6 +67,16 @@ def refused_by_safety(response: Any) -> bool:
     return isinstance(error, dict) and error.get("code") == "moderation_blocked"
 
 
+# TASK-0060: a woman's chest is described with what covers it. Asked for "the chest ... to below
+# the pectorals" with the rest clothed, the image model drew a bearded man instead.
+BODY_VIEWS = {
+    ("chest", "feminine"): "upper chest seen from the front, from the collarbones down to a plain "
+    "black bandeau top that covers the breasts",
+    ("sternum", "feminine"): "sternum seen from the front, the centre of the chest between the "
+    "cups of a plain black sports bra, from the collarbones to below the bra",
+}
+
+
 class StudioProvider:
     def __init__(
         self, key: str, image_model: str = "gpt-image-2", vision_model: str = "gpt-4.1-mini"
@@ -363,6 +373,8 @@ class StudioProvider:
         placement = brief["placement"]
         side = {"left": "left ", "right": "right ", "centre": ""}.get(placement.get("side", ""), "")
         view = ZONE_VIEWS.get(placement["bodyPart"], placement["bodyPart"].replace("_", " "))
+        if not neutral:
+            view = BODY_VIEWS.get((placement["bodyPart"], placement.get("bodyType")), view)
         # TASK-0041: the plate reads as a man's or a woman's body when the client said which. It is
         # the only place body sex is used; it never reaches the artwork prompt. `neutral` drops it,
         # for a second request after the provider's safety system refused the first (TASK-0059).

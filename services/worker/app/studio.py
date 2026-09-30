@@ -20,6 +20,7 @@ from tattoo_contracts.validation import validate
 
 from app.settings import Settings, SettingsError
 from generation.bfl_studio import BflStudioProvider
+from generation.plate_library import PlateLibrary
 from generation.studio import StudioProvider
 from jobs.queue import JobQueue
 from media.sanitize import sanitize
@@ -207,7 +208,7 @@ class _StudioGenerationDeps:
     def ensure_background(self, state: PipelineState) -> bytes:
         if state.background is not None:
             return state.background
-        return self.studio.provider.background(state.brief)
+        return self.studio.plate(state.brief)
 
     def compose(
         self, state: PipelineState, raster: Any, background: bytes
@@ -264,9 +265,16 @@ class _StudioGenerationDeps:
 
 
 class Studio:
-    def __init__(self, root: Path, key: bytes, provider: StudioProvider) -> None:
+    def __init__(
+        self,
+        root: Path,
+        key: bytes,
+        provider: StudioProvider,
+        plates: PlateLibrary | None = None,
+    ) -> None:
         root.mkdir(parents=True, exist_ok=True)
         self.provider = provider
+        self.plates = plates
         self.media = EncryptedFileStore(root / "media", key, retention=timedelta(hours=24))
         self.db_path = root / "ownership.sqlite"
         self.lock = threading.RLock()
@@ -287,6 +295,11 @@ class Studio:
                 "DEFAULT CURRENT_TIMESTAMP)"
             )
         self.jobs = JobQueue(root / "jobs.sqlite", self.generate, self.purge_expired)
+
+    def plate(self, brief: dict[str, Any]) -> bytes:
+        """A skin plate from the reviewed library, or generated when it has none (TASK-0060)."""
+        stored = self.plates.plate(brief) if self.plates else None
+        return stored if stored is not None else self.provider.background(brief)
 
     def purge_expired(self, now: datetime | None = None) -> None:
         """
@@ -510,7 +523,7 @@ class Studio:
         # Attached photos always mean the drawing changes, whatever else the sentence says.
         if coverage and parent and coverage.placement_only and not attached:
             if background is None:
-                background = self.provider.background(brief)
+                background = self.plate(brief)
             return self.reposition(owner, payload, parent, background, coverage, mark)
         # A whole-zone request is a statement about the body, so it settles the millimetres
         # before anything is drawn at them (ADR-0008, TASK-0024/REQ-004).
@@ -1165,6 +1178,7 @@ def build_studio(settings: Settings) -> Studio | None:
         Path(settings.data_dir),
         bytes.fromhex(settings.media_key.get_secret_value()),
         build_provider(settings),
+        PlateLibrary(),
     )
 
 
