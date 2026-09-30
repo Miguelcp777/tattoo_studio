@@ -119,7 +119,7 @@ def test_background_is_text_only(monkeypatch: pytest.MonkeyPatch) -> None:
     provider.background(BRIEF)
     payload = script.posts[0][1]["json"]
     assert not any(key.startswith("input_image") for key in payload)
-    assert "bare, unmarked" in payload["prompt"]
+    assert "Clinical reference photograph of the skin" in payload["prompt"]
     provider.close()
 
 

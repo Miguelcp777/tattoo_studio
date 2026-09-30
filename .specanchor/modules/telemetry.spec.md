@@ -9,6 +9,10 @@ last_reviewed: 2026-09-30
 
 # Module: telemetry
 
+TASK-0059: a failed provider call records the provider's short error code beside the status
+("HTTP 400 moderation_blocked"), validated as `[a-z0-9_]{1,40}`; the provider's message is never
+kept.
+
 TASK-0055: `report.py` computes the administrator's views from rows: totals and timings,
 consumption by model, activity by day, per-account summaries with the last sign-in address, recent
 errors, and one account's activity. Administrator events are audit, not use, and are left out.

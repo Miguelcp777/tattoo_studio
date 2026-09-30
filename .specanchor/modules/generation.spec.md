@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0059: the skin plate prompt is a clothed clinical record ("Clinical reference photograph of
+the skin of the ..., non-sexual ... plain opaque clothing covers the body outside this zone")
+instead of "photograph of the bare ...", which OpenAI's safety system refused for a woman's thigh.
+`StudioProvider.background` asks again when refused (`moderation_blocked`), then with the body's
+sex dropped, and then raises `PLATE_REFUSED`, which sends the client to their own photo or another
+zone. Other provider errors are not retried.
+
 TASK-0058 (ADR-0026): with no reference `_artwork` posts to `/images/generations` (JSON, no files)
 and `artwork_prompt(..., referenced=False)` says no reference is supplied.
 

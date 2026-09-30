@@ -137,6 +137,81 @@ def test_a_calf_background_is_the_back_of_the_leg() -> None:
     assert "front of the lower leg" in shin
 
 
+class _Answer:
+    def __init__(self, status: int, body: dict[str, Any]) -> None:
+        self.status_code = status
+        self._body = body
+
+    def json(self) -> dict[str, Any]:
+        return self._body
+
+
+BLOCKED = _Answer(400, {"error": {"code": "moderation_blocked", "message": "rejected"}})
+
+
+def test_a_refused_plate_is_asked_again_then_without_the_body_sex(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """TASK-0059: a woman's thigh was refused by the safety system; refusals are not billed."""
+    provider = StudioProvider("test-not-a-secret")
+    prompts: list[str] = []
+    answers = [BLOCKED, BLOCKED, _Answer(200, {"data": []})]
+
+    def post(url: str, **kwargs: Any) -> object:
+        assert url.endswith("/images/generations")
+        prompts.append(kwargs["json"]["prompt"])
+        return answers[len(prompts) - 1]
+
+    monkeypatch.setattr(provider.client, "post", post)
+    monkeypatch.setattr(provider, "image_bytes", lambda response: b"plate")
+    brief = {"placement": {"bodyPart": "thigh_outer", "side": "right", "bodyType": "feminine"}}
+    assert provider.background(brief) == b"plate"
+    assert len(prompts) == 3
+    assert "of a woman" in prompts[0] and "of a woman" in prompts[1]
+    assert "of an adult" in prompts[2]
+    provider.close()
+
+
+def test_a_plate_refused_every_time_says_what_to_do(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = StudioProvider("test-not-a-secret")
+    calls: list[str] = []
+
+    def post(url: str, **kwargs: Any) -> object:
+        calls.append(url)
+        return BLOCKED
+
+    monkeypatch.setattr(provider.client, "post", post)
+    brief = {"placement": {"bodyPart": "thigh_front", "bodyType": "feminine"}}
+    with pytest.raises(ValueError, match="Mi foto de piel"):
+        provider.background(brief)
+    assert len(calls) == 3
+    provider.close()
+
+
+def test_other_provider_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = StudioProvider("test-not-a-secret")
+    calls: list[str] = []
+
+    def post(url: str, **kwargs: Any) -> object:
+        calls.append(url)
+        return _Answer(400, {"error": {"code": "invalid_value"}})
+
+    monkeypatch.setattr(provider.client, "post", post)
+    with pytest.raises(ValueError, match="400"):
+        provider.background({"placement": {"bodyPart": "calf"}})
+    assert len(calls) == 1
+    provider.close()
+
+
+def test_the_plate_is_a_clothed_clinical_record() -> None:
+    prompt = StudioProvider.background_prompt(
+        {"placement": {"bodyPart": "thigh_front", "side": "right", "bodyType": "feminine"}}
+    )
+    assert "Clinical reference photograph of the skin of the right front of the thigh" in prompt
+    assert "clothing covers the body outside this zone" in prompt
+    assert "bare" not in prompt
+
+
 def test_background_names_the_body_sex_when_given() -> None:
     """TASK-0041: the plate reads as a man's or a woman's leg; unset stays a neutral adult."""
     man = StudioProvider.background_prompt(

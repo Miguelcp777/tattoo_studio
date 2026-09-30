@@ -144,6 +144,20 @@ def test_a_failed_call_is_recorded_as_one_and_still_raises(events: EventStore) -
     assert (newest["outcome"], newest["detail"]["error"]) == ("error", "HTTP 429")
 
 
+def test_a_refusal_keeps_the_provider_code_and_never_its_message(events: EventStore) -> None:
+    """TASK-0059: the panel said only "HTTP 400"; the cause was OpenAI's safety system."""
+    blocked = {"error": {"code": "moderation_blocked", "message": "Your request was rejected ..."}}
+    with provider_call("openai", "background", "gpt-image-2") as call:
+        call.read(Response(400, blocked))
+    with provider_call("openai", "background", "gpt-image-2") as call:
+        call.read(Response(400, {"error": {"code": "Not A Code <script>", "message": "x"}}))
+
+    newest, oldest = events.events(since())
+    assert oldest["detail"]["error"] == "HTTP 400 moderation_blocked"
+    assert newest["detail"]["error"] == "HTTP 400"
+    assert "rejected" not in str(oldest["detail"])
+
+
 def test_a_transport_error_is_reported_by_type_only(events: EventStore) -> None:
     with pytest.raises(ConnectionError), provider_call("openai", "analyze", "m"):
         raise ConnectionError("https://api.example/?key=secret")

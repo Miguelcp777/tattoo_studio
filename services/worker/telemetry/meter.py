@@ -11,6 +11,7 @@ tokens and estimated cost. The exception is re-raised untouched: metering never 
 from __future__ import annotations
 
 import contextlib
+import re
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -38,6 +39,13 @@ class Call:
             body = response.json()
         except Exception:  # a body we cannot read simply reports no usage
             return
+        if self.failed:
+            # TASK-0059: the provider's short error code ("moderation_blocked"), never its message,
+            # which can quote the request.
+            error = body.get("error") if isinstance(body, dict) else None
+            code = error.get("code") if isinstance(error, dict) else None
+            if isinstance(code, str) and re.fullmatch(r"[a-z0-9_]{1,40}", code):
+                self.failed = f"{self.failed} {code}"
         self.input_tokens, self.output_tokens = tokens(body)
         data = body.get("data") if isinstance(body, dict) else None
         if isinstance(data, list):

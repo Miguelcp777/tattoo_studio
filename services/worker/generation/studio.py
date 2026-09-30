@@ -48,6 +48,25 @@ ZONE_VIEWS: dict[str, str] = {
 }
 
 
+# TASK-0059: what the client reads when the image provider's safety system will not draw a skin
+# plate for their zone, even after asking again. Their own photograph needs no plate.
+PLATE_REFUSED = (
+    "El filtro de contenido del proveedor de imágenes no ha aceptado la foto de piel de esta "
+    "zona. Prueba con tu propia foto («Mi foto de piel») o con otra zona. No se ha generado nada."
+)
+
+
+def refused_by_safety(response: Any) -> bool:
+    """OpenAI's safety system refused the request: HTTP 400 with `moderation_blocked`."""
+    if getattr(response, "status_code", None) != 400:
+        return False
+    try:
+        error = response.json().get("error") or {}
+    except Exception:
+        return False
+    return isinstance(error, dict) and error.get("code") == "moderation_blocked"
+
+
 class StudioProvider:
     def __init__(
         self, key: str, image_model: str = "gpt-image-2", vision_model: str = "gpt-4.1-mini"
@@ -340,37 +359,54 @@ class StudioProvider:
         )
 
     @staticmethod
-    def background_prompt(brief: dict[str, Any]) -> str:
+    def background_prompt(brief: dict[str, Any], *, neutral: bool = False) -> str:
         placement = brief["placement"]
         side = {"left": "left ", "right": "right ", "centre": ""}.get(placement.get("side", ""), "")
         view = ZONE_VIEWS.get(placement["bodyPart"], placement["bodyPart"].replace("_", " "))
         # TASK-0041: the plate reads as a man's or a woman's body when the client said which. It is
-        # the only place body sex is used; it never reaches the artwork prompt.
-        person = {"masculine": "a man", "feminine": "a woman"}.get(
-            placement.get("bodyType", ""), "an adult"
+        # the only place body sex is used; it never reaches the artwork prompt. `neutral` drops it,
+        # for a second request after the provider's safety system refused the first (TASK-0059).
+        person = (
+            "an adult"
+            if neutral
+            else {"masculine": "a man", "feminine": "a woman"}.get(
+                placement.get("bodyType", ""), "an adult"
+            )
         )
+        # TASK-0059: "photograph of the bare ... thigh, from hip to knee, of a woman" was refused by
+        # OpenAI's safety system. A clinical studio record with the rest of the body clothed is
+        # what the plate is, and is refused far less often.
         return (
-            f"Photograph of the bare, unmarked {side}{view} of {person}. "
-            "Professional studio photograph, soft directional light, visible pores, fine natural "
-            "skin texture and realistic muscle volume. The zone fills most of the frame, with a "
-            "narrow strip of plain neutral backdrop on both sides so its outline is visible. "
-            "No tattoo, no ink, no text, no nudity. Vertical portrait crop."
+            f"Clinical reference photograph of the skin of the {side}{view} of {person}, taken in "
+            "a tattoo studio to preview where a tattoo will go. Non-sexual and matter-of-fact, "
+            "like a dermatology record. Plain opaque clothing covers the body outside this zone. "
+            "Soft directional light, visible pores, fine natural skin texture and realistic muscle "
+            "volume. The zone fills most of the frame, with a narrow strip of plain neutral "
+            "backdrop on both sides so its outline is visible. No tattoo, no ink, no text. "
+            "Vertical portrait crop."
         )
 
     def background(self, brief: dict[str, Any]) -> bytes:
-        with provider_call("openai", "background", self.image_model) as call:
-            response = self.client.post(
-                "https://api.openai.com/v1/images/generations",
-                headers={"Authorization": f"Bearer {self.key}"},
-                json={
-                    "model": self.image_model,
-                    "size": "1024x1536",
-                    "quality": "medium",
-                    "prompt": self.background_prompt(brief),
-                },
-            )
-            call.read(response)
-        return self.image_bytes(response)
+        """A blank skin plate. TASK-0059: the safety system's verdict varies between identical
+        requests and a refusal is not billed, so a refused plate is asked for again, then without
+        the body's sex, before the client is told. The plate comes before the artwork (TASK-0052),
+        so a refusal costs no design."""
+        for neutral in (False, False, True):
+            with provider_call("openai", "background", self.image_model) as call:
+                response = self.client.post(
+                    "https://api.openai.com/v1/images/generations",
+                    headers={"Authorization": f"Bearer {self.key}"},
+                    json={
+                        "model": self.image_model,
+                        "size": "1024x1536",
+                        "quality": "medium",
+                        "prompt": self.background_prompt(brief, neutral=neutral),
+                    },
+                )
+                call.read(response)
+            if not refused_by_safety(response):
+                return self.image_bytes(response)
+        raise ValueError(PLATE_REFUSED)
 
     def image_bytes(self, response: Any) -> bytes:
         self.check(response)
