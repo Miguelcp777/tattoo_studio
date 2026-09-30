@@ -160,5 +160,7 @@ def test_the_telemetry_role_can_touch_only_its_table() -> None:
     assert "enable row level security" in sql
 
     worker = service_blocks((INFRA / "docker-compose.yml").read_text(encoding="utf-8"))["worker"]
-    for setting in ("TATTOO_TELEMETRY_DSN", "TATTOO_PRICES", "TATTOO_TELEMETRY_RETENTION_DAYS"):
+    for setting in ("TATTOO_PRICES", "TATTOO_TELEMETRY_RETENTION_DAYS"):
         assert f"{setting}: ${{{setting}:" in worker, setting
+    # TASK-0056: not passed until Postgres is reachable from the stack; SQLite until then.
+    assert "TATTOO_TELEMETRY_DSN:" not in worker

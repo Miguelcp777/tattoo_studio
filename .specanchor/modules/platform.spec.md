@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0056: the compose file no longer passes `TATTOO_TELEMETRY_DSN`; the deployed worker keeps
+events in SQLite until the Supabase database is reachable from the stack and the variable is wired
+again. A placeholder value held in Coolify stopped the worker at startup.
+
 TASK-0055 (ADR-0025): `/studio/admin/overview`, `/studio/admin/accounts/{id}` and
 `/studio/admin/media/{id}`, behind the service token and an administrator id, each recording an
 `admin` event. `Studio.admin_asset` serves a file of any account and refuses, with 403, a body
