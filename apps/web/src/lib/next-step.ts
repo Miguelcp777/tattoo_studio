@@ -2,7 +2,7 @@
  * What stands between the client and "Generar diseño y plantilla", and the one next action
  * (TASK-0034).
  *
- * Generation needs several independent things — a complete brief, references, the brief
+ * Generation needs several independent things — a complete brief, any essential reference, the brief
  * accepted, age and permission confirmed, references reviewed, no unsaved panel edits. The button
  * used to be disabled with no word about which. These pure functions name each blocker in order
  * and point at the section that clears it. They read the state the page already holds and decide
@@ -19,8 +19,6 @@ export interface GateInput {
   briefMissing: string[];
   /** Labels of essential references still missing, e.g. ["el escudo del FC Barcelona"]. */
   missingReferences: string[];
-  /** No reference at all yet. */
-  noReferences: boolean;
   briefAccepted: boolean;
   adult: boolean;
   consent: boolean;
@@ -57,11 +55,6 @@ export function generationBlockers(g: GateInput): Blocker[] {
     blockers.push({
       step: 'referencias',
       text: `Añade una imagen de ${list(g.missingReferences)}.`,
-    });
-  if (g.noReferences)
-    blockers.push({
-      step: 'referencias',
-      text: 'Adjunta una imagen de referencia o busca las referencias pendientes.',
     });
   if (!g.phaseReady && !blockers.length)
     blockers.push({ step: 'brief', text: 'Completa los datos pendientes del panel.' });

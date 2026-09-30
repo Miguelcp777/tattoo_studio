@@ -40,6 +40,9 @@ labelled as illustrative renders.
 
 ## Consequences
 
+> **Amended by ADR-0026 (2026-09-30).** A generic idea no longer needs a reference and a
+> job may carry none, so the blocked case below now applies only to essential references.
+
 - **A pick no longer satisfies "referencia visual".** `studio-job.schema.json` requires at least
   one reference, and the worker uses the first as the lineage parent of every artifact. When the
   scout finds nothing and the client uploads nothing, generation stays blocked and the client is

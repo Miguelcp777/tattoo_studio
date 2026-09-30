@@ -269,8 +269,9 @@
       }
     },
     "referenceIds": {
+      "description": "TASK-0058 (ADR-0026): may be empty. A generic idea is drawn from the brief alone; the consultation still blocks on a missing essential reference (a named emblem, flag, landmark or artwork).",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 5,
       "uniqueItems": true,
       "items": {

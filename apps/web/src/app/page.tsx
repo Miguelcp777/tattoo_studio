@@ -82,6 +82,9 @@ export default function ConsultationPage(): ReactNode {
   const [consent, setConsent] = useState(false);
 
   const [referencesReviewed, setReferencesReviewed] = useState(false);
+  // TASK-0058 (ADR-0026): a design may have no reference; then there is nothing to review.
+  const hasReferences = (session?.references.length ?? 0) > 0;
+  const referencesConfirmed = referencesReviewed || !hasReferences;
 
   // TASK-0029: nothing is generated until the client has read the brief and said yes.
   // Storing what they accepted, rather than that they accepted, means any later change
@@ -395,7 +398,7 @@ export default function ConsultationPage(): ReactNode {
 
           consent,
 
-          referencesReviewed,
+          referencesReviewed: referencesConfirmed,
 
           ...(bodyPhotoId ? { bodyPhotoId } : {}),
 
@@ -512,11 +515,10 @@ export default function ConsultationPage(): ReactNode {
     missingReferences: missingFields
       .filter((f) => f.startsWith('referencia: '))
       .map((f) => f.slice('referencia: '.length)),
-    noReferences: missingFields.includes('referencia visual'),
     briefAccepted,
     adult,
     consent,
-    referencesReviewed,
+    referencesReviewed: referencesConfirmed,
     phaseReady: session?.phase === 'ready_to_generate',
   };
   const blockers = generationBlockers(gate);
@@ -544,7 +546,7 @@ export default function ConsultationPage(): ReactNode {
     referenceCount: session?.references.length ?? 0,
     adult,
     consent,
-    referencesReviewed,
+    referencesReviewed: referencesConfirmed,
     hasArtifact: Boolean(artifact),
     proposedSize: slots?.size,
   });
@@ -1014,16 +1016,16 @@ export default function ConsultationPage(): ReactNode {
             </label>
           </details>
 
-          <label className="check-row">
-            <input
-              type="checkbox"
-
-              checked={referencesReviewed}
-
-              onChange={(e) => setReferencesReviewed(e.target.checked)}
-            />
-            He revisado que las referencias corresponden a mi idea.
-          </label>
+          {hasReferences && (
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={referencesReviewed}
+                onChange={(e) => setReferencesReviewed(e.target.checked)}
+              />
+              He revisado que las referencias corresponden a mi idea.
+            </label>
+          )}
 
           <button
             id="step-diseno"
@@ -1035,7 +1037,7 @@ export default function ConsultationPage(): ReactNode {
               session?.phase !== 'ready_to_generate' ||
               !adult ||
               !consent ||
-              !referencesReviewed ||
+              !referencesConfirmed ||
               !briefAccepted ||
               blockers.length > 0
             }

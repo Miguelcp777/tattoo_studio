@@ -38,10 +38,10 @@
       "why": "missing-review"
     },
     {
-      "name": "empty-refs",
-      "file": "invalid/empty-refs.json",
-      "valid": false,
-      "why": "empty-refs"
+      "name": "no-references",
+      "file": "valid/no-references.json",
+      "valid": true,
+      "why": "TASK-0058: a job for a generic idea may carry no reference."
     },
     {
       "name": "duplicate-refs",

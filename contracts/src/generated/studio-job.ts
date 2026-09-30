@@ -513,10 +513,13 @@ export interface StudioJob {
     };
   };
   /**
-   * @minItems 1
+   * TASK-0058 (ADR-0026): may be empty. A generic idea is drawn from the brief alone; the consultation still blocks on a missing essential reference (a named emblem, flag, landmark or artwork).
+   *
+   * @minItems 0
    * @maxItems 5
    */
   referenceIds:
+    | []
     | [string]
     | [string, string]
     | [string, string, string]

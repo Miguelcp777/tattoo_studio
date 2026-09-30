@@ -39,3 +39,14 @@ it('refuses hosts outside the allowlist and catalogue paths', async () => {
   await expect(referenceBytes('http://upload.wikimedia.org/x.png')).rejects.toThrow(/no permitida/);
   await expect(referenceBytes('/style-library/tribal/maori.webp')).rejects.toThrow();
 });
+it('downloads an Openverse thumbnail and nothing else from that host (TASK-0058)', async () => {
+  const thumb = 'https://api.openverse.org/v1/images/0ab10347-24ca-470a-83f1-4e07d5bae69b/thumb/';
+  const fetched = vi.fn(async () => new Response(new Uint8Array([1, 2, 3])));
+  vi.stubGlobal('fetch', fetched);
+  expect(Buffer.from(await referenceBytes(thumb), 'base64')).toEqual(Buffer.from([1, 2, 3]));
+  expect(fetched).toHaveBeenCalledOnce();
+  await expect(referenceBytes('https://api.openverse.org/v1/images/')).rejects.toThrow(
+    /no permitida/,
+  );
+  await expect(referenceBytes(`${thumb}?full_size=true`)).rejects.toThrow(/no permitida/);
+});

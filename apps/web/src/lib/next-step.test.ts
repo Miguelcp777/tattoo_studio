@@ -10,7 +10,6 @@ const ready: GateInput = {
   unsaved: false,
   briefMissing: [],
   missingReferences: [],
-  noReferences: false,
   briefAccepted: true,
   adult: true,
   consent: true,
@@ -30,7 +29,6 @@ describe('generationBlockers (TASK-0034)', () => {
       unsaved: true,
       briefMissing: ['el tamaño'],
       missingReferences: ['el escudo del FC Barcelona'],
-      noReferences: true,
       briefAccepted: false,
       adult: false,
       consent: false,
@@ -40,8 +38,8 @@ describe('generationBlockers (TASK-0034)', () => {
     expect(blocked.map((b) => b.step)).toEqual([
       'brief',
       'brief',
-      'referencias',
       // TASK-0038: a missing reference is answered in «Referencias», not by a style pick.
+      // TASK-0058: only an essential one; a generic idea needs none.
       'referencias',
       'resumen',
       'permisos',

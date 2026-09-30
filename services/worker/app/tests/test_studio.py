@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 from app.studio import Studio, router
 from generation.studio import StudioProvider
 from jobs.queue import JobQueue
-from media.store import EncryptedFileStore
+from media.store import EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM
 from mockup.engine import composite, visible_size
 from mockup.placement import Coverage, coverage_request, fit_coverage
@@ -196,6 +196,34 @@ def test_owned_media_job_idempotency_lineage_and_deletion(tmp_path: Path) -> Non
     studio.delete(owner)
     assert studio.media.all_assets() == []
     assert studio.jobs.get(owner, a["jobId"])["result"] is None
+
+
+def test_a_generic_idea_is_drawn_without_references(tmp_path: Path) -> None:
+    """TASK-0058 (ADR-0026): no reference, no analysis call, and the design is its own root."""
+    analysed: list[list[bytes]] = []
+
+    class Unreferenced(FakeProvider):
+        def analyze(self, references: list[bytes], subject: str) -> str:
+            analysed.append(references)
+            return ""
+
+    provider = Unreferenced()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    owner = "11111111-1111-4111-8111-111111111111"
+    request = payload()
+    request["referenceIds"] = []
+    job = studio.jobs.enqueue(owner, request)
+    assert studio.jobs.tick()
+    result = studio.jobs.get(owner, job["jobId"])
+    assert result["state"] == "succeeded", result
+    assert provider.calls == 1
+    assert analysed == []
+    assert result["result"]["referenceAnalysis"].startswith("Sin referencias")
+    master = studio.media.metadata(result["result"]["master"]["assetId"])
+    assert master.retention is RetentionClass.DESIGN
+    assert master.parent_id is None
+    studio.delete(owner)
+    assert studio.media.all_assets() == []
 
 
 def test_provider_failure_never_returns_an_artifact(tmp_path: Path) -> None:

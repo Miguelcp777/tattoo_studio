@@ -368,7 +368,14 @@ class StudioJob(BaseModel):
             description="The system's central contract. The consultation produces it; the flash, stencil and mockup engines consume it. Size is authoritative in millimetres (CONTRACTS-INV-001) and style is drawn from a closed vocabulary (CONTRACTS-INV-002). No 'format' keyword is used and every pattern spells out [0-9], so that TypeScript and Python reach identical verdicts."
         ),
     ]
-    referenceIds: Annotated[list[ReferenceId], Field(max_length=5, min_length=1)]
+    referenceIds: Annotated[
+        list[ReferenceId],
+        Field(
+            description='TASK-0058 (ADR-0026): may be empty. A generic idea is drawn from the brief alone; the consultation still blocks on a missing essential reference (a named emblem, flag, landmark or artwork).',
+            max_length=5,
+            min_length=0,
+        ),
+    ]
     bodyPhotoId: Annotated[str | None, Field(pattern='^[a-f0-9]{32}$')] = None
     idempotencyKey: Annotated[str, Field(pattern='^[a-f0-9-]{36}$')]
     referencesReviewed: Literal[True]

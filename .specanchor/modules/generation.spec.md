@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0058 (ADR-0026): with no reference `_artwork` posts to `/images/generations` (JSON, no files)
+and `artwork_prompt(..., referenced=False)` says no reference is supplied.
+
 TASK-0054 (ADR-0024): every paid call is metered with `telemetry.meter.provider_call` — the
 OpenAI artwork, edit, finish, background, reference analysis and moderation calls, and FLUX's
 submit-to-download as one call. The meter reads the status and the reported tokens itself, so the

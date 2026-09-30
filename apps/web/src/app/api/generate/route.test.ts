@@ -261,6 +261,79 @@ describe('generation boundary', () => {
     expect(calls.length).toBe(before);
   });
 
+  it('a generic idea with no reference is generated with none (TASK-0058)', async () => {
+    vi.stubEnv('TATTOO_WORKER_TOKEN', 'test-only-token');
+    const searched: string[] = [];
+    let submitted: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        const target = String(url);
+        const authenticated = answerAuth(target);
+        if (authenticated) return authenticated;
+        if (target.includes('commons.wikimedia.org/w/api')) {
+          searched.push('commons');
+          return Response.json({ query: {} });
+        }
+        if (target.startsWith('https://api.openverse.org/v1/images/?')) {
+          searched.push('openverse');
+          return Response.json({ results: [] });
+        }
+        if (target.endsWith('/studio/jobs')) {
+          submitted = JSON.parse(String(init?.body));
+          return Response.json({
+            jobId: 'c'.repeat(32),
+            state: 'queued',
+            result: null,
+            error: null,
+          });
+        }
+        throw new Error(`Unexpected request ${target}`);
+      }),
+    );
+    const post = (cookie: string | undefined, body: unknown) =>
+      consult(
+        new Request('http://localhost:3000/api/consultation', {
+          method: 'POST',
+          headers: { cookie: signedIn(cookie) },
+          body: JSON.stringify(body),
+        }),
+      );
+    const started = await post(undefined, {
+      action: 'orchestrate',
+      userMessage:
+        'Un tatuaje biomecánico en el muslo derecho de un hombre, negro con acentos de color',
+    });
+    const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
+    const state = (await started.json()).session as OrchestrationSession;
+    // Both licensed sources were asked and had nothing; nothing essential is missing.
+    expect(searched).toEqual(['commons', 'openverse']);
+    expect(state.references).toEqual([]);
+    expect(state.missingFields).toEqual([]);
+    expect(state.phase).toBe('ready_to_generate');
+
+    const accepted = await post(cookie, {
+      action: 'accept_brief',
+      signature: briefSignature(buildMasterPrompt(state.slots, state.references, state.stylePick)),
+    });
+    expect(accepted.status).toBe(200);
+    const response = await POST(
+      new Request('http://localhost:3000/api/generate', {
+        method: 'POST',
+        headers: { cookie: signedIn(cookie) },
+        body: JSON.stringify({
+          adult: true,
+          consent: true,
+          referencesReviewed: true,
+          idempotencyKey: '66666666-6666-4666-8666-666666666666',
+        }),
+      }),
+    );
+    expect(response.status).toBe(202);
+    expect(submitted?.['referenceIds']).toEqual([]);
+    expect(submitted?.['brief']).toMatchObject({ style: { primary: 'biomechanical' } });
+  });
+
   it('a catalogue pick sets the style and is never uploaded (TASK-0038)', async () => {
     vi.stubEnv('TATTOO_WORKER_TOKEN', 'test-only-token');
     const uploads: string[] = [];

@@ -53,6 +53,29 @@ def test_reference_bytes_are_in_the_edit_request(monkeypatch: pytest.MonkeyPatch
     provider.close()
 
 
+def test_without_references_the_design_is_generated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TASK-0058: the edits endpoint needs an image; a reference-free design is generated."""
+    provider = StudioProvider("test-not-a-secret")
+    calls = []
+
+    def post(url: str, **kwargs: Any) -> object:
+        calls.append((url, kwargs))
+        return object()
+
+    monkeypatch.setattr(provider.client, "post", post)
+    monkeypatch.setattr(provider, "image_bytes", lambda response: b"output")
+    brief = {"size": {"widthMm": 80, "heightMm": 150}}
+    assert provider.lineart(brief, [], "Sin referencias") == b"output"
+    url, request = calls[0]
+    assert url.endswith("/images/generations")
+    assert "files" not in request
+    prompt = request["json"]["prompt"]
+    assert "No reference images are supplied" in prompt
+    assert "supplied images are visual references" not in prompt
+    assert request["json"]["size"] == "1024x1536"
+    provider.close()
+
+
 @pytest.mark.parametrize("mode", ["colour", "black_and_grey_with_accent"])
 def test_colour_request_uses_references_and_optional_palette(
     monkeypatch: pytest.MonkeyPatch, mode: str

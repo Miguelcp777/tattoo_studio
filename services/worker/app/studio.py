@@ -91,7 +91,7 @@ PHOTO_GONE = (
 LIKENESS_FILES = frozenset({"mockup", "background"})
 
 
-def lifecycle(name: str, payload: dict[str, Any]) -> tuple[RetentionClass, str]:
+def lifecycle(name: str, payload: dict[str, Any]) -> tuple[RetentionClass, str | None]:
     """
     Which lifecycle a stored file follows, and what it descends from (TASK-0047, MEDIA-INV-006).
 
@@ -104,7 +104,17 @@ def lifecycle(name: str, payload: dict[str, Any]) -> tuple[RetentionClass, str]:
     photo = payload.get("bodyPhotoId")
     if photo and name in LIKENESS_FILES:
         return RetentionClass.PHOTO_DERIVED, str(photo)
-    return RetentionClass.DESIGN, str(payload["referenceIds"][0])
+    return RetentionClass.DESIGN, design_parent(payload)
+
+
+NO_REFERENCES = "Sin referencias: el diseño parte solo de la descripción del cliente."
+
+
+def design_parent(payload: dict[str, Any]) -> str | None:
+    """The first reference, or none: a design drawn from the brief alone is its own root
+    (TASK-0058, ADR-0026). Erasing the account still removes it (MEDIA-INV-006)."""
+    references = payload.get("referenceIds") or []
+    return str(references[0]) if references else None
 
 
 # ADR-0022: the version a kept camera photograph becomes. The ink is superimposed on the device, so
@@ -511,6 +521,8 @@ class Studio:
             parent["referenceAnalysis"]
             if parent
             else self.provider.analyze(references, brief["subject"]["description"])
+            if references
+            else NO_REFERENCES
         )
         if edit and attached:
             # The new photos lead the reference list; record what they show for traceability.
@@ -601,7 +613,7 @@ class Studio:
             height_px=0,
             # The geometry shows nobody: it is the design itself (TASK-0047).
             retention=RetentionClass.DESIGN,
-            parent_id=payload["referenceIds"][0],
+            parent_id=design_parent(payload),
         )
         with self.db() as db:
             db.execute(

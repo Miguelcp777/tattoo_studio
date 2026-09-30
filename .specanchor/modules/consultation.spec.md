@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0058 (ADR-0026): "referencia visual" is gone: only a missing essential reference blocks, and
+the phase is ready once the brief is complete. The scout searches Openverse beside Commons
+(`license_type=modification`, `mature=false`, only thumbnails matching `isOpenverseThumbnail`);
+with a judge both sources are offered, without one Openverse only when Commons is empty. The judge
+rejects any image showing a person or a body part.
+
 TASK-0054 (ADR-0024): `usage.ts` announces every model call — the consultation, the scout's
 planner and judge — with tokens, duration and outcome, to one listener the web tier installs. A
 listener that throws is ignored; a call's outcome never changes.

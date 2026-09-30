@@ -25,7 +25,7 @@ import type {
 
 export const CLAUDE_SCOUT_MODEL = 'claude-sonnet-5';
 
-const PLANNER_PROMPT = `You plan image searches on Wikimedia Commons that find visual references for a tattoo design.
+const PLANNER_PROMPT = `You plan image searches on Wikimedia Commons and Openverse (openly licensed photos and artwork) that find visual references for a tattoo design.
 Return 1 to 3 queries, one per concrete thing the client wants depicted.
 Each query is 1 to 4 English words naming that thing, as a Commons file might be titled: "howling wolf", "red rose", "human skull", "nautical compass", "Great Wave off Kanagawa".
 Never add words about the medium or the source: no "photo", "illustration", "image", "picture", "drawing", "art", "Wikimedia", "Commons", "public domain", "high resolution", "official", "logo design".
@@ -56,7 +56,8 @@ const PLANNER_SCHEMA = {
 
 const JUDGE_PROMPT = `You check candidate reference images for a tattoo design.
 Each image is numbered and tagged with the search that found it. Keep only images that clearly and literally depict the thing that search was for, as the client described it.
-Reject logos or text of unrelated things, maps or scenes that merely share a word, different species or objects, photographs of identifiable real people, and anything unclear.
+Reject logos or text of unrelated things, maps or scenes that merely share a word, different species or objects, and anything unclear.
+Reject every image in which a person or any part of a human body appears, including skin, a face, hands, or a tattooed arm, leg, back or torso: the studio cannot use a stranger's body, and its safety check refuses it. A tattoo design drawn on paper or screen, a flash sheet, a painting, a sculpture or an object is fine.
 For a specific emblem, crest, flag or logo, keep only its current official design: reject historical, retired, simplified, fan-made or alternative versions unless the client asked for that version.
 Return the numbers of the images to keep, best first. Returning none is correct when none fit.`;
 

@@ -10,6 +10,7 @@ import {
   VisualSearchAgent,
   type ConsultationProvider,
   type OrchestrationSession,
+  isOpenverseThumbnail,
 } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 
@@ -265,9 +266,13 @@ export function errorResponse(error: unknown): NextResponse {
 export async function referenceBytes(source: string): Promise<string> {
   const url = new URL(source);
   const officialCrest = url.href === 'https://www.valenciacf.com/svg/escudo.svg';
+  // TASK-0058: an Openverse thumbnail of one exact shape, the only form the scout produces.
+  const openverse = isOpenverseThumbnail(url.href);
   if (
     url.protocol !== 'https:' ||
-    (!officialCrest && !['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(url.hostname)) ||
+    (!officialCrest &&
+      !openverse &&
+      !['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(url.hostname)) ||
     url.username ||
     url.password ||
     url.port ||

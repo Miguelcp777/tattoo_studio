@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0058 (ADR-0026): `studio-job.referenceIds` may be empty; a generic idea is drawn from the
+brief. The former `invalid/empty-refs.json` is now `valid/no-references.json`.
+
 TASK-0057: `studio-job`'s embedded `styleName` gains the six styles TASK-0027 added to
 `tattoo-brief` only. Until then every job in those styles was refused by the web tier with "Revisa
 las referencias, la posición y las medidas." A corpus test now requires the embedded brief and its

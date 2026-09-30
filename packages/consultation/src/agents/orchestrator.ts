@@ -40,9 +40,6 @@ function closingMessage(session: OrchestrationSession): string {
     .map((field) => field.slice(MISSING_REFERENCE.length));
   if (essential.length)
     return `${lead}Para ser fiel necesito una imagen de ${spanishList(essential)}. Siguiente paso: adjúntala en «Referencias» o pulsa «Buscar las referencias pendientes».`;
-  // TASK-0038: a catalogue pick settles the style but is not a reference, so it cannot answer this.
-  if (session.missingFields.includes('referencia visual'))
-    return `${lead}Siguiente paso: adjunta una imagen de referencia en «Referencias» o pulsa «Buscar las referencias pendientes».`;
   const gaps = buildMasterPrompt(session.slots, session.references, session.stylePick).missing;
   if (gaps.length)
     return `${lead}Siguiente paso: indica ${spanishList(gaps)} en el panel y pulsa «Guardar preferencias».`;
@@ -190,7 +187,7 @@ export class OrchestratorAgent {
     next.missingFields = [...missing];
     // TASK-0026 (ADR-0010): size is not a missing client answer. The design process proposes
     // it from the anatomy and the idea, and the client may override it.
-    if (!next.references.length) next.missingFields.push('referencia visual');
+    // TASK-0058 (ADR-0026): a generic idea no longer needs a reference; it is drawn from the brief.
     // TASK-0034: only an essential reference blocks — a specific emblem, flag, landmark or artwork
     // whose exact look matters. A generic motif can be drawn without one. A reference of the
     // client's own settles it.
@@ -211,10 +208,7 @@ export class OrchestratorAgent {
       next.phase = 'investigation';
       next.messages.push(message('prompt_architect', questions[missing[0]!]!));
     } else {
-      next.phase =
-        next.brief && next.references.length && !next.missingFields.length
-          ? 'ready_to_generate'
-          : 'needs_details';
+      next.phase = next.brief && !next.missingFields.length ? 'ready_to_generate' : 'needs_details';
       next.messages.push(message('orchestrator', closingMessage(next)));
     }
     next.messages = next.messages.slice(-30);

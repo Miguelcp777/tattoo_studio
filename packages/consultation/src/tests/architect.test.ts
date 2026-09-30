@@ -375,7 +375,7 @@ describe('relevant references (TASK-0034)', () => {
     expect(result.reportMessage).toContain('no he podido comprobar');
   });
 
-  it('a generic motif the judge rejects does not block generation', async () => {
+  it('a generic motif the judge rejects does not block generation (TASK-0058)', async () => {
     const o = new OrchestratorAgent(
       new VisualSearchAgent(commonsThree, { planner, judge: { choose: vi.fn(async () => []) } }),
     );
@@ -383,12 +383,13 @@ describe('relevant references (TASK-0034)', () => {
       o.createSession(),
       'Un lobo aullando de línea fina en el antebrazo izquierdo, solo negro, 8 x 15 cm',
     );
-    // Nothing found and nothing essential missing: the client is steered to an upload or a new
-    // search. TASK-0038: no longer to a style variant, which settles the style but is not a
-    // reference.
-    expect(s.missingFields).toEqual(['referencia visual']);
-    expect(s.messages.at(-1)?.content).toContain('adjunta una imagen de referencia');
-    expect(s.messages.at(-1)?.content).not.toContain('variantes de estilo');
+    // Nothing found and nothing essential missing. TASK-0058 (ADR-0026): a generic idea is drawn
+    // from the brief, so nothing blocks it; the scout says an upload is still welcome.
+    expect(s.missingFields).toEqual([]);
+    expect(s.phase).toBe('ready_to_generate');
+    expect(s.references).toEqual([]);
+    expect(s.messages.map((m) => m.content).join(' ')).toContain('a partir de tu descripción');
+    expect(s.messages.at(-1)?.content).toContain('Propuesta lista');
   });
 
   it('forgets a catalogue pick once the style moves away from it (TASK-0038)', async () => {

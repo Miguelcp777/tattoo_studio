@@ -23,6 +23,10 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0058 (ADR-0026): a job may carry no reference. `design_parent` returns the first reference or
+none, so a reference-free design is its own lineage root; the analysis call is skipped
+(`NO_REFERENCES`).
+
 TASK-0056: Coolify injects every variable it holds into every compose service, declared or not,
 so the compose file does not decide what the worker receives: the variables in Coolify do. A
 placeholder `TATTOO_TELEMETRY_DSN` stopped the worker at startup until it was deleted there.

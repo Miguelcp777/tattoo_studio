@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0058 (ADR-0026): `referenceBytes` also downloads an Openverse thumbnail (and no other Openverse
+URL). With no reference the review checkbox is hidden and not required, and the "no reference"
+blocker is gone from `next-step.ts`.
+
 TASK-0055 (ADR-0025): `/admin` is the administrator's panel. `requireAdmin` checks
 `app_metadata.role` with Supabase on every request; `user_metadata` never grants it. The three
 `/api/admin/*` routes proxy the worker's admin routes as the administrator (`X-Admin-Id`), and the
