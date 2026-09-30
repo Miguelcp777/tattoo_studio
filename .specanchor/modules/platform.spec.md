@@ -23,9 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
-TASK-0056: the compose file no longer passes `TATTOO_TELEMETRY_DSN`; the deployed worker keeps
-events in SQLite until the Supabase database is reachable from the stack and the variable is wired
-again. A placeholder value held in Coolify stopped the worker at startup.
+TASK-0056: Coolify injects every variable it holds into every compose service, declared or not,
+so the compose file does not decide what the worker receives: the variables in Coolify do. A
+placeholder `TATTOO_TELEMETRY_DSN` stopped the worker at startup until it was deleted there.
 
 TASK-0055 (ADR-0025): `/studio/admin/overview`, `/studio/admin/accounts/{id}` and
 `/studio/admin/media/{id}`, behind the service token and an administrator id, each recording an
