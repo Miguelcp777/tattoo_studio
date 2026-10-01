@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0063: the fresh-ink composite separates the skin's surface light (`skin_light`: pore sparkle
+and broad gloss, `SPARKLE` 0.45, `GLOSS` 0.6) from the diffuse light, darkens only the latter with
+the pigment and adds the former back, so pores and gloss continue over the ink. Even skin gets the
+previous result; the bare geometric composite stays a plain multiply. Like the surface term it moves
+nothing (MOCKUP-INV-001).
+
 TASK-0041: `MAX_SPILL` is 0.06 (was 0.02). A limb wraps, so the outermost ink of a whole-zone
 design continues around its side out of view; the wider margin lets it fill the zone while the
 feathered silhouette clip keeps the edge clean (checked on a real render to 12 %).

@@ -54,6 +54,38 @@ def surface_falloff(patch: np.ndarray, strength: float) -> np.ndarray:
     return falloff
 
 
+#: How much of the skin's surface light passes over ink (TASK-0063): fine sparkle (pores, fine
+#: texture) and the broad gloss of the brightest skin. Chosen by eye on library plates.
+SPARKLE = 0.45
+GLOSS = 0.6
+
+
+def skin_light(patch: np.ndarray) -> np.ndarray:
+    """The light the skin's surface reflects, which sits over the ink rather than under it.
+
+    Ink is under the epidermis: the camera sees the diffuse light the pigment darkens, plus the
+    reflection off the skin above it, which the pigment does not touch. Multiplying the whole
+    photograph by the ink darkened that reflection too, and the tattoo read as a matte sticker
+    (TASK-0063). This estimates the reflection from the photograph in two parts: the fine sparkle
+    of pores, brighter than their immediate surroundings, and the broad gloss where the skin is
+    among its brightest. It is an illustrative approximation, not a measured reflectance, and like
+    the surface term it moves nothing (MOCKUP-INV-001).
+    """
+    # Rounded once, as the blurs below are: even skin then reflects exactly nothing extra.
+    luminance = np.round(patch @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32))
+
+    def blur(values: np.ndarray, radius: float) -> np.ndarray:
+        image = Image.fromarray(np.clip(values, 0, 255).astype(np.uint8))
+        return np.asarray(image.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32)
+
+    height, width = luminance.shape
+    sparkle = np.clip(luminance - blur(luminance, 3.0), 0, None)
+    smooth = blur(luminance, max(2.0, min(width, height) / 60))
+    gloss = np.clip(smooth - float(np.percentile(smooth, 75)), 0, None)
+    light: np.ndarray = np.minimum(SPARKLE * sparkle + GLOSS * gloss, 0.6 * luminance)
+    return light
+
+
 def visible_artwork(master: Image.Image) -> tuple[Image.Image, dict[str, int]]:
     """Remove only exterior white padding for uncalibrated projection; never edit the master."""
     rgb = master.convert("RGB")
@@ -273,10 +305,12 @@ def composite(
         warm[:, :, 0] += (255 - warm[:, :, 0]) * halo * 0.14
         warm[:, :, 1] *= 1 - halo * 0.095
         warm[:, :, 2] *= 1 - halo * 0.065
-        pigment = warm * (0.07 + 0.93 * ink)
-        sheen = 255 * 0.025 * coverage[:, :, None] * (patch / 255) ** 4
-        pixels[y : y + height, x : x + width] = pigment + sheen
+        # TASK-0063: the pigment darkens the diffuse light only; the surface's own reflection
+        # passes over it, so the skin's pores and gloss continue across the tattoo.
+        light = skin_light(patch)[:, :, None]
+        pixels[y : y + height, x : x + width] = (warm - light) * (0.07 + 0.93 * ink) + light
     else:
+        # The bare geometric reference stays a plain multiply: it is what proves no redraw.
         patch *= 0.15 + 0.85 * ink
     result = Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8))
     output = io.BytesIO()
