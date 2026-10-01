@@ -20,6 +20,7 @@ import {
   reply,
   requireAccount,
   RequestError,
+  reserveTurn,
   screenText,
   session,
 } from '../../../lib/studio-server';
@@ -229,6 +230,14 @@ export async function POST(request: Request): Promise<NextResponse> {
       current.state.references = current.state.references.filter(
         (r) => r.source !== body['removeReference'],
       );
+
+    // TASK-0078 (audit SEG-02): the daily limit is checked before the models are called.
+    const paid = text.trim()
+      ? 'message'
+      : body['action'] === 'retry_references'
+        ? 'search'
+        : undefined;
+    if (paid) await reserveTurn(caller.account.id, paid);
 
     const heard = current.state.messages.length;
     current.state = await orchestrator.handleUserInteraction(

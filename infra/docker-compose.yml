@@ -27,6 +27,10 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set it in Coolify}
       TATTOO_IMAGE_BACKEND: ${TATTOO_IMAGE_BACKEND:-openai}
       BFL_API_KEY: ${BFL_API_KEY:-}
+      # TASK-0078 (audit SEG-02): daily limits; empty keeps the defaults (20, 300, 100).
+      TATTOO_DAILY_DESIGNS: ${TATTOO_DAILY_DESIGNS:-20}
+      TATTOO_DAILY_DESIGNS_TOTAL: ${TATTOO_DAILY_DESIGNS_TOTAL:-300}
+      TATTOO_DAILY_TURNS: ${TATTOO_DAILY_TURNS:-100}
       # TASK-0052: which BFL cluster draws the skin plates. EU by default; set it in Coolify to
       # https://api.bfl.ai to route round an EU incident. Only a text prompt goes to BFL, never a
       # photograph, so this moves no client image out of Europe.

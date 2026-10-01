@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0078 (audit SEG-02): `jobs/quota.py` — `Limits`, `TurnLedger`, `QuotaExceededError`. `enqueue` checks the per-account and studio daily design limits before inserting; `billable` marks jobs that call a paid provider (not coverage re-placements nor kept photos).
+
 TASK-0076: `JobQueue.stage` records the step of the job running in this thread (a context variable set by `tick`); `get` adds `stage` to a running job and `queuePosition` to a queued one. Steps live in memory only.
 
 TASK-0072: a failed job stores `for_client(cause)` (`jobs/client_messages.py`): plain words, never a

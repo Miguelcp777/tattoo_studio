@@ -93,6 +93,17 @@ class Settings(BaseSettings):
     telemetry_retention_days: int = Field(default=365, ge=1)
     """Events older than this are deleted (TATTOO_TELEMETRY_RETENTION_DAYS)."""
 
+    daily_designs: int = Field(default=20, ge=1)
+    """TASK-0078 (audit SEG-02): designs and redraws per account per UTC day
+    (TATTOO_DAILY_DESIGNS). Re-placements and kept camera photos are not counted."""
+
+    daily_designs_total: int = Field(default=300, ge=1)
+    """Designs for the whole studio per UTC day (TATTOO_DAILY_DESIGNS_TOTAL)."""
+
+    daily_turns: int = Field(default=100, ge=1)
+    """Paid consultation turns (messages, reference searches) per account per UTC day
+    (TATTOO_DAILY_TURNS)."""
+
     bfl_background_model: str = "flux-2-pro"
     """TASK-0025: FLUX.2 renders the blank skin plate only. Artwork and edits stay on
     OpenAI, which is the vendor that will actually return flat art on white (ADR-0009)."""

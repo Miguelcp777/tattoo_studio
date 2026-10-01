@@ -16,7 +16,27 @@ from typing import Any
 from tattoo_contracts.validation import validate
 
 from jobs.client_messages import GENERIC, for_client
+from jobs.quota import (
+    STUDIO_FULL,
+    Limits,
+    QuotaExceededError,
+    day_start,
+    designs_reached,
+)
 from telemetry import activity, record
+
+
+def billable_job(payload: dict[str, Any]) -> bool:
+    """Whether a job calls a paid provider (TASK-0078).
+
+    A re-placement asked through the coverage controls (`mode: "placement"`) only re-projects the
+    accepted artwork; everything else draws.
+    """
+    edit = payload.get("edit") or {}
+    return not (
+        edit.get("coverage") and edit.get("mode") == "placement" and not edit.get("referenceIds")
+    )
+
 
 #: The job this thread is executing, so a pipeline step can report itself (TASK-0076).
 _running: ContextVar[str | None] = ContextVar("running_job", default=None)
@@ -28,10 +48,12 @@ class JobQueue:
         path: Path,
         execute: Callable[[str, dict[str, Any]], dict[str, Any]],
         maintenance: Callable[[], None] | None = None,
+        limits: Limits | None = None,
     ) -> None:
         self.path = path
         self.execute = execute
         self.maintenance = maintenance
+        self.limits = limits or Limits()
         # TASK-0076 (audit UX-03): the step each running job is in, as the pipeline reports it.
         # In memory on purpose: a restart fails running jobs anyway.
         self.stages: dict[str, str] = {}
@@ -42,6 +64,10 @@ class JobQueue:
                 "TEXT, payload TEXT, state TEXT, result TEXT, error TEXT, created REAL, "
                 "UNIQUE(owner,idem))"
             )
+            # TASK-0078: whether the job calls a paid provider. Older rows count as paid.
+            columns = {row[1] for row in db.execute("PRAGMA table_info(jobs)")}
+            if "billable" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN billable INTEGER NOT NULL DEFAULT 1")
             db.execute(
                 "UPDATE jobs SET state='failed',error='El estudio se reinició mientras creaba "
                 "tu diseño. Vuelve a generarlo.' WHERE state='running'"
@@ -72,9 +98,26 @@ class JobQueue:
             ).fetchone()[0]
             if active >= 8 or own >= 1:
                 raise ValueError("Ya hay una generación en curso o la cola está llena.")
+            # TASK-0078 (audit SEG-02): the daily limits, checked before anything is paid for.
+            # A repeated idempotency key returned above, so a retry is never counted twice.
+            billable = billable_job(payload)
+            if billable:
+                today = day_start()
+                mine = db.execute(
+                    "SELECT count(*) FROM jobs WHERE owner=? AND billable=1 AND created>=?",
+                    (owner, today),
+                ).fetchone()[0]
+                if mine >= self.limits.designs_per_account:
+                    raise QuotaExceededError(designs_reached(self.limits.designs_per_account))
+                everyone = db.execute(
+                    "SELECT count(*) FROM jobs WHERE billable=1 AND created>=?", (today,)
+                ).fetchone()[0]
+                if everyone >= self.limits.designs_total:
+                    raise QuotaExceededError(STUDIO_FULL)
             job_id = uuid.uuid4().hex
             db.execute(
-                "INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)",
+                "INSERT INTO jobs (id, owner, idem, payload, state, result, error, created, "
+                "billable) VALUES (?,?,?,?,?,?,?,?,?)",
                 (
                     job_id,
                     owner,
@@ -84,6 +127,7 @@ class JobQueue:
                     None,
                     None,
                     time.time(),
+                    int(billable),
                 ),
             )
         return self.get(owner, job_id)
@@ -116,8 +160,10 @@ class JobQueue:
             ).fetchone()
             if existing:
                 return self.public(existing)
+            # A kept camera photo calls no provider, so it is not billable (TASK-0078).
             db.execute(
-                "INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)",
+                "INSERT INTO jobs (id, owner, idem, payload, state, result, error, created, "
+                "billable) VALUES (?,?,?,?,?,?,?,?,0)",
                 (
                     job_id,
                     owner,

@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0078: settings `TATTOO_DAILY_DESIGNS`, `TATTOO_DAILY_DESIGNS_TOTAL`, `TATTOO_DAILY_TURNS`; `POST /studio/quota/turns`; a reached limit answers 429. The compose file passes the three settings to the worker.
+
 TASK-0076: `Studio.generate` reports `references`, then each graph node through `NODE_STAGES`; a re-placement reports `placing`.
 
 TASK-0074: ESLint no longer asks plain `.mjs` modules for type annotations they cannot carry; JSDoc documents them.

@@ -399,6 +399,23 @@ export async function referenceBytes(source: string): Promise<string> {
  * stored asset, job and vector master by, so it is the reason the same person sees the same work
  * on a second device — and the reason one account can never reach another's.
  */
+/**
+ * Count one paid consultation turn before spending on it (TASK-0078, audit SEG-02).
+ *
+ * Only when the consultation calls paid models; the deterministic one spends nothing. The worker
+ * keeps the daily count, so it survives restarts and is shared by every web replica, and answers
+ * 429 with a plain message when the account's limit is reached.
+ */
+export async function reserveTurn(
+  owner: string,
+  kind: 'message' | 'search',
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
+  const config = liveAgentConfig(env);
+  if (!config.architect && !config.scoutPlanner) return;
+  await worker(owner, '/quota/turns', 'POST', { id: randomUUID(), kind });
+}
+
 export async function worker(
   owner: string,
   path: string,

@@ -98,3 +98,36 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
 });
+
+describe('paid consultation turns are counted first (TASK-0078, audit SEG-02)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('asks the worker to count a turn when the consultation uses paid models', async () => {
+    vi.stubEnv('TATTOO_WORKER_TOKEN', 'test-only-token');
+    const fetch = vi.fn(async (url: unknown, init?: RequestInit) => {
+      expect(String(url)).toMatch(/\/studio\/quota\/turns$/);
+      expect(JSON.parse(String(init?.body))).toMatchObject({ kind: 'message' });
+      return Response.json(
+        { detail: 'Has llegado al límite de 100 mensajes por día con el asistente.' },
+        { status: 429 },
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    const { reserveTurn } = await import('./studio-server');
+    await expect(
+      reserveTurn('owner', 'message', { TATTOO_CONSULTATION_BACKEND: 'claude' }),
+    ).rejects.toMatchObject({ status: 429, message: expect.stringContaining('límite') });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts nothing when the consultation spends nothing', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const { reserveTurn } = await import('./studio-server');
+    await reserveTurn('owner', 'message', {});
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});

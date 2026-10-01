@@ -6,6 +6,7 @@ import base64
 import io
 import json
 import re
+import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -21,7 +22,8 @@ from PIL import Image, ImageDraw
 from app.studio import Studio, router
 from generation.studio import StudioProvider
 from jobs import client_messages
-from jobs.queue import JobQueue
+from jobs.queue import JobQueue, billable_job
+from jobs.quota import Limits, QuotaExceededError, TurnLedger
 from media.store import EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM
 from mockup.engine import composite, visible_size
@@ -1689,3 +1691,91 @@ def test_a_generation_reports_each_step_in_order(tmp_path: Path) -> None:
     a_design_for(studio, "11111111-1111-4111-8111-111111111111")
     order = [step for i, step in enumerate(steps) if i == 0 or steps[i - 1] != step]
     assert order == ["references", "skin", "drawing", "stencil", "placing", "finishing"]
+
+
+def test_an_account_has_a_daily_design_limit(tmp_path: Path) -> None:
+    """TASK-0078 (audit SEG-02): checked before anything is paid for; a retry counts once."""
+    queue = JobQueue(
+        tmp_path / "jobs.db",
+        lambda owner, body: {},
+        limits=Limits(designs_per_account=2, designs_total=10, turns_per_account=5),
+    )
+    request = payload()
+    for key in ("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"):
+        queue.enqueue("owner", {**request, "idempotencyKey": key})
+        with queue.connect() as db:
+            db.execute("UPDATE jobs SET state='failed', error='x'")
+    # The same key again is the same job, not a third design.
+    again = queue.enqueue(
+        "owner", {**request, "idempotencyKey": "22222222-2222-4222-8222-222222222222"}
+    )
+    assert again["state"] == "failed"
+    with pytest.raises(QuotaExceededError, match="límite de 2 diseños"):
+        queue.enqueue(
+            "owner", {**request, "idempotencyKey": "33333333-3333-4333-8333-333333333333"}
+        )
+    # Another account is not affected.
+    queue.enqueue("other", {**request, "idempotencyKey": "44444444-4444-4444-8444-444444444444"})
+
+
+def test_the_studio_has_a_daily_limit_for_everyone(tmp_path: Path) -> None:
+    queue = JobQueue(
+        tmp_path / "jobs.db",
+        lambda owner, body: {},
+        limits=Limits(designs_per_account=5, designs_total=1, turns_per_account=5),
+    )
+    queue.enqueue("a", payload())
+    with queue.connect() as db:
+        db.execute("UPDATE jobs SET state='failed', error='x'")
+    with pytest.raises(QuotaExceededError, match="límite de diseños de hoy"):
+        queue.enqueue("b", payload())
+
+
+def test_a_replacement_is_not_counted_as_a_design() -> None:
+    assert billable_job(payload())
+    placement = {"edit": {"coverage": "larger", "mode": "placement"}}
+    assert not billable_job(placement)
+    assert billable_job({"edit": {**placement["edit"], "referenceIds": ["a" * 32]}})
+
+
+def test_consultation_turns_have_a_daily_limit_and_count_once(tmp_path: Path) -> None:
+    ledger = TurnLedger(tmp_path / "jobs.db", Limits(turns_per_account=2))
+    ledger.reserve("owner", "t1", "message")
+    ledger.reserve("owner", "t1", "message")  # a retry of the same turn
+    ledger.reserve("owner", "t2", "search")
+    with pytest.raises(QuotaExceededError, match="límite de 2 mensajes"):
+        ledger.reserve("owner", "t3", "message")
+    # A new UTC day starts again.
+    ledger.reserve("owner", "t4", "message", now=time.time() + 86400)
+
+
+def test_the_limits_answer_429_with_a_plain_message(tmp_path: Path) -> None:
+    studio = Studio(
+        tmp_path,
+        b"x" * 32,
+        FakeProvider(),
+        limits=Limits(designs_per_account=1, turns_per_account=1),
+    )
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": ACCOUNT}
+    turn = {"id": "55555555-5555-4555-8555-555555555555", "kind": "message"}
+    assert client.post("/studio/quota/turns", json=turn, headers=headers).status_code == 204
+    refused = client.post(
+        "/studio/quota/turns",
+        json={**turn, "id": "66666666-6666-4666-8666-666666666666"},
+        headers=headers,
+    )
+    assert refused.status_code == 429 and "mensajes por día" in refused.json()["detail"]
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    assert client.post("/studio/jobs", json=request, headers=headers).status_code == 202
+    assert studio.jobs.tick()
+    second = client.post(
+        "/studio/jobs",
+        json={**request, "idempotencyKey": "77777777-7777-4777-8777-777777777777"},
+        headers=headers,
+    )
+    assert second.status_code == 429 and "diseños por día" in second.json()["detail"]

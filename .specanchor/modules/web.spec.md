@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0078: `reserveTurn` counts a paid consultation turn (message or reference search) in the worker before the models are called, only when the consultation uses paid models.
+
 TASK-0077 (audit UX-05): `lib/image-failure.ts` — a skin view that fails to load is probed: 401 session, 404/410 the 24-hour expiry only for an own photo or capture, otherwise unavailable; no answer or 5xx offers «Reintentar».
 
 TASK-0076 (audit UX-03, supersedes TASK-0069's timed lines): `inkStage(task, {stage, queuePosition})` shows the worker's step («paso N de 6») or the queue place; other waits show one description and an indeterminate bar (`.ink-bar-waiting`).

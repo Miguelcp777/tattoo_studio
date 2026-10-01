@@ -24,6 +24,7 @@ from generation.plate_library import PlateLibrary
 from generation.studio import StudioProvider
 from jobs.client_messages import for_client
 from jobs.queue import JobQueue
+from jobs.quota import Limits, QuotaExceededError, TurnLedger
 from media.sanitize import sanitize
 from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM, zone_size
@@ -316,6 +317,7 @@ class Studio:
         key: bytes,
         provider: StudioProvider,
         plates: PlateLibrary | None = None,
+        limits: Limits | None = None,
     ) -> None:
         root.mkdir(parents=True, exist_ok=True)
         self.provider = provider
@@ -339,7 +341,12 @@ class Studio:
                 "CREATE TABLE IF NOT EXISTS consent (owner TEXT, version TEXT, created TEXT "
                 "DEFAULT CURRENT_TIMESTAMP)"
             )
-        self.jobs = JobQueue(root / "jobs.sqlite", self.generate, self.purge_expired)
+        self.limits = limits or Limits()
+        self.jobs = JobQueue(
+            root / "jobs.sqlite", self.generate, self.purge_expired, limits=self.limits
+        )
+        # TASK-0078 (audit SEG-02): paid consultation turns, reserved by the web before it spends.
+        self.turns = TurnLedger(root / "jobs.sqlite", self.limits)
 
     def plate(self, brief: dict[str, Any]) -> bytes:
         """A skin plate from the reviewed library, or generated when it has none (TASK-0060)."""
@@ -1172,8 +1179,30 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
             if body.get("bodyPhotoId"):
                 studio.own_photo(who, body["bodyPhotoId"])
             return studio.jobs.enqueue(who, body)
+        except QuotaExceededError as limit:
+            # TASK-0078 (audit SEG-02): a daily limit, before any provider was called.
+            raise HTTPException(429, str(limit)) from limit
         except (KeyError, ValueError) as error:
             raise HTTPException(422, for_client(str(error))) from error
+
+    @routes.post("/quota/turns", status_code=204)
+    async def reserve_turn(request: Request) -> Response:
+        """Count one paid consultation turn before the web spends on it (TASK-0078).
+
+        The web sends an id per turn, so a retried request is counted once.
+        """
+        who = owner(request)
+        body = await bounded_json(request)
+        turn_id, kind = body.get("id"), body.get("kind")
+        if not isinstance(turn_id, str) or not re.fullmatch("[a-f0-9-]{36}", turn_id):
+            raise HTTPException(422, "Identificador de solicitud inválido.")
+        if kind not in ("message", "search"):
+            raise HTTPException(422, "Tipo de solicitud inválido.")
+        try:
+            studio.turns.reserve(who, turn_id, kind)
+        except QuotaExceededError as limit:
+            raise HTTPException(429, str(limit)) from limit
+        return Response(status_code=204)
 
     @routes.post("/events", status_code=202)
     async def web_events(request: Request) -> dict[str, int]:
@@ -1250,6 +1279,11 @@ def build_studio(settings: Settings) -> Studio | None:
         bytes.fromhex(settings.media_key.get_secret_value()),
         build_provider(settings),
         PlateLibrary(),
+        Limits(
+            designs_per_account=settings.daily_designs,
+            designs_total=settings.daily_designs_total,
+            turns_per_account=settings.daily_turns,
+        ),
     )
 
 
