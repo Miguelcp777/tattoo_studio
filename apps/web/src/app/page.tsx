@@ -16,6 +16,8 @@ import { SessionMenu } from '@/components/SessionMenu';
 
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
+import { InkWorking } from '@/components/InkWorking';
+import type { InkTask } from '@/lib/ink-progress';
 import { StepFlow } from '@/components/StepFlow';
 import { StylePicker } from '@/components/StylePicker';
 import { MasterBrief } from '@/components/MasterBrief';
@@ -100,6 +102,8 @@ export default function ConsultationPage(): ReactNode {
   const [savedForm, setSavedForm] = useState<Form>(empty);
 
   const [busy, setBusy] = useState(false);
+  // TASK-0069: what the studio is doing while busy, for the tattooing hand to say it.
+  const [task, setTask] = useState<InkTask>('save');
   const [submittingGeneration, setSubmittingGeneration] = useState(false);
 
   const [error, setError] = useState('');
@@ -359,9 +363,10 @@ export default function ConsultationPage(): ReactNode {
     return data;
   }
 
-  async function run(action: () => Promise<void>): Promise<boolean> {
+  async function run(action: () => Promise<void>, doing: InkTask = 'save'): Promise<boolean> {
     setError('');
 
+    setTask(doing);
     setBusy(true);
 
     try {
@@ -393,7 +398,7 @@ export default function ConsultationPage(): ReactNode {
       accept(data.session);
 
       setText('');
-    });
+    }, 'idea');
   }
 
   async function save(values: Form = form): Promise<OrchestrationSession | null> {
@@ -476,7 +481,7 @@ export default function ConsultationPage(): ReactNode {
       accept(data.session);
 
       if (kind === 'body') setBodyPhotoId(data.assetId);
-    });
+    }, 'image');
   }
 
   async function generate(): Promise<boolean> {
@@ -611,7 +616,7 @@ export default function ConsultationPage(): ReactNode {
     const signature = currentSignature;
     const accepted = await run(async () => {
       accept((await call('/api/consultation', { action: 'accept_brief', signature })).session);
-    });
+    }, 'accept');
     if (accepted) await generate();
   }
 
@@ -632,7 +637,7 @@ export default function ConsultationPage(): ReactNode {
       const data = await call('/api/consultation', { action: 'orchestrate', userMessage: idea });
       accept(data.session);
       setStep(afterIdea(data.session));
-    });
+    }, 'idea');
   }
 
   // Step 2 asks what is missing; reached again with «Atrás», it offers every detail to revise.
@@ -659,7 +664,7 @@ export default function ConsultationPage(): ReactNode {
     );
     const accepted = await run(async () => {
       accept((await call('/api/consultation', { action: 'accept_brief', signature })).session);
-    });
+    }, 'accept');
     if (!accepted) return;
     // «Listo» only once the design is really queued; a refusal leaves the summary and its reason.
     if (await generate()) setStep('done');
@@ -676,7 +681,7 @@ export default function ConsultationPage(): ReactNode {
       setSelectedJobId('');
       setJob(null);
       setStep('idea');
-    });
+    }, 'reset');
   }
 
   function openVersion(version: StudioJobStatus) {
@@ -765,6 +770,9 @@ export default function ConsultationPage(): ReactNode {
 
             <div ref={messagesEnd} />
           </div>
+
+          {/* TASK-0069: the advanced studio shows the same hand while an agent works. */}
+          {mode === 'advanced' && busy && !submittingGeneration && <InkWorking task={task} />}
 
           <form
             className="studio-composer"
@@ -988,8 +996,12 @@ export default function ConsultationPage(): ReactNode {
             <button
               disabled={disabled}
               onClick={() =>
-                void run(async () =>
-                  accept((await call('/api/consultation', { action: 'retry_references' })).session),
+                void run(
+                  async () =>
+                    accept(
+                      (await call('/api/consultation', { action: 'retry_references' })).session,
+                    ),
+                  'search',
                 )
               }
             >
@@ -1277,6 +1289,7 @@ export default function ConsultationPage(): ReactNode {
             <IdeaStep
               initial={session?.slots.subject?.description ?? ''}
               busy={busy}
+              working={busy ? task : null}
               error={error}
               onSubmit={(idea) => void submitIdea(idea)}
               onAdvanced={() => switchMode('advanced')}
@@ -1288,6 +1301,7 @@ export default function ConsultationPage(): ReactNode {
               fields={detailFields}
               values={form}
               busy={busy}
+              working={busy ? task : null}
               onChange={(patch) => setForm({ ...form, ...patch })}
               onBack={() => setStep('idea')}
               onContinue={() => void continueDetails()}
@@ -1297,12 +1311,17 @@ export default function ConsultationPage(): ReactNode {
               references={session?.references ?? []}
               essential={essentialMissing(session)}
               busy={busy}
+              working={busy ? task : null}
               error={error}
               onRemove={(source) => void changeReferences({ removeReference: source })}
               onAdd={(file) => void upload(file, 'reference')}
               onSearchAgain={() =>
-                void run(async () =>
-                  accept((await call('/api/consultation', { action: 'retry_references' })).session),
+                void run(
+                  async () =>
+                    accept(
+                      (await call('/api/consultation', { action: 'retry_references' })).session,
+                    ),
+                  'search',
                 )
               }
               onWaive={() => setWaiving(true)}
@@ -1316,6 +1335,7 @@ export default function ConsultationPage(): ReactNode {
               referenceCount={session?.references.length ?? 0}
               bodyPhotoId={bodyPhotoId}
               busy={busy}
+              working={busy ? task : null}
               error={error}
               onChange={(patch) => setForm({ ...form, ...patch })}
               onOwnPhoto={(file) => void upload(file, 'body')}

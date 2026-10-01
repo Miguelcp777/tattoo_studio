@@ -3,6 +3,8 @@
 import { useState, type ReactNode } from 'react';
 
 import { Confirm } from '../Confirm';
+import { InkWorking } from '../InkWorking';
+import type { InkTask } from '@/lib/ink-progress';
 import { VersionList } from './DoneStep';
 import type { StudioJobStatus } from '@/types/generation';
 
@@ -16,6 +18,7 @@ const EXAMPLES = [
 export function IdeaStep({
   initial,
   busy,
+  working,
   error,
   onSubmit,
   onAdvanced,
@@ -25,6 +28,8 @@ export function IdeaStep({
   /** The idea already sent, when the client comes back to change it. */
   initial: string;
   busy: boolean;
+  /** What the studio is doing while `busy`, for the tattooing hand (TASK-0069). */
+  working?: InkTask | null;
   error?: string;
   onSubmit: (idea: string) => void;
   onAdvanced: () => void;
@@ -64,21 +69,26 @@ export function IdeaStep({
         onChange={(event) => setIdea(event.target.value)}
         placeholder="Un león de línea fina en el antebrazo izquierdo, en negro…"
       />
-      <div className="wizard-chips" aria-label="Ejemplos">
-        {EXAMPLES.map((example) => (
-          <button
-            key={example}
-            type="button"
-            className="chip"
-            disabled={busy}
-            onClick={() => setIdea(example)}
-          >
-            {example}
-          </button>
-        ))}
-      </div>
+      {/* TASK-0069: while the idea is studied, the hand takes the place of the examples. */}
+      {working ? (
+        <InkWorking task={working} />
+      ) : (
+        <div className="wizard-chips" aria-label="Ejemplos">
+          {EXAMPLES.map((example) => (
+            <button
+              key={example}
+              type="button"
+              className="chip"
+              disabled={busy}
+              onClick={() => setIdea(example)}
+            >
+              {example}
+            </button>
+          ))}
+        </div>
+      )}
       {error && <p role="alert">{error}</p>}
-      <VersionList versions={versions} onOpen={onOpen} />
+      {!working && <VersionList versions={versions} onOpen={onOpen} />}
     </Confirm>
   );
 }

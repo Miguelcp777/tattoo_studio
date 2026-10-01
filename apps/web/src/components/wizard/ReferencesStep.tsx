@@ -7,6 +7,8 @@ import type { OrchestrationSession } from '@tattoo/consultation';
 import { ofSpanish } from '@tattoo/consultation/master-prompt';
 
 import { Confirm } from '../Confirm';
+import { InkWorking } from '../InkWorking';
+import type { InkTask } from '@/lib/ink-progress';
 
 type Reference = OrchestrationSession['references'][number];
 
@@ -15,6 +17,7 @@ export function ReferencesStep({
   references,
   essential,
   busy,
+  working,
   error,
   onRemove,
   onAdd,
@@ -27,6 +30,8 @@ export function ReferencesStep({
   /** Essential references still missing (a named emblem, flag, landmark…). */
   essential: string[];
   busy: boolean;
+  /** What the studio is doing while `busy`, for the tattooing hand (TASK-0069). */
+  working?: InkTask | null;
   error?: string;
   onRemove: (source: string) => void;
   onAdd: (file: File) => void;
@@ -104,6 +109,7 @@ export function ReferencesStep({
           ))}
         </div>
       )}
+      {working && <InkWorking task={working} />}
       {error && <p role="alert">{error}</p>}
       <input
         ref={input}

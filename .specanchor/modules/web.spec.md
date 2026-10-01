@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0069: while an agent works, `InkWorking` shows a gloved hand tattooing a rose, the task's
+title, a timed line about its stages, a bar and the clock (`lib/ink-progress.ts`). Nothing in it is
+reported by the server: the lines stay on the last stage and the bar never passes 94 %. Used by every
+wizard step while busy, by `GenerationProgress` and by the advanced chat; `run()` names the task.
+
 TASK-0068 (ADR-0030): `liveAgentConfig.webImageSearch` is `brave` only with the Claude scout,
 `TATTOO_WEB_IMAGE_SEARCH=brave` and `BRAVE_SEARCH_API_KEY`; `referenceBytes` accepts a Brave
 thumbnail. The privacy policy names Brave and `IMAGES_VERSION` is `2026-10-01.2`.

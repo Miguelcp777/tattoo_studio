@@ -5,6 +5,8 @@ import { useRef, type ReactNode } from 'react';
 import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
 import { Confirm } from '../Confirm';
+import { InkWorking } from '../InkWorking';
+import type { InkTask } from '@/lib/ink-progress';
 import { BODY_CHOICES, COLOUR_CHOICES, SIDE_CHOICES, type DetailValues } from './options';
 
 export interface SummaryValues extends DetailValues {
@@ -50,6 +52,7 @@ export function SummaryStep({
   referenceCount,
   bodyPhotoId,
   busy,
+  working,
   error,
   onChange,
   onOwnPhoto,
@@ -62,6 +65,8 @@ export function SummaryStep({
   referenceCount: number;
   bodyPhotoId: string;
   busy: boolean;
+  /** What the studio is doing while `busy`, for the tattooing hand (TASK-0069). */
+  working?: InkTask | null;
   error?: string;
   onChange: (patch: Partial<SummaryValues>) => void;
   onOwnPhoto: (file: File) => void;
@@ -197,6 +202,7 @@ export function SummaryStep({
           : 'Sin referencias: el diseño parte de la descripción. '}
         Al pulsar «Esto es lo que quiero» aceptas este resumen y empezamos a diseñar.
       </p>
+      {working && <InkWorking task={working} />}
       {error && <p role="alert">{error}</p>}
       <input
         ref={photo}

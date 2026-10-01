@@ -708,42 +708,9 @@ summary {
 .studio-dialog::backdrop {
   background: #050609de;
 }
+/* TASK-0069: the card is the tattooing hand's own (.ink-working). */
 .generation-progress {
-  padding: 16px;
-  border: 1px solid #8e693e;
-  border-radius: 10px;
   margin: 12px 0;
-  background: #201a14;
-}
-.progress-track {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #3b332a;
-  margin: 12px 0;
-}
-.progress-track span {
-  display: block;
-  width: 35%;
-  height: 100%;
-  background: #edb064;
-  border-radius: inherit;
-  animation: progress-travel 1.8s ease-in-out infinite alternate;
-}
-@keyframes progress-travel {
-  from {
-    transform: translateX(-30%);
-  }
-  to {
-    transform: translateX(215%);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .progress-track span {
-    animation: none;
-    width: 100%;
-    opacity: 0.65;
-  }
 }
 .result-grid[hidden] {
   display: none;
@@ -2330,5 +2297,78 @@ body::after {
   }
   .session-greeting {
     display: none;
+  }
+}
+
+/* TASK-0069: a hand tattooing while an agent works, so a wait never looks frozen. */
+.ink-working {
+  margin: 16px 0 4px;
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(216, 171, 147, 0.28);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #171a21, #12141a);
+  text-align: center;
+}
+.ink-art {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  margin: 0 auto 8px;
+  border-radius: var(--radius-sm);
+  background: radial-gradient(ellipse at 50% 30%, #1d212b, #12141a 70%);
+}
+.ink-working .ink-title {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: 0.06em;
+  color: #f4ece6;
+  margin: 0;
+}
+.ink-working .ink-line {
+  min-height: 1.5em;
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  color: #e8c3ad;
+  animation: ink-line-in 0.5s ease-out;
+}
+@keyframes ink-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ink-bar {
+  height: 4px;
+  margin: 12px auto 6px;
+  max-width: 340px;
+  border-radius: 4px;
+  background: rgba(216, 171, 147, 0.14);
+  overflow: hidden;
+}
+.ink-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f6553, #e8c3ad);
+  box-shadow: 0 0 8px rgba(232, 195, 173, 0.6);
+  transition: width 0.5s linear;
+}
+.ink-working .ink-time {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink-working .ink-line {
+    animation: none;
+  }
+  .ink-bar span {
+    transition: none;
   }
 }

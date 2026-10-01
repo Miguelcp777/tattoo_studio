@@ -6,6 +6,8 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 import { styleOffers } from '@tattoo/consultation/style-library';
 
 import { Confirm } from '../Confirm';
+import { InkWorking } from '../InkWorking';
+import type { InkTask } from '@/lib/ink-progress';
 import type { DetailField } from '@/lib/wizard';
 import { BODY_CHOICES, COLOUR_CHOICES, SIDE_CHOICES, type DetailValues } from './options';
 
@@ -52,6 +54,7 @@ export function DetailsStep({
   fields,
   values,
   busy,
+  working,
   onChange,
   onBack,
   onContinue,
@@ -59,6 +62,8 @@ export function DetailsStep({
   fields: DetailField[];
   values: DetailValues;
   busy: boolean;
+  /** What the studio is doing while `busy`, for the tattooing hand (TASK-0069). */
+  working?: InkTask | null;
   onChange: (patch: Partial<DetailValues>) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -140,6 +145,7 @@ export function DetailsStep({
           onPick={(color) => onChange({ color })}
         />
       )}
+      {working && <InkWorking task={working} />}
     </Confirm>
   );
 }
