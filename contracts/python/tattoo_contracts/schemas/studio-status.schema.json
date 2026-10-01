@@ -314,6 +314,29 @@
           "type": "string",
           "minLength": 1
         },
+        "stencilReview": {
+          "description": "TASK-0086 (audit ARQ-03): how the stencil was obtained, so the client and the tattooer know how far to trust it. `lineart`: traced from a dedicated line-art pass; `colour_contours`: approximate contours of a colour or shaded design. `simplification`: 0 when traced at full detail, 1 to 3 for each coarser pass needed.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method",
+            "simplification"
+          ],
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "lineart",
+                "colour_contours"
+              ]
+            },
+            "simplification": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            }
+          }
+        },
         "background": {
           "$ref": "#/$defs/asset"
         },

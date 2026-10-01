@@ -150,6 +150,18 @@
       "file": "invalid/queue-position-zero.json",
       "valid": false,
       "why": "TASK-0076: a place in the queue starts at 1"
+    },
+    {
+      "name": "stencil-review",
+      "file": "valid/stencil-review.json",
+      "valid": true,
+      "why": "TASK-0086: a result says how its stencil was obtained"
+    },
+    {
+      "name": "stencil-review-unknown",
+      "file": "invalid/stencil-review-unknown.json",
+      "valid": false,
+      "why": "TASK-0086: the method is a closed vocabulary and the level is 0 to 3"
     }
   ]
 }

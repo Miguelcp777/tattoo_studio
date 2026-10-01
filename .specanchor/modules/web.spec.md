@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0086: `lib/stencil-review.ts`; the viewer marks a preliminary stencil, says why, and overlays it on the design on request.
+
 TASK-0085: the panel shows «Espera en cola» (median and p95).
 
 TASK-0084 (audit): the result viewer shows the images, then three short notices, and folds the long notice; the style picker shows `content/style-hints.ts` (Spanish) instead of the English prompt characteristics.

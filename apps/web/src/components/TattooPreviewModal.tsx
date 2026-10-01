@@ -4,6 +4,7 @@ import type { GeneratedTattooArtifact } from '@/types/generation';
 import { ImageDetail } from './ImageDetail';
 import { messageForError } from '@/lib/client-errors';
 import { zoneProposal } from '@/lib/zone-size';
+import { stencilNotes } from '@/lib/stencil-review';
 import { IMAGE_FAILURE_TEXT, imageFailure, probe, type ImageFailure } from '@/lib/image-failure';
 import { Confirm } from './Confirm';
 export function TattooPreviewModal({
@@ -60,6 +61,8 @@ export function TattooPreviewModal({
   const fromOwnPhoto = Boolean(artifact.capture) || artifact.backgroundKind === 'own_photo';
   // TASK-0073 (audit UX-01): a new print size is shown and confirmed before it is applied.
   const [confirmZone, setConfirmZone] = useState(false);
+  const [overlay, setOverlay] = useState(false);
+  const stencil = stencilNotes(artifact.stencilReview);
   const proposal = zoneProposal(artifact.size, zoneSpan);
   return (
     <dialog
@@ -173,15 +176,36 @@ export function TattooPreviewModal({
               setDetail('stencil');
             }}
           >
-            <img
-              src={url(artifact.stencil.assetId)}
-              alt="Stencil vectorial del mismo diseño maestro"
-            />
+            {/* TASK-0086 (audit ARQ-03): the stencil over its design shows what was left out. */}
+            <span className="stencil-stack">
+              {overlay && (
+                <img src={url(artifact.master.assetId)} alt="" className="stencil-under" />
+              )}
+              <img
+                src={url(artifact.stencil.assetId)}
+                alt="Stencil vectorial del mismo diseño maestro"
+                className={overlay ? 'stencil-over' : undefined}
+              />
+            </span>
             <span>Ampliar plantilla ↗</span>
           </button>
           <figcaption>
-            Plantilla · formato {artifact.size.widthMm} × {artifact.size.heightMm} mm
+            {stencil.preliminary ? 'Plantilla preliminar' : 'Plantilla'} · formato{' '}
+            {artifact.size.widthMm} × {artifact.size.heightMm} mm
             {artifact.transform.sourceCropPx && ' · puede incluir márgenes blancos'}
+            {stencil.notes.map((note) => (
+              <small key={note} className="stencil-note">
+                {note}
+              </small>
+            ))}
+            <button
+              type="button"
+              className="link-button"
+              aria-pressed={overlay}
+              onClick={() => setOverlay((value) => !value)}
+            >
+              {overlay ? 'Ver solo la plantilla' : 'Superponer sobre el diseño'}
+            </button>
           </figcaption>
         </figure>
       </div>

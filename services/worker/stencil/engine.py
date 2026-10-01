@@ -23,10 +23,14 @@ class Master:
     height_mm: float
     stroke_mm: float
     source_hash: str | None = None
+    #: TASK-0086 (audit ARQ-03): how many coarser passes the trace needed (0 = full detail).
+    #: Reported to the client; not part of the design's identity.
+    simplification: int = 0
 
     @property
     def design_hash(self) -> str:
-        return hashlib.sha256(json.dumps(self.__dict__, sort_keys=True).encode()).hexdigest()
+        identity = {k: v for k, v in self.__dict__.items() if k != "simplification"}
+        return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
 
 #: A skeleton with more points than this is not traced: too slow and too dense to transfer.
@@ -48,7 +52,7 @@ def trace_native_lineart(
     """Threshold only the dedicated flat native line-art pass, never a shaded render."""
     with Image.open(io.BytesIO(data)) as image:
         gray = image.convert("L")
-    for size in LINEART_SIZES:
+    for level, size in enumerate(LINEART_SIZES):
         pass_image = gray.copy()
         pass_image.thumbnail((size, size))
         ink = np.asarray(pass_image) < 128
@@ -56,9 +60,11 @@ def trace_native_lineart(
         if not 0.001 < fraction < 0.35:
             raise ValueError("El proveedor no produjo line-art limpio. Reintenta con otro diseño.")
         try:
-            return _trace_mask(ink, width_mm, height_mm, stroke_mm)
+            traced = _trace_mask(ink, width_mm, height_mm, stroke_mm)
         except _TooComplexError:
             continue
+        traced.simplification = level
+        return traced
     raise ValueError(TOO_COMPLEX)
 
 
@@ -76,7 +82,7 @@ def trace_colour_artwork(
     artwork.thumbnail((1536, 1536))
     master: Master | None = None
     # TASK-0071: smoother edges, then a smaller image, until the contours can be traced.
-    for size, sigma in COLOUR_PASSES:
+    for level, (size, sigma) in enumerate(COLOUR_PASSES):
         pass_image = original.copy()
         pass_image.thumbnail((size, size))
         rgb = np.asarray(pass_image, dtype=np.float64) / 255
@@ -89,6 +95,7 @@ def trace_colour_artwork(
             raise ValueError("No se pueden extraer contornos suficientes del diseño a color.")
         try:
             master = _trace_mask(edges, width_mm, height_mm, stroke_mm)
+            master.simplification = level
             break
         except _TooComplexError:
             continue

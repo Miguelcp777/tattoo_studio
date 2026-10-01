@@ -674,6 +674,11 @@ class Studio:
             "referenceAnalysis": analysis,
             "transform": transform,
             "reviewRequired": True,
+            # TASK-0086 (audit ARQ-03): how far to trust the stencil.
+            "stencilReview": {
+                "method": "colour_contours" if rendered else "lineart",
+                "simplification": master.simplification,
+            },
             "backgroundKind": "own_photo" if payload.get("bodyPhotoId") else "generated_anatomy",
             "notice": (
                 "Propuesta con acabado y sombreado. El stencil aproxima los contornos "

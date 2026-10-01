@@ -99,6 +99,15 @@ def test_a_dense_design_is_traced_at_coarser_detail(
         ]
     )
     assert shapes == expected
+    # TASK-0086 (audit ARQ-03): the client is told how many coarser passes it took.
+    assert master.simplification == 2
+
+
+def test_the_simplification_level_is_not_part_of_the_design_identity() -> None:
+    a = sample()
+    b = sample()
+    b.simplification = 3
+    assert a.design_hash == b.design_hash
 
 
 def test_a_design_too_dense_at_every_pass_says_so(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1824,3 +1824,12 @@ def test_a_job_records_how_long_it_waited(tmp_path: Path, recorded: EventStore) 
         e for e in recorded.events(datetime.now(UTC) - timedelta(hours=1)) if e["kind"] == "job"
     ]
     assert event["detail"]["waitMs"] >= 3_000
+
+
+def test_a_result_says_how_its_stencil_was_obtained(tmp_path: Path) -> None:
+    """TASK-0086 (audit ARQ-03)."""
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    job = a_design_for(studio, ACCOUNT)
+    review = studio.jobs.get(ACCOUNT, job)["result"]["stencilReview"]
+    assert review["method"] in ("lineart", "colour_contours")
+    assert review["simplification"] == 0

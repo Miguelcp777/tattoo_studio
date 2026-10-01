@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0086: `Studio.generate` reports `stencilReview` with each result.
+
 TASK-0085: the runbook test asserts the sign-in requirement and the daily limits come before the deployment steps.
 
 TASK-0083 (audit SEG-03): `pnpm-workspace.yaml` overrides `next>postcss` to `^8.5.28`; `pnpm audit --prod` is clean.

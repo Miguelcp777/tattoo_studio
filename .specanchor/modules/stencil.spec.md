@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: stencil
 
+TASK-0086: `Master.simplification` records the pass that succeeded; it is excluded from `design_hash`.
+
 TASK-0071: a skeleton above `MAX_TRACE_POINTS` is traced again at coarser detail
 (`LINEART_SIZES`, `COLOUR_PASSES`) before «Line-art demasiado complejo» is raised.
 

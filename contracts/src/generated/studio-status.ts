@@ -86,6 +86,13 @@ export interface GeneratedTattooArtifact {
     freshness?: number;
   };
   notice: string;
+  /**
+   * TASK-0086 (audit ARQ-03): how the stencil was obtained, so the client and the tattooer know how far to trust it. `lineart`: traced from a dedicated line-art pass; `colour_contours`: approximate contours of a colour or shaded design. `simplification`: 0 when traced at full detail, 1 to 3 for each coarser pass needed.
+   */
+  stencilReview?: {
+    method: 'lineart' | 'colour_contours';
+    simplification: number;
+  };
   background?: StudioAsset;
   /**
    * A photograph the client took with the camera try-on and chose to keep, saved as a version of the design it shows (ADR-0022). Every other field is the parent's: the design is unchanged. The photograph passed the own-photo gate and is never sent to an image model.

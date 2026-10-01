@@ -166,6 +166,23 @@ class Transform(BaseModel):
     ] = None
 
 
+class Method1(StrEnum):
+    lineart = 'lineart'
+    colour_contours = 'colour_contours'
+
+
+class StencilReview(BaseModel):
+    """
+    TASK-0086 (audit ARQ-03): how the stencil was obtained, so the client and the tattooer know how far to trust it. `lineart`: traced from a dedicated line-art pass; `colour_contours`: approximate contours of a colour or shaded design. `simplification`: 0 when traced at full detail, 1 to 3 for each coarser pass needed.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: Method1
+    simplification: Annotated[int, Field(ge=0, le=3)]
+
+
 class MimeType1(StrEnum):
     image_jpeg = 'image/jpeg'
     image_png = 'image/png'
@@ -248,6 +265,12 @@ class Artifact(BaseModel):
     backgroundKind: BackgroundKind
     transform: Transform
     notice: Annotated[str, Field(min_length=1)]
+    stencilReview: Annotated[
+        StencilReview | None,
+        Field(
+            description='TASK-0086 (audit ARQ-03): how the stencil was obtained, so the client and the tattooer know how far to trust it. `lineart`: traced from a dedicated line-art pass; `colour_contours`: approximate contours of a colour or shaded design. `simplification`: 0 when traced at full detail, 1 to 3 for each coarser pass needed.'
+        ),
+    ] = None
     background: Asset | None = None
     capture: Annotated[
         Capture | None,
