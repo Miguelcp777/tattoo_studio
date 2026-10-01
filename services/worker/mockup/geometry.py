@@ -37,6 +37,11 @@ MAX_EDGE_POINTS = 4000
 #: Fraction of the design bounds added on each side, so a design that moved is still in view.
 REGION_MARGIN = 0.1
 
+#: TASK-0087: the local check divides the compared region into this many tiles per side, and
+#: judges only tiles where the reference has at least this fraction of ink.
+TILE_GRID = 4
+MIN_TILE_INK = 0.02
+
 
 @dataclass(frozen=True)
 class GeometryReport:
@@ -49,6 +54,9 @@ class GeometryReport:
     ink_iou: float
     #: Outline pixels found in the reference. Zero means there was nothing to verify against.
     reference_edges: int
+    #: TASK-0087 (audit ARQ-02): the lowest ink IoU over the inked tiles of a grid on the design.
+    #: A small emblem or a letter redrawn barely moves the global numbers; it empties its tile.
+    worst_tile_iou: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -57,6 +65,8 @@ class GeometryTolerance:
 
     max_p95_relative: float
     min_ink_iou: float
+    #: TASK-0087: the local limit. Zero checks nothing locally.
+    min_tile_iou: float = 0.0
 
 
 #: Calibrated in TASK-0040 on the live Mestalla composite (1024 x 1536, design 640 x 1136 px).
@@ -64,7 +74,12 @@ class GeometryTolerance:
 #: faithful (the worst only darkened the tone). FLUX.2 edits, two runs: p95 0.0199-0.0208, IoU
 #: 0.477-0.532, with ornaments and the crest's outline redrawn. The limits sit between the two.
 #: One design is a thin corpus: revisit when more designs have been measured (ADR-0018).
-BLEND_TOLERANCE = GeometryTolerance(max_p95_relative=0.018, min_ink_iou=0.62)
+#: TASK-0087 (audit ARQ-02): the local limit comes from the synthetic corpus (`mockup.corpus`: four
+#: designs, three skin tones, three finish strengths, four kinds of redraw). Faithful finishes kept
+#: a worst tile IoU of 0.231 or more; every redraw — a small emblem redrawn or dropped, one letter
+#: changed, the design shifted — fell to 0.202 or less, fourteen of 39 past the global limits
+#: alone. 0.21 sits between with a thin margin: recalibrate against real finishes.
+BLEND_TOLERANCE = GeometryTolerance(max_p95_relative=0.018, min_ink_iou=0.62, min_tile_iou=0.21)
 
 
 def _region(transform: dict[str, Any], width: int, height: int) -> tuple[int, int, int, int]:
@@ -133,6 +148,23 @@ def _gray(image: Image.Image) -> np.ndarray:
     return np.asarray(image.convert("L"), dtype=np.float32)
 
 
+def worst_tile_iou(reference: np.ndarray, candidate: np.ndarray) -> float:
+    """The lowest ink IoU among the tiles where the reference has ink (TASK-0087)."""
+    height, width = reference.shape
+    worst = 1.0
+    for row in range(TILE_GRID):
+        for col in range(TILE_GRID):
+            top, bottom = row * height // TILE_GRID, (row + 1) * height // TILE_GRID
+            left, right = col * width // TILE_GRID, (col + 1) * width // TILE_GRID
+            a = reference[top:bottom, left:right]
+            if not a.size or a.mean() < MIN_TILE_INK:
+                continue
+            b = candidate[top:bottom, left:right]
+            union = int((a | b).sum())
+            worst = min(worst, float((a & b).sum()) / union if union else 0.0)
+    return worst
+
+
 def geometry_report(before: bytes, after: bytes, transform: dict[str, Any]) -> GeometryReport:
     """Compare the design region of the pre-blend warp (``before``) with the blend (``after``).
 
@@ -153,8 +185,9 @@ def geometry_report(before: bytes, after: bytes, transform: dict[str, Any]) -> G
     union = int((mask_a | mask_b).sum())
     iou = float((mask_a & mask_b).sum()) / union if union else 0.0
     diagonal = math.hypot(float(transform["widthPx"]), float(transform["heightPx"]))
+    tile = worst_tile_iou(mask_a, mask_b)
     if not len(points_a) or not len(points_b):
-        return GeometryReport(math.inf, math.inf, math.inf, iou, len(points_a))
+        return GeometryReport(math.inf, math.inf, math.inf, iou, len(points_a), tile)
     distances = np.concatenate([_nearest(points_a, points_b), _nearest(points_b, points_a)])
     p95 = float(np.percentile(distances, 95))
     return GeometryReport(
@@ -163,6 +196,7 @@ def geometry_report(before: bytes, after: bytes, transform: dict[str, Any]) -> G
         p95_relative=p95 / diagonal if diagonal else math.inf,
         ink_iou=iou,
         reference_edges=len(points_a),
+        worst_tile_iou=tile,
     )
 
 
@@ -173,6 +207,7 @@ def within_tolerance(report: GeometryReport, tolerance: GeometryTolerance) -> bo
         and math.isfinite(report.p95_relative)
         and report.p95_relative <= tolerance.max_p95_relative
         and report.ink_iou >= tolerance.min_ink_iou
+        and report.worst_tile_iou >= tolerance.min_tile_iou
     )
 
 

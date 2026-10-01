@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: mockup
 
+TASK-0087 (audit ARQ-02, ADR-0018 amended): `worst_tile_iou` over a 4 × 4 grid and `min_tile_iou` (0.21 in `BLEND_TOLERANCE`); `mockup.corpus` is the synthetic validation corpus (`python -m mockup.corpus`).
+
 TASK-0063: the fresh-ink composite separates the skin's surface light (`skin_light`: pore sparkle
 and broad gloss, `SPARKLE` 0.45, `GLOSS` 0.6) from the diffuse light, darkens only the latter with
 the pigment and adds the former back, so pores and gloss continue over the ink. Even skin gets the

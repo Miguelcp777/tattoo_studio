@@ -8,6 +8,12 @@ amends: ADR-0016
 
 # ADR-0018: The AI finish runs on generated plates, is chosen by measurement, and falls back
 
+> **Amended by TASK-0087 (2026-10-02, audit ARQ-02).** The geometry check also has a local limit:
+> the worst ink IoU over a 4 × 4 grid of the design (`min_tile_iou` 0.21), calibrated on a
+> synthetic corpus (`mockup.corpus`). It rejects small redraws the global limits accepted (14 of 39
+> in the corpus) and refuses no faithful finish they accepted. The corpus also shows the global p95
+> limit refusing faithful colour finishes on medium and dark skin; the composite then ships.
+
 ## Context
 
 ADR-0016 activated the constrained AI blend for the mockup, but it was never switched on: no
