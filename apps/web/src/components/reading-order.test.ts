@@ -64,3 +64,31 @@ describe('the sign-in card centres the brand (TASK-0062)', () => {
     expect(rule('.brand-card .brand-name')).toMatch(/padding-left:\s*0\.2em/);
   });
 });
+
+describe('the guided studio leaves the header usable (TASK-0066)', () => {
+  const zIndex = (selector: string): number =>
+    Number(
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter(([, s]) => s!.trim() === selector)
+        .flatMap(([, , body]) => [...body!.matchAll(/z-index:\s*(\d+)/g)].map((m) => m[1]))
+        .at(-1),
+    );
+
+  it('opens every wizard pop-up below the header, not as a modal over it', () => {
+    // A modal dialog makes the rest of the page inert: «Salir» was visible but could not be pressed.
+    const dir = resolve(here, 'src/components/wizard');
+    for (const file of ['IdeaStep', 'DetailsStep', 'ReferencesStep', 'SummaryStep', 'DoneStep']) {
+      const source = readFileSync(resolve(dir, `${file}.tsx`), 'utf8');
+      const dialogs = source.match(/<Confirm\b/g)?.length ?? 0;
+      expect(dialogs, file).toBeGreaterThan(0);
+      expect(source.match(/<Confirm\s+belowHeader/g)?.length ?? 0, file).toBe(dialogs);
+    }
+  });
+
+  it('stacks the header above the pop-up, and the pop-up above its backdrop', () => {
+    expect(zIndex('.studio-header')).toBeGreaterThan(zIndex('.studio-dialog.confirm-below-header'));
+    expect(zIndex('.studio-dialog.confirm-below-header')).toBeGreaterThan(
+      zIndex('.confirm-backdrop'),
+    );
+  });
+});

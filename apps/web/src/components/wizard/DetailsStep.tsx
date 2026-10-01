@@ -79,6 +79,7 @@ export function DetailsStep({
   const zones = Object.entries(BODY_OPTIONS).map(([value, label]) => ({ value, label: label! }));
   return (
     <Confirm
+      belowHeader
       wide
       title="Nos faltan unos datos"
       onCancel={onBack}

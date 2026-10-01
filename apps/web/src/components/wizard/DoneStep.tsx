@@ -41,7 +41,7 @@ export function VersionList({
 /** While the studio works (TASK-0065): nothing to answer, only progress. */
 export function WorkingStep({ phase }: { phase: 'preparing' | 'queued' | 'running' }): ReactNode {
   return (
-    <Confirm title="Estamos creando tu diseño" onCancel={() => undefined} actions={[]}>
+    <Confirm belowHeader title="Estamos creando tu diseño" onCancel={() => undefined} actions={[]}>
       <p>Puede tardar unos minutos. Cuando esté listo verás la vista en piel y la plantilla.</p>
       <GenerationProgress phase={phase} />
     </Confirm>
@@ -64,6 +64,7 @@ export function DoneStep({
 }): ReactNode {
   return (
     <Confirm
+      belowHeader
       wide
       title="Tu diseño está listo"
       onCancel={() => undefined}

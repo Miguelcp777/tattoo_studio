@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0066: the wizard's pop-ups open below the header (`Confirm belowHeader`: non-modal, own
+backdrop), so «Modo avanzado», «Panel» and «Salir» stay usable; the header wraps on a phone. Every
+visit starts guided; the mode lasts for the tab (`sessionStorage`). The switch is a pill.
+
 TASK-0065 (ADR-0029): the studio opens on the guided pop-ups (`components/wizard/*`, `lib/wizard.ts`):
 idea, missing details, references, editable summary, then progress, result and «listo». The step
 resumes from the server's state. `DELETE /api/consultation` starts a new design. The chat and panel

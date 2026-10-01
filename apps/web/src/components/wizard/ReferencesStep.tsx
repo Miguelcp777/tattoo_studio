@@ -34,6 +34,7 @@ export function ReferencesStep({
   const input = useRef<HTMLInputElement>(null);
   return (
     <Confirm
+      belowHeader
       wide
       title="Tus referencias"
       onCancel={onBack}

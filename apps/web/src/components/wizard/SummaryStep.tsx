@@ -74,6 +74,7 @@ export function SummaryStep({
   const zones = Object.entries(BODY_OPTIONS).map(([value, label]) => ({ value, label: label! }));
   return (
     <Confirm
+      belowHeader
       wide
       title="Esto es lo que vamos a tatuar"
       onCancel={onBack}

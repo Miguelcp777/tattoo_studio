@@ -2161,9 +2161,20 @@ body::after {
 .studio-container[hidden] {
   display: none;
 }
+/* TASK-0066: switching mode is always in sight, as a pill in the header. */
 .mode-switch {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   white-space: nowrap;
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  border: 1px solid #e8c3ad;
+  background: rgba(216, 171, 147, 0.16);
+  color: #f4ece6;
+  cursor: pointer;
+}
+.mode-switch:hover {
+  background: rgba(216, 171, 147, 0.28);
 }
 .confirm-dialog .eyebrow {
   margin: 0 0 6px;
@@ -2279,4 +2290,39 @@ body::after {
 .wizard-versions h3 {
   font-size: 0.95rem;
   margin: 18px 0 8px;
+}
+
+/* TASK-0066: the guided studio's dialogs sit under the header, which stays usable. */
+.confirm-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #050609de;
+  z-index: 40;
+}
+.studio-dialog.confirm-below-header {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 45;
+  overflow: auto;
+}
+/* On a phone the header wraps rather than pushing «Salir» off the screen. */
+@media (max-width: 600px) {
+  .studio-header {
+    padding: 0.6rem 1rem;
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+  .header-end {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+  .session-greeting {
+    display: none;
+  }
 }

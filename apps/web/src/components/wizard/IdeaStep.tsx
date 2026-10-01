@@ -36,6 +36,7 @@ export function IdeaStep({
   const ready = idea.trim().length > 0 && !busy;
   return (
     <Confirm
+      belowHeader
       wide
       title="¿Qué quieres tatuarte?"
       onCancel={() => undefined}
