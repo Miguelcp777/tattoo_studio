@@ -3,6 +3,9 @@ import {
   CLAUDE_SCOUT_MODEL,
   ClaudeScoutQueryPlanner,
   isOpenverseThumbnail,
+  JUDGE_PROMPT,
+  PLANNER_PROMPT,
+  subjectQuery,
   referenceQueries,
   VisualSearchAgent,
   type CandidateScreen,
@@ -261,6 +264,53 @@ describe('ClaudeScoutQueryPlanner (TASK-0032/REQ-005)', () => {
       { query: 'fox head', essential: false, label: 'cabeza de zorro' },
       { query: 'FC Barcelona crest', essential: true, label: 'el escudo del Barça' },
     ]);
+  });
+
+  it('searches for the subject, never the style or a tattoo (TASK-0061)', async () => {
+    const request = (async () =>
+      Response.json({
+        id: 'msg_test',
+        type: 'message',
+        role: 'assistant',
+        model: 'claude-sonnet-5',
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              queries: [
+                { query: 'biomechanical bat', essential: false, label: 'murciélago' },
+                { query: 'mechanical gears texture', essential: false, label: 'engranajes' },
+                { query: 'owl tattoo design', essential: false, label: 'búho' },
+                { query: 'traditional american rose', essential: false, label: 'rosa' },
+              ],
+            }),
+          },
+        ],
+        stop_reason: 'end_turn',
+        stop_sequence: null,
+        usage: { input_tokens: 5, output_tokens: 5 },
+      })) as unknown as typeof fetch;
+
+    const queries = await new ClaudeScoutQueryPlanner({ apiKey: 'k' }, request).plan('x');
+    // The gears query held nothing but style: it is dropped, not searched.
+    expect(queries.map((q) => q.query)).toEqual(['bat', 'owl', 'rose']);
+  });
+
+  it('keeps a subject whole and drops only the words that are not one', () => {
+    expect(subjectQuery('howling wolf')).toBe('howling wolf');
+    expect(subjectQuery('Great Wave off Kanagawa')).toBe('Great Wave off Kanagawa');
+    expect(subjectQuery('geometric owl')).toBe('owl');
+    expect(subjectQuery('octopus tattoo')).toBe('octopus');
+    expect(subjectQuery('watercolor splash pattern')).toBe('splash');
+    expect(subjectQuery('mechanical gears texture')).toBe('');
+  });
+
+  it('tells the judge to read the whole idea and refuse style parts and tattoos', () => {
+    expect(JUDGE_PROMPT).toContain("client's whole idea");
+    expect(JUDGE_PROMPT).toContain('gears or machinery for "biomechanical"');
+    expect(JUDGE_PROMPT).toContain('Reject every tattoo, tattoo design, flash sheet');
+    expect(JUDGE_PROMPT).not.toContain('flash sheet, a painting, a sculpture or an object is fine');
+    expect(PLANNER_PROMPT).toContain('Never search for tattoos');
   });
 
   it('throws without a credential so the scout falls back', async () => {

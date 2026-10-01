@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0061: the planner searches for the subject only, never a style, its ingredients or a tattoo;
+`subjectQuery` strips such words from what it returns and drops a query left empty. The judge reads
+the client's whole idea and refuses style ingredients and any tattoo, tattoo design or flash
+(PROD-INV-004), correcting TASK-0058's rule that called a tattoo design on paper fine.
+
 TASK-0058 (ADR-0026): "referencia visual" is gone: only a missing essential reference blocks, and
 the phase is ready once the brief is complete. The scout searches Openverse beside Commons
 (`license_type=modification`, `mature=false`, only thumbnails matching `isOpenverseThumbnail`);
