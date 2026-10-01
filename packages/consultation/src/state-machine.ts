@@ -231,6 +231,7 @@ export function brief(state: ConsultationState): BriefExtractionResult {
           ? `Tatuaje: ${s.subject!.description!}`
           : s.subject!.description!,
       elements: s.subject?.elements,
+      refined: s.subject?.refined,
     },
     style: {
       primary: s.style!.primary!,

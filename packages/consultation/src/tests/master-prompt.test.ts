@@ -109,3 +109,16 @@ describe('body sex of the generated plate (TASK-0041)', () => {
     ).toBe('Mujer');
   });
 });
+
+describe('the professional description in the summary (TASK-0065)', () => {
+  it('is shown as a proposal the client can change', () => {
+    const prompt = buildMasterPrompt({
+      subject: { description: 'Un murciélago', refined: 'Murciélago de frente, alas abiertas.' },
+    });
+    expect(prompt.lines).toContainEqual({
+      label: 'Descripción profesional',
+      value: 'Murciélago de frente, alas abiertas.',
+      proposed: true,
+    });
+  });
+});

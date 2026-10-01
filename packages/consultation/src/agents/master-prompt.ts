@@ -132,6 +132,9 @@ export function buildMasterPrompt(
   const subject = slots.subject?.description?.trim();
   if (subject) lines.push({ label: 'Qué', value: subject });
   else missing.push('el tema');
+  // TASK-0065: what the studio will draw, in a tattooer's words; the client may edit it.
+  const refined = slots.subject?.refined?.trim();
+  if (refined) lines.push({ label: 'Descripción profesional', value: refined, proposed: true });
 
   const style = styleLine(slots, pick);
   if (style) lines.push({ label: 'Estilo', value: style });

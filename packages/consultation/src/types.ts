@@ -33,6 +33,11 @@ export interface ConsultationSlots {
     | {
         description?: string | undefined;
         elements?: string[] | undefined;
+        /**
+         * TASK-0065 (ADR-0029): the idea as a professional tattoo request, drafted by the
+         * architect and editable by the client. Never replaces `description`, their own words.
+         */
+        refined?: string | undefined;
       }
     | undefined;
   style?:

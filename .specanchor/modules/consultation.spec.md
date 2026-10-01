@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0065 (ADR-0029): the architect drafts `subject.refined`, a professional description in Spanish
+that keeps every element the client named (system prompt rule 10); `sanitizeArchitectSlots` bounds
+it at 1200 characters, `mergeArchitect` lets the client's edit win, the brief carries it and the
+master brief shows it as «Descripción profesional».
+
 TASK-0064: the closing "Propuesta lista" message points at «Generar diseño y plantilla», where the
 summary is confirmed; «Aceptar y continuar» no longer exists.
 

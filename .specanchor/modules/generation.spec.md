@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0065 (ADR-0029): `artwork_prompt` leads with the accepted professional description when the
+brief has one, still followed by the client's brief.
+
 TASK-0060 (ADR-0027): `plate_library.py` reads the 52 reviewed plates committed under `plates/`
 (26 zones × man, woman; right side; mirrored for the left except on the centre line; a brief with
 no body gets one of the two by its id) and builds them through the provider's own plate call.

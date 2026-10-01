@@ -34,6 +34,14 @@ class Subject(BaseModel):
             max_length=20,
         ),
     ] = None
+    refined: Annotated[
+        str | None,
+        Field(
+            description="TASK-0065 (ADR-0029): the idea written as a professional tattoo request (composition, elements, detail, framing), in Spanish. Drafted by the consultation, editable by the client. It never replaces `description`, the client's own words.",
+            max_length=1200,
+            min_length=1,
+        ),
+    ] = None
 
 
 class Weight(Enum):

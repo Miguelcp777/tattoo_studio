@@ -2156,3 +2156,127 @@ body::after {
   color: var(--text-primary);
   margin-top: 28px;
 }
+
+/* TASK-0065: the guided studio. */
+.studio-container[hidden] {
+  display: none;
+}
+.mode-switch {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.confirm-dialog .eyebrow {
+  margin: 0 0 6px;
+}
+.wizard-idea,
+.wizard-summary-field textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.wizard-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.chip {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.wizard-field {
+  border: 0;
+  padding: 0;
+  margin: 14px 0;
+  min-width: 0;
+}
+.wizard-field legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.wizard-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wizard-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+}
+.wizard-choice[aria-pressed='true'] {
+  border-color: #e8c3ad;
+  background: rgba(216, 171, 147, 0.16);
+  color: var(--text-primary);
+}
+.wizard-choices-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+}
+.wizard-choices-images .wizard-choice {
+  flex-direction: column;
+  padding: 6px;
+  font-size: 0.8rem;
+}
+.wizard-choices-images img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex: none;
+}
+.wizard-idea-quote {
+  font-style: italic;
+}
+.wizard-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.wizard-summary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+.wizard-summary-field select {
+  min-height: 40px;
+  min-width: 0;
+}
+.wizard-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wizard-size input {
+  width: 100%;
+  min-width: 0;
+}
+.wizard-photo {
+  display: block;
+  max-height: 140px;
+  margin-top: 8px;
+  border-radius: var(--radius-sm);
+}
+.wizard-references figure img {
+  max-height: 160px;
+  object-fit: cover;
+}
+.wizard-versions h3 {
+  font-size: 0.95rem;
+  margin: 18px 0 8px;
+}

@@ -481,3 +481,44 @@ describe('body sex (TASK-0041)', () => {
     ).toBe('feminine');
   });
 });
+
+describe('the professional description (TASK-0065, ADR-0029)', () => {
+  const refined =
+    'Murciélago de frente con las alas abiertas, placas y pistones bajo la piel, encuadre vertical.';
+
+  it('is drafted by the architect, kept beside the client words and bounded', async () => {
+    expect(sanitizeArchitectSlots({ subject: { refined: 'x'.repeat(1201) } }).subject).toBe(
+      undefined,
+    );
+    const { architect } = fakeArchitect({
+      extractedSlots: { ...structuredClone(samurai), subject: { refined } } as never,
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+    const s = await o.handleUserInteraction(
+      o.createSession(),
+      'Un murciélago biomecánico en el muslo derecho de un hombre, solo negro',
+    );
+    expect(s.slots.subject?.description).toBe(
+      'Un murciélago biomecánico en el muslo derecho de un hombre, solo negro',
+    );
+    expect(s.slots.subject?.refined).toBe(refined);
+    // It travels in the brief the worker receives.
+    expect(s.brief?.subject).toMatchObject({ refined });
+  });
+
+  it("the client's edit wins over a later draft", async () => {
+    const { architect } = fakeArchitect({
+      extractedSlots: { ...structuredClone(samurai), subject: { refined } } as never,
+    });
+    const o = new OrchestratorAgent(offlineScout(), architect);
+    let s = await o.handleUserInteraction(o.createSession(), 'Un murciélago en el muslo');
+    const edited = 'Murciélago de perfil, alas plegadas, sin pistones.';
+    s = await o.handleUserInteraction(s, '', [], {
+      subject: { ...s.slots.subject, refined: edited },
+    });
+    expect(s.slots.subject?.refined).toBe(edited);
+    // A later message refines the same idea; the client's wording of it stays.
+    s = await o.handleUserInteraction(s, 'que sea más grande');
+    expect(s.slots.subject?.refined).toBe(edited);
+  });
+});

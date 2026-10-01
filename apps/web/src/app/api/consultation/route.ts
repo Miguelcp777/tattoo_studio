@@ -14,6 +14,7 @@ import {
   applyRenewal,
   carryRenewal,
   errorResponse,
+  forgetConsultation,
   input,
   orchestrator,
   reply,
@@ -256,5 +257,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     return errorResponse(error);
   } finally {
     if (current && locked) current.busy = false;
+  }
+}
+
+/**
+ * «Nuevo diseño» (TASK-0065): forget the consultation in this browser and start again. The
+ * account's stored designs are untouched; erasing those is `DELETE /api/media`.
+ */
+export async function DELETE(request: Request): Promise<NextResponse> {
+  try {
+    const caller = await requireAccount(request);
+    forgetConsultation(request);
+    const response = applyRenewal(
+      NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } }),
+      caller,
+    );
+    response.cookies.delete('inkcraft');
+    return response;
+  } catch (error) {
+    return errorResponse(error);
   }
 }

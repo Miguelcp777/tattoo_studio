@@ -23,6 +23,19 @@ import { Confirm } from '@/components/Confirm';
 import { ConsentDialog } from '@/components/ConsentDialog';
 import { IMAGES_VERSION, TERMS_VERSION } from '@/content/legal';
 import { missingBeyondDialogs, nextDialog, type GenerationDialog } from '@/lib/generation-flow';
+import {
+  afterIdea,
+  ALL_DETAILS,
+  essentialMissing,
+  missingDetails,
+  resumeStep,
+  type WizardStep,
+} from '@/lib/wizard';
+import { IdeaStep } from '@/components/wizard/IdeaStep';
+import { DetailsStep } from '@/components/wizard/DetailsStep';
+import { ReferencesStep } from '@/components/wizard/ReferencesStep';
+import { SummaryStep } from '@/components/wizard/SummaryStep';
+import { DoneStep, WorkingStep } from '@/components/wizard/DoneStep';
 
 import { buildSteps } from '@/lib/steps';
 import { generationBlockers, nextAction } from '@/lib/next-step';
@@ -47,6 +60,9 @@ interface Form {
   width: string;
 
   height: string;
+
+  /** TASK-0065: the professional description, editable in the summary. */
+  refined: string;
 }
 
 const empty: Form = {
@@ -65,7 +81,14 @@ const empty: Form = {
   width: '',
 
   height: '',
+
+  refined: '',
 };
+
+/** TASK-0065 (ADR-0029): the guided studio by default; the chat and panel are «Modo avanzado». */
+type Mode = 'guided' | 'advanced';
+type GuidedStep = WizardStep | 'done';
+const MODE_KEY = 'inkcraft-mode';
 
 export default function ConsultationPage(): ReactNode {
   const [session, setSession] = useState<OrchestrationSession | null>(null);
@@ -85,6 +108,9 @@ export default function ConsultationPage(): ReactNode {
   // that existed, or after the texts changed version, is asked here once.
   const [needsConsent, setNeedsConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
+
+  const [mode, setMode] = useState<Mode>('guided');
+  const [step, setStep] = useState<GuidedStep>('idea');
 
   // TASK-0064: «Generar» walks through the pop-ups that apply, one at a time (generation-flow.ts).
   const [flowing, setFlowing] = useState(false);
@@ -127,6 +153,23 @@ export default function ConsultationPage(): ReactNode {
   const messagesEnd = useRef<HTMLDivElement>(null);
 
   const activeJob = job?.state === 'queued' || job?.state === 'running';
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(MODE_KEY) === 'advanced') setMode('advanced');
+    } catch {
+      // Storage can be unavailable; the guided studio is the default.
+    }
+  }, []);
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    try {
+      window.localStorage.setItem(MODE_KEY, next);
+    } catch {
+      // Remembering the choice is a convenience only.
+    }
+  }
 
   useEffect(() => {
     void fetch('/api/auth', { cache: 'no-store' })
@@ -178,7 +221,17 @@ export default function ConsultationPage(): ReactNode {
             }
           }
         }
-        if (!cancelled) await refreshVersions(reopensNewest(opening, jobState));
+        if (!cancelled) {
+          // TASK-0065: the guided studio resumes where the consultation left off.
+          setStep(
+            opening.restore !== 'conversation'
+              ? 'idea'
+              : jobState === 'succeeded'
+                ? 'done'
+                : resumeStep(data.session),
+          );
+          await refreshVersions(reopensNewest(opening, jobState));
+        }
       })
 
       .catch(() => {});
@@ -274,6 +327,8 @@ export default function ConsultationPage(): ReactNode {
       width: s.size?.widthMm?.toString() ?? '',
 
       height: s.size?.heightMm?.toString() ?? '',
+
+      refined: s.subject?.refined ?? '',
     };
 
     setForm(nextForm);
@@ -338,7 +393,7 @@ export default function ConsultationPage(): ReactNode {
     });
   }
 
-  async function save(values: Form = form): Promise<boolean> {
+  async function save(values: Form = form): Promise<OrchestrationSession | null> {
     const preferences: Record<string, unknown> = {};
 
     if (values.style) preferences['style'] = { primary: values.style };
@@ -377,9 +432,24 @@ export default function ConsultationPage(): ReactNode {
     if (values.width && values.height && (sizeTouched || !session?.slots.size?.proposed))
       preferences['size'] = { widthMm: Number(values.width), heightMm: Number(values.height) };
 
-    return run(async () =>
-      accept((await call('/api/consultation', { action: 'preferences', preferences })).session),
-    );
+    // TASK-0065: an edited professional description travels with the subject it describes. The
+    // brief's description is used because it already meets the contract's minimum length.
+    const subject = session?.slots.subject;
+    if (values.refined !== savedForm.refined && subject?.description) {
+      const refined = values.refined.trim();
+      preferences['subject'] = {
+        description: session?.brief?.subject.description ?? subject.description,
+        ...(subject.elements?.length ? { elements: subject.elements } : {}),
+        ...(refined ? { refined } : {}),
+      };
+    }
+
+    let saved = null as OrchestrationSession | null;
+    const ok = await run(async () => {
+      saved = (await call('/api/consultation', { action: 'preferences', preferences })).session;
+      accept(saved!);
+    });
+    return ok ? saved : null;
   }
 
   async function upload(file: File | undefined, kind: 'reference' | 'body') {
@@ -406,10 +476,10 @@ export default function ConsultationPage(): ReactNode {
     });
   }
 
-  async function generate() {
+  async function generate(): Promise<boolean> {
     setSubmittingGeneration(true);
     try {
-      await run(async () => {
+      return await run(async () => {
         const data = await call('/api/generate', {
           idempotencyKey: crypto.randomUUID(),
 
@@ -551,12 +621,73 @@ export default function ConsultationPage(): ReactNode {
     // `missingKey` stands for `masterPrompt.missing`, a new array on every render.
   }, [flowing, busy, dialog, unsaved, missingKey]);
 
+  // TASK-0065: the guided studio's answers.
+  async function submitIdea(idea: string) {
+    await run(async () => {
+      // An idea sent again (after «Atrás») starts a clean consultation, not a refinement.
+      if (session) await call('/api/consultation', {}, 'DELETE');
+      const data = await call('/api/consultation', { action: 'orchestrate', userMessage: idea });
+      accept(data.session);
+      setStep(afterIdea(data.session));
+    });
+  }
+
+  // Step 2 asks what is missing; reached again with «Atrás», it offers every detail to revise.
+  const missingNow = missingDetails(session?.slots);
+  const detailFields = missingNow.length ? missingNow : ALL_DETAILS;
+
+  async function continueDetails() {
+    if (await save(form)) setStep('references');
+  }
+
+  async function changeReferences(body: Record<string, unknown>) {
+    await run(async () =>
+      accept((await call('/api/consultation', { action: 'references', ...body })).session),
+    );
+  }
+
+  async function confirmSummary() {
+    // What is accepted is the brief as saved, so a change made here is saved first and the
+    // signature is read from the session the server returns.
+    const current = unsaved ? await save(form) : session;
+    if (!current) return;
+    const signature = briefSignature(
+      buildMasterPrompt(current.slots, current.references, current.stylePick),
+    );
+    const accepted = await run(async () => {
+      accept((await call('/api/consultation', { action: 'accept_brief', signature })).session);
+    });
+    if (!accepted) return;
+    // «Listo» only once the design is really queued; a refusal leaves the summary and its reason.
+    if (await generate()) setStep('done');
+  }
+
+  async function newDesign() {
+    await run(async () => {
+      await call('/api/consultation', {}, 'DELETE');
+      setSession(null);
+      setForm(empty);
+      setSavedForm(empty);
+      setBodyPhotoId('');
+      setArtifact(null);
+      setSelectedJobId('');
+      setJob(null);
+      setStep('idea');
+    });
+  }
+
+  function openVersion(version: StudioJobStatus) {
+    setArtifact(version.result);
+    setSelectedJobId(version.jobId);
+    setShowResult(true);
+  }
+
   function stopFlow() {
     setFlowing(false);
     setDialog(null);
   }
 
-  async function answer(step: () => Promise<boolean>) {
+  async function answer(step: () => Promise<unknown>) {
     setDialog(null);
     if (!(await step())) setFlowing(false);
   }
@@ -585,14 +716,20 @@ export default function ConsultationPage(): ReactNode {
         <Brand variant="header" />
 
         <div className="header-end">
-          <span className="model-badge">Diseño · Piel · Stencil</span>
+          <button
+            type="button"
+            className="link-button mode-switch"
+            onClick={() => switchMode(mode === 'guided' ? 'advanced' : 'guided')}
+          >
+            {mode === 'guided' ? 'Modo avanzado' : 'Modo guiado'}
+          </button>
           <SessionMenu />
         </div>
       </header>
 
-      <StepFlow steps={steps} onSelect={goToStep} />
+      {mode === 'advanced' && <StepFlow steps={steps} onSelect={goToStep} />}
 
-      <main className="studio-container">
+      <main className="studio-container" hidden={mode !== 'advanced'}>
         <section id="step-idea" className="chat-surface" aria-label="Consulta de diseño">
           <div className="studio-intro">
             <p className="eyebrow">DE LA IDEA AL TRAZO</p>
@@ -1123,6 +1260,75 @@ export default function ConsultationPage(): ReactNode {
           onAttach={attachForEdit}
           editingDisabled={Boolean(disabled || submittingGeneration || !selectedJobId)}
         />
+      )}
+
+      {mode === 'guided' && !needsConsent && !showResult && (
+        <>
+          {activeJob || submittingGeneration ? (
+            <WorkingStep
+              phase={
+                submittingGeneration ? 'preparing' : job?.state === 'queued' ? 'queued' : 'running'
+              }
+            />
+          ) : step === 'idea' ? (
+            <IdeaStep
+              initial={session?.slots.subject?.description ?? ''}
+              busy={busy}
+              error={error}
+              onSubmit={(idea) => void submitIdea(idea)}
+              onAdvanced={() => switchMode('advanced')}
+              versions={versions}
+              onOpen={openVersion}
+            />
+          ) : step === 'details' ? (
+            <DetailsStep
+              fields={detailFields}
+              values={form}
+              busy={busy}
+              onChange={(patch) => setForm({ ...form, ...patch })}
+              onBack={() => setStep('idea')}
+              onContinue={() => void continueDetails()}
+            />
+          ) : step === 'references' ? (
+            <ReferencesStep
+              references={session?.references ?? []}
+              essential={essentialMissing(session)}
+              busy={busy}
+              error={error}
+              onRemove={(source) => void changeReferences({ removeReference: source })}
+              onAdd={(file) => void upload(file, 'reference')}
+              onSearchAgain={() =>
+                void run(async () =>
+                  accept((await call('/api/consultation', { action: 'retry_references' })).session),
+                )
+              }
+              onBack={() => setStep('details')}
+              onContinue={() => setStep('summary')}
+            />
+          ) : step === 'summary' ? (
+            <SummaryStep
+              idea={session?.slots.subject?.description ?? ''}
+              values={form}
+              referenceCount={session?.references.length ?? 0}
+              bodyPhotoId={bodyPhotoId}
+              busy={busy}
+              error={error}
+              onChange={(patch) => setForm({ ...form, ...patch })}
+              onOwnPhoto={(file) => void upload(file, 'body')}
+              onStudioSkin={() => setBodyPhotoId('')}
+              onBack={() => setStep('references')}
+              onConfirm={() => void confirmSummary()}
+            />
+          ) : (
+            <DoneStep
+              versions={versions}
+              onView={() => artifact && setShowResult(true)}
+              onNew={() => void newDesign()}
+              onOpen={openVersion}
+              onAdvanced={() => switchMode('advanced')}
+            />
+          )}
+        </>
       )}
 
       {needsConsent && (

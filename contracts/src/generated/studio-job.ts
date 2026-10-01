@@ -268,6 +268,10 @@ export interface StudioJob {
             string,
             string
           ];
+      /**
+       * TASK-0065 (ADR-0029): the idea written as a professional tattoo request (composition, elements, detail, framing), in Spanish. Drafted by the consultation, editable by the client. It never replaces `description`, the client's own words.
+       */
+      refined?: string;
     };
     style: {
       primary: StyleName;

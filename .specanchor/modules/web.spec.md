@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0065 (ADR-0029): the studio opens on the guided pop-ups (`components/wizard/*`, `lib/wizard.ts`):
+idea, missing details, references, editable summary, then progress, result and «listo». The step
+resumes from the server's state. `DELETE /api/consultation` starts a new design. The chat and panel
+are «Modo avanzado» (remembered in `localStorage`). `save(values)` returns the saved session and
+sends an edited professional description with its subject.
+
 TASK-0064 (ADR-0028): signing in opens «Antes de entrar» (terms with age, and image use, two
 sections, one button); `/api/auth` refuses without the current versions and sets the signed
 `inkcraft_ok` cookie (`lib/consent.ts`); `/api/consent` accepts for an open session. `/api/media`,

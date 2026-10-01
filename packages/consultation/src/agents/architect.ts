@@ -69,7 +69,10 @@ export function sanitizeArchitectSlots(raw: unknown): ConsultationSlots {
   const slots: ConsultationSlots = {};
 
   const elements = list(input['subject']?.['elements'], 20, 120);
-  if (elements) slots.subject = { elements };
+  // TASK-0065: the professional description, bounded like the contract (1200 characters).
+  const refined = text(input['subject']?.['refined'], 1200);
+  if (elements || refined)
+    slots.subject = { ...(elements ? { elements } : {}), ...(refined ? { refined } : {}) };
 
   const primary = input['style']?.['primary'];
   if (isStyle(primary)) {
@@ -180,6 +183,10 @@ export function mergeArchitect(
 
   if (proposed.subject?.elements && !explicit.subject?.elements?.length) {
     merged.subject = { ...explicit.subject, elements: proposed.subject.elements };
+  }
+  // TASK-0065: the architect drafts the professional description once; the client's edit wins.
+  if (proposed.subject?.refined && !explicit.subject?.refined) {
+    merged.subject = { ...merged.subject, refined: proposed.subject.refined };
   }
 
   if (!explicit.style?.primary && proposed.style) {

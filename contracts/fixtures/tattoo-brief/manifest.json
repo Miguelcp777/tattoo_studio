@@ -181,6 +181,18 @@
       "file": "invalid/body-type-outside-vocabulary.json",
       "valid": false,
       "why": "bodyType is a closed vocabulary: masculine or feminine"
+    },
+    {
+      "name": "subject-refined",
+      "file": "valid/subject-refined.json",
+      "valid": true,
+      "why": "TASK-0065: a professional description beside the client's words."
+    },
+    {
+      "name": "subject-refined-too-long",
+      "file": "invalid/subject-refined-too-long.json",
+      "valid": false,
+      "why": "TASK-0065: the professional description is bounded at 1200 characters."
     }
   ]
 }

@@ -93,7 +93,7 @@ export const CONSULTATION_OUTPUT_SCHEMA = object(
     },
     extractedSlots: object(
       {
-        subject: object({ description: text, elements: strings }),
+        subject: object({ description: text, elements: strings, refined: text }),
         style: object({
           primary: { type: 'string', enum: STYLES },
           secondary: { type: 'string', enum: STYLES },

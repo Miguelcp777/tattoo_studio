@@ -240,6 +240,12 @@ export const schemas: Record<string, Record<string, unknown>> = {
               },
               "maxItems": 20,
               "uniqueItems": true
+            },
+            "refined": {
+              "description": "TASK-0065 (ADR-0029): the idea written as a professional tattoo request (composition, elements, detail, framing), in Spanish. Drafted by the consultation, editable by the client. It never replaces `description`, the client's own words.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200
             }
           }
         },
@@ -1112,6 +1118,12 @@ export const schemas: Record<string, Record<string, unknown>> = {
           },
           "maxItems": 20,
           "uniqueItems": true
+        },
+        "refined": {
+          "description": "TASK-0065 (ADR-0029): the idea written as a professional tattoo request (composition, elements, detail, framing), in Spanish. Drafted by the consultation, editable by the client. It never replaces `description`, the client's own words.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
         }
       }
     },

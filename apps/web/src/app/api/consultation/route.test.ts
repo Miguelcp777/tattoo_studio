@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { POST } from './route';
+import { DELETE, GET, POST } from './route';
 import { answerAuth, authOnlyFetch, configureAuth, signedIn } from '../../../lib/auth.testing';
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -98,5 +98,43 @@ describe('consultation server ownership', () => {
     );
     expect(response.status).toBe(400);
     expect((await response.json()).error).toContain('entre 5 y 600 mm');
+  });
+});
+
+describe('a new design (TASK-0065)', () => {
+  it('forgets the consultation in this browser, and refuses a stranger', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url: string | URL | Request) =>
+          answerAuth(String(url)) ?? Response.json({ query: { pages: {} } }),
+      ),
+    );
+    const started = await POST(req({ action: 'orchestrate', userMessage: 'Un lobo aullando' }));
+    const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
+    const read = () =>
+      GET(
+        new Request('http://localhost:3000/api/consultation', {
+          headers: { cookie: signedIn(cookie) },
+        }),
+      );
+    expect((await (await read()).json()).session.slots.subject.description).toBe(
+      'Un lobo aullando',
+    );
+
+    const forgot = await DELETE(
+      new Request('http://localhost:3000/api/consultation', {
+        method: 'DELETE',
+        headers: { cookie: signedIn(cookie) },
+      }),
+    );
+    expect(forgot.status).toBe(200);
+    expect(forgot.headers.getSetCookie().join(';')).toMatch(/inkcraft=;/);
+    expect((await (await read()).json()).session).toBeNull();
+
+    const stranger = await DELETE(
+      new Request('http://localhost:3000/api/consultation', { method: 'DELETE' }),
+    );
+    expect(stranger.status).toBe(401);
   });
 });

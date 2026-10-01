@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0065 (ADR-0029): `subject.refined` (optional string, 1–1200) in `tattoo-brief` and in the brief
+`studio-job` embeds. Fixtures `valid/subject-refined.json`, `invalid/subject-refined-too-long.json`.
+
 TASK-0058 (ADR-0026): `studio-job.referenceIds` may be empty; a generic idea is drawn from the
 brief. The former `invalid/empty-refs.json` is now `valid/no-references.json`.
 

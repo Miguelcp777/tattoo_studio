@@ -53,6 +53,24 @@ def test_reference_bytes_are_in_the_edit_request(monkeypatch: pytest.MonkeyPatch
     provider.close()
 
 
+def test_the_professional_description_leads_the_artwork_prompt() -> None:
+    """TASK-0065: the accepted professional description is drawn; without one, nothing changes."""
+    brief = {
+        "subject": {
+            "description": "Un murciélago",
+            "refined": "Murciélago de frente, alas abiertas.",
+        },
+        "size": {"widthMm": 80, "heightMm": 150},
+    }
+    prompt = StudioProvider.artwork_prompt(brief, "", colour=False)
+    assert "Professional description of the design" in prompt
+    assert "Murciélago de frente, alas abiertas." in prompt
+    plain = StudioProvider.artwork_prompt(
+        {"subject": {"description": "Un murciélago"}, "size": brief["size"]}, "", colour=False
+    )
+    assert "Professional description" not in plain
+
+
 def test_without_references_the_design_is_generated(monkeypatch: pytest.MonkeyPatch) -> None:
     """TASK-0058: the edits endpoint needs an image; a reference-free design is generated."""
     provider = StudioProvider("test-not-a-secret")
