@@ -8,3 +8,8 @@ packages:
 # esbuild's postinstall links its platform binary, which vitest requires.
 allowBuilds:
   esbuild: true
+
+# TASK-0083 (audit SEG-03): Next pins postcss 8.4.31, which carries four advisories
+# (GHSA-6g55-p6wh-862q and its incomplete fixes). The same major line, patched, is compatible.
+overrides:
+  next>postcss: ^8.5.28

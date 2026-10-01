@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0083 (audit SEG-03): `pnpm-workspace.yaml` overrides `next>postcss` to `^8.5.28`; `pnpm audit --prod` is clean.
+
 TASK-0081: password recovery needs Supabase SMTP and `/restablecer` among its allowed redirect URLs (`infra/README.md`).
 
 TASK-0080 (audit ARQ-04): `infra/README.md` describes authentication, daily limits, Supabase's role, the security-header check and current troubleshooting.
