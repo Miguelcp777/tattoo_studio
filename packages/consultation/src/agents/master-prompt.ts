@@ -73,8 +73,15 @@ function sizeLine(slots: ConsultationSlots): { value: string; proposed: boolean 
     Math.abs(size.heightMm - span.heightMm) < 1,
   );
   // TASK-0034: a size the studio proposed (from the architect or the zone) says so.
+  // TASK-0073: with one dimension stated, the line says which one is the client's.
+  const stated =
+    size.stated === 'width'
+      ? ' (ancho indicado por ti; alto propuesto)'
+      : size.stated === 'height'
+        ? ' (alto indicado por ti; ancho propuesto)'
+        : '';
   return {
-    value: `${size.widthMm} × ${size.heightMm} mm`,
+    value: `${size.widthMm} × ${size.heightMm} mm${stated}`,
     proposed: fillsZone || size.proposed === true,
   };
 }

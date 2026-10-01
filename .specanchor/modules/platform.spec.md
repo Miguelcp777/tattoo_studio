@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0073 (audit UX-01, ADR-0008 amended): `resizes_print` — only an edit with `coverage: "full"` changes print millimetres. An initial design keeps its accepted size; a placement-only whole-zone phrase is refused with `ZONE_NEEDS_CONTROL`.
+
 TASK-0072: the router's 422 answers pass through `for_client`.
 
 TASK-0071: `REFUSED_UPLOAD` in `app/studio.py` gives each gate reason its own message (a real

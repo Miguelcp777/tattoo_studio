@@ -121,12 +121,12 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
     slots.colour = { mode: 'black_and_grey_with_accent', palette: colours(text) };
   else if (monochrome) slots.colour = { mode: 'black_and_grey' };
   else if (coloured) slots.colour = { mode: 'colour', palette: colours(text) };
-  const size = text.match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(mm|cm)/);
-  if (size)
-    slots.size = {
-      widthMm: Number(size[1]!.replace(',', '.')) * (size[3] === 'cm' ? 10 : 1),
-      heightMm: Number(size[2]!.replace(',', '.')) * (size[3] === 'cm' ? 10 : 1),
-    };
+  // TASK-0073 (audit UX-01): «15 cm de ancho y 30 cm de alto» was not read, so the studio's
+  // proposal replaced the client's measurement. One stated dimension is kept as theirs; the other
+  // is proposed, never invented as if they had said it.
+  const size = statedSize(text);
+  if (size?.widthMm && size.heightMm) slots.size = size;
+  else if (size) slots.size = { ...size, proposed: true };
   else {
     // TASK-0027: a qualitative size resolves against the zone, because "grande" on a wrist and
     // "grande" on a back are not the same tattoo. An explicit measurement always wins.
@@ -136,6 +136,47 @@ export function extractPreferences(input: string, existing: ConsultationSlots): 
   if (slots.colour?.palette?.length === 0) delete slots.colour.palette;
   return slots;
 }
+const NUMBER = String.raw`(\d+(?:[.,]\d+)?)`;
+const UNIT = String.raw`(mm|cm|milimetros?|centimetros?)`;
+const millimetres = (value: string, unit: string) =>
+  Math.round(Number(value.replace(',', '.')) * (unit.startsWith('c') ? 10 : 1) * 10) / 10;
+
+/**
+ * The size the client stated, in millimetres (TASK-0073). Reads «15 x 30 cm», «15cm x 30cm»,
+ * «15 por 30 cm», «15 cm de ancho y 30 cm de alto», «de alto 30 cm y de ancho 15» and either
+ * order; a dimension without a unit takes the other's. With only one dimension, only that one is
+ * returned, marked `stated`. Text is the normalised (lower-case, unaccented) message.
+ */
+export function statedSize(
+  text: string,
+): { widthMm?: number; heightMm?: number; stated?: 'width' | 'height' } | undefined {
+  const compact = new RegExp(
+    String.raw`${NUMBER}\s*${UNIT}?\s*(?:x|×|por)\s*${NUMBER}\s*${UNIT}\b`,
+  ).exec(text);
+  if (compact) {
+    const unit = compact[4]!;
+    return {
+      widthMm: millimetres(compact[1]!, compact[2] ?? unit),
+      heightMm: millimetres(compact[3]!, unit),
+    };
+  }
+  const labelled = (words: string) =>
+    new RegExp(String.raw`${NUMBER}\s*${UNIT}?\s*(?:de\s+)?(?:${words})\b`).exec(text) ??
+    new RegExp(String.raw`(?:${words})\s*(?:de\s+)?${NUMBER}\s*${UNIT}?`).exec(text);
+  const width = labelled('ancho|anchura');
+  const height = labelled('alto|altura|largo');
+  const unit = width?.[2] ?? height?.[2];
+  if (!unit) return undefined;
+  if (width && height)
+    return {
+      widthMm: millimetres(width[1]!, width[2] ?? unit),
+      heightMm: millimetres(height[1]!, height[2] ?? unit),
+    };
+  if (width) return { widthMm: millimetres(width[1]!, unit), stated: 'width' };
+  if (height) return { heightMm: millimetres(height[1]!, unit), stated: 'height' };
+  return undefined;
+}
+
 const SIZE_WORDS: [RegExp, keyof typeof SIZE_SCALES][] = [
   [/\b(?:muy grande|enorme|gigante|extra grande)\b/, 'large'],
   [/\b(?:grande|amplio|cubriendo|cobertura)\b/, 'large'],
@@ -181,6 +222,9 @@ export function proposeSize(
 ): ConsultationSlots {
   const size = slots.size;
   if (size?.widthMm && size?.heightMm && !size.proposed) return slots;
+  // TASK-0073: the one dimension the client gave stays theirs, whatever else is proposed.
+  const kept =
+    size?.stated === 'width' ? size.widthMm : size?.stated === 'height' ? size.heightMm : undefined;
   const zone = slots.placement?.bodyPart;
   const span = zone ? BODY_ZONE_SPANS[zone] : undefined;
   if (!zone || !span) {
@@ -189,7 +233,13 @@ export function proposeSize(
     delete rest.size;
     return rest;
   }
-  if (size?.proposed && size.widthMm && size.heightMm && zone === previousZone && !recommended)
+  if (
+    size?.proposed &&
+    size.widthMm &&
+    size.heightMm &&
+    zone === previousZone &&
+    (!recommended || kept)
+  )
     return slots;
   let width: number;
   let height: number;
@@ -206,12 +256,20 @@ export function proposeSize(
     width = span.widthMm * scale;
     height = span.heightMm * scale;
   }
+  if (kept && size?.stated === 'width') {
+    height = (height * kept) / width;
+    width = kept;
+  } else if (kept && size?.stated === 'height') {
+    width = (width * kept) / height;
+    height = kept;
+  }
   return {
     ...slots,
     size: {
       widthMm: Math.max(10, Math.round(width)),
       heightMm: Math.max(10, Math.round(height)),
       proposed: true,
+      ...(kept ? { stated: size!.stated } : {}),
     },
   };
 }

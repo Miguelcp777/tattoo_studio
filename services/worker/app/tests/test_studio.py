@@ -603,11 +603,11 @@ def test_an_edit_of_a_resized_version_keeps_its_size(tmp_path: Path) -> None:
     client = TestClient(app)
     headers = {"Authorization": "Bearer test-only-token", "X-Owner-Id": owner}
 
-    def edit(parent: str, instruction: str, key: str) -> dict[str, Any]:
+    def edit(parent: str, instruction: str, key: str, **control: str) -> dict[str, Any]:
         response = client.post(
             "/studio/jobs",
             json={
-                "edit": {"parentJobId": parent, "instruction": instruction},
+                "edit": {"parentJobId": parent, "instruction": instruction, **control},
                 "idempotencyKey": key,
             },
             headers=headers,
@@ -618,7 +618,14 @@ def test_an_edit_of_a_resized_version_keeps_its_size(tmp_path: Path) -> None:
         assert status["state"] == "succeeded", status
         return {"id": response.json()["jobId"], **status["result"]}
 
-    resized = edit(first, "que ocupe todo el antebrazo", "22222222-2222-4222-8222-222222222222")
+    # TASK-0073: the print size changes through the explicit control only.
+    resized = edit(
+        first,
+        "Que ocupe toda la zona",
+        "22222222-2222-4222-8222-222222222222",
+        coverage="full",
+        mode="placement",
+    )
     assert resized["size"] != studio.jobs.get(owner, first)["result"]["size"]
     redrawn = edit(resized["id"], "Añade azul", "33333333-3333-4333-8333-333333333333")
     assert redrawn["size"] == resized["size"]
@@ -633,23 +640,11 @@ def test_edit_prompt_points_at_the_attached_photos() -> None:
     assert "images 2 to 3" in two
 
 
-@pytest.mark.parametrize(
-    "instruction",
-    [
-        "quiero que ocupe casi todo el gemelo",
-        "es muy pequeño, quiero que me ocupe casi todo el gemelo y abarque hacia los lados, "
-        "casi envolviendo el gemelo",
-    ],
-)
-def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
-    tmp_path: Path, instruction: str
-) -> None:
-    """ADR-0008: a whole-zone request settles millimetres, so the print assets change too.
-
-    The instructions say «gemelo» while the brief declares `inner_forearm`. The brief wins:
-    the Spanish noun is never mapped onto the enum (TASK-0024/REQ-003).
-    """
-    provider = FakeProvider()
+def _zone_edit(
+    tmp_path: Path, edit: dict[str, Any], provider: Any = None
+) -> tuple[Any, dict[str, Any], dict[str, Any]]:
+    """A design, then the given change request on it; returns the provider, parent and result."""
+    provider = provider or FakeProvider()
     studio = Studio(tmp_path, b"x" * 32, provider)
     owner = "11111111-1111-4111-8111-111111111111"
     ref = studio.ingest(
@@ -663,11 +658,10 @@ def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
     parent = studio.jobs.get(owner, parent_id)["result"]
     app = FastAPI()
     app.include_router(router(studio, "test-only-token"))
-    client = TestClient(app)
-    response = client.post(
+    response = TestClient(app).post(
         "/studio/jobs",
         json={
-            "edit": {"parentJobId": parent_id, "instruction": instruction},
+            "edit": {"parentJobId": parent_id, **edit},
             "idempotencyKey": "22222222-2222-4222-8222-222222222222",
         },
         headers={"Authorization": "Bearer test-only-token", "X-Owner-Id": owner},
@@ -676,7 +670,73 @@ def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
     assert studio.jobs.tick()
     status = studio.jobs.get(owner, response.json()["jobId"])
     assert status["state"] == "succeeded", status
-    result = status["result"]
+    return provider, parent, status["result"]
+
+
+@pytest.mark.parametrize(
+    "instruction",
+    [
+        "quiero que ocupe casi todo el gemelo",
+        "es muy pequeño, quiero que me ocupe casi todo el gemelo y abarque hacia los lados, "
+        "casi envolviendo el gemelo",
+    ],
+)
+def test_a_whole_zone_phrase_asks_for_the_control_instead_of_resizing(
+    tmp_path: Path, instruction: str
+) -> None:
+    """TASK-0073 (audit UX-01): a sentence cannot confirm a new print size; nothing is queued."""
+    provider = FakeProvider()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    owner = "11111111-1111-4111-8111-111111111111"
+    parent_id = a_design_for(studio, owner)
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    response = TestClient(app).post(
+        "/studio/jobs",
+        json={
+            "edit": {"parentJobId": parent_id, "instruction": instruction},
+            "idempotencyKey": "22222222-2222-4222-8222-222222222222",
+        },
+        headers={"Authorization": "Bearer test-only-token", "X-Owner-Id": owner},
+    )
+    assert response.status_code == 422
+    assert "Ocupar toda la zona" in response.json()["detail"]
+    assert provider.calls == 1
+
+
+def test_a_mixed_whole_zone_request_redraws_at_the_accepted_size(tmp_path: Path) -> None:
+    """TASK-0073: «que ocupe todo el gemelo y añade flores» redraws; the print size stays."""
+    _, parent, result = _zone_edit(
+        tmp_path,
+        {"instruction": "Que ocupe casi todo el gemelo y añade flores"},
+        RecordingProvider(),
+    )
+    assert result["size"] == parent["size"]
+
+
+def a_design_for(studio: Studio, owner: str) -> str:
+    ref = studio.ingest(
+        owner, {"data": base64.b64encode(picture()).decode(), "adult": True, "consent": True}
+    )
+    original = payload()
+    original["referenceIds"] = [ref["assetId"]]
+    job_id = str(studio.jobs.enqueue(owner, original)["jobId"])
+    assert studio.jobs.tick()
+    return job_id
+
+
+def test_whole_zone_control_resizes_to_reference_anatomy_without_generation(
+    tmp_path: Path,
+) -> None:
+    """ADR-0008: the confirmed whole-zone control settles millimetres, so the print changes too.
+
+    The instructions say «gemelo» while the brief declares `inner_forearm`. The brief wins:
+    the Spanish noun is never mapped onto the enum (TASK-0024/REQ-003).
+    """
+    provider, parent, result = _zone_edit(
+        tmp_path, {"instruction": "Que ocupe toda la zona", "coverage": "full", "mode": "placement"}
+    )
+    original = payload()
     assert result["transform"]["widthPx"] > parent["transform"]["widthPx"]
     assert result["transform"]["heightPx"] > parent["transform"]["heightPx"]
     # TASK-0024/AC-004: the size fills the reference span on its binding dimension.
@@ -694,8 +754,6 @@ def test_whole_zone_request_resizes_to_reference_anatomy_without_generation(
     assert result["mockup"]["assetId"] != parent["mockup"]["assetId"]
     for name in ("master", "stencil", "pdf", "mockup"):
         assert result[name]["designId"] == result["designId"]
-    stencil = studio.owned(owner, result["stencil"]["assetId"]).decode()
-    assert f'width="{size["widthMm"]}mm"' in stencil
     assert f"{size['widthMm']:.0f} x {size['heightMm']:.0f} mm" in result["notice"]
     # TASK-0024/AC-006: resizing never costs a generation call.
     assert provider.calls == 1
@@ -761,6 +819,10 @@ def test_initial_full_calf_prompt_uses_visible_bounds(tmp_path: Path) -> None:
     result = studio.generate("owner", request)
     assert result["transform"]["sourceCropPx"]["height"] > 0
     assert result["transform"]["heightPx"] >= 240
+    # TASK-0073 (audit UX-01): the accepted millimetres reach the result and the print unchanged.
+    assert result["size"] == {"widthMm": 150, "heightMm": 500}
+    stencil = studio.owned("owner", result["stencil"]["assetId"]).decode()
+    assert 'width="150mm"' in stencil and 'height="500mm"' in stencil
 
 
 def test_a_nudge_changes_the_view_and_nothing_that_gets_printed(tmp_path: Path) -> None:

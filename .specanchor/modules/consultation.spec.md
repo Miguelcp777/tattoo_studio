@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0073 (audit UX-01): `statedSize` reads compact and labelled sizes in either order; a single dimension is kept as `size.stated` and only the other is proposed (`proposeSize` keeps it across zone changes; the summary says which is the client's).
+
 TASK-0070 (ADR-0031): `agents/content-screen.ts` holds `TextScreen`, `OpenAITextModeration`
 (`omni-moderation-latest`, refuses at `sexual` ≥ 0.9 or `sexual/minors`, lets the idea through on
 failure) and `ContentRefusedError`. `OrchestratorAgent` takes an optional screen and throws before

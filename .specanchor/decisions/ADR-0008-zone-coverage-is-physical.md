@@ -7,6 +7,10 @@ created: 2026-09-22
 
 # ADR-0008: A whole-zone coverage request sets physical size, not preview zoom
 
+> **Amended by TASK-0073 (2026-10-01, audit UX-01).** The accepted millimetres are authoritative.
+> A whole-zone phrase covers the zone on the skin only; the print size changes only through the
+> explicit «Ocupar toda la zona» control, after the client confirms the new size.
+
 ## Context
 
 TASK-0022 introduced coverage controls and decided they are *visual only*: they change how large

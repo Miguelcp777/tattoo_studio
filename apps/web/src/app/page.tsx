@@ -17,6 +17,7 @@ import { SessionMenu } from '@/components/SessionMenu';
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { InkWorking } from '@/components/InkWorking';
+import { BODY_ZONE_SPANS } from '@tattoo/contracts';
 import { messageForError, messageForResponse } from '@/lib/client-errors';
 import type { InkTask } from '@/lib/ink-progress';
 import { StepFlow } from '@/components/StepFlow';
@@ -1277,6 +1278,12 @@ export default function ConsultationPage(): ReactNode {
           }
           onAttach={attachForEdit}
           editingDisabled={Boolean(disabled || submittingGeneration || !selectedJobId)}
+          zoneSpan={
+            // TASK-0073: the zone is known only when this design belongs to the open consultation.
+            artifact.briefId === session?.sessionId && session?.slots.placement?.bodyPart
+              ? BODY_ZONE_SPANS[session.slots.placement.bodyPart]
+              : undefined
+          }
         />
       )}
 

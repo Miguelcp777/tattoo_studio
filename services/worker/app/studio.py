@@ -69,6 +69,22 @@ REFUSED_UPLOAD = {
 }
 
 
+ZONE_NEEDS_CONTROL = (
+    "Para que ocupe toda la zona hay que cambiar las medidas de impresión. Usa el botón «Ocupar "
+    "toda la zona»: te dirá las medidas nuevas antes de aplicarlas."
+)
+
+
+def resizes_print(edit: dict[str, Any] | None) -> bool:
+    """Whether a request may change the print millimetres (TASK-0073, audit UX-01).
+
+    Only the explicit, confirmed «Ocupar toda la zona» control does: an edit carrying
+    `coverage: "full"`. A whole-zone phrase in the idea or a change request covers the zone on the
+    skin and keeps the accepted size.
+    """
+    return bool(edit) and (edit or {}).get("coverage") == "full"
+
+
 class _StudioBlend:
     """The mockup finish over the configured provider (TASK-0040, ADR-0018).
 
@@ -546,10 +562,12 @@ class Studio:
             if background is None:
                 background = self.plate(brief)
             return self.reposition(owner, payload, parent, background, coverage, mark)
-        # A whole-zone request is a statement about the body, so it settles the millimetres
-        # before anything is drawn at them (ADR-0008, TASK-0024/REQ-004).
+        # A whole-zone request fills the zone on the skin (ADR-0008). TASK-0073 (audit UX-01): the
+        # millimetres the client accepted stay authoritative. Only the explicit «Ocupar toda la
+        # zona» control, which says it changes the print size and is confirmed, resolves them from
+        # the zone; a sentence in the idea or in a change request moves the projection only.
         zone = self.zone_intent(brief, payload, coverage, bool(edit))
-        if zone:
+        if zone and resizes_print(edit):
             brief["size"] = self.zone_millimetres(brief)
         analysis = (
             parent["referenceAnalysis"]
@@ -721,7 +739,9 @@ class Studio:
             previous["width"] = parent["transform"]["widthPx"] / image.width
         stored_vector = (
             self.load_vector(owner, parent["designId"])
-            if coverage.resizes_zone and not previous.get("photoWidthMm")
+            if coverage.resizes_zone
+            and resizes_print(payload.get("edit"))
+            and not previous.get("photoWidthMm")
             else None
         )
         resize = stored_vector is not None and body_part in ZONE_SPAN_MM
@@ -791,6 +811,13 @@ class Studio:
                 f"{brief['size']['heightMm']:.0f} mm. Plantilla y PDF reexportados a esa medida; "
                 "el dibujo no se ha modificado. La medida procede de anatomía de referencia "
                 "adulta, no de tu cuerpo: confírmala con tu tatuador. "
+            )
+        elif coverage.resizes_zone and not resizes_print(payload.get("edit")):
+            # TASK-0073: a phrase is not the confirmed control; the accepted size stays.
+            notice = (
+                "Cobertura visual ampliada a la zona. Las medidas de impresión siguen siendo las "
+                f"que aceptaste ({brief['size']['widthMm']:.0f} x {brief['size']['heightMm']:.0f} "
+                "mm); para cambiarlas usa «Ocupar toda la zona». "
             )
         elif coverage.resizes_zone:
             notice = (
@@ -1100,6 +1127,17 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
                 if not isinstance(instruction, str) or not 3 <= len(instruction.strip()) <= 1000:
                     raise ValueError("Escribe entre 3 y 1000 caracteres para describir el cambio.")
                 body["edit"]["instruction"] = instruction.strip()
+                # TASK-0073 (audit UX-01): covering the whole zone with nothing else changed is a
+                # print-size change. A sentence cannot confirm it; the control says what it does.
+                phrased = coverage_request({"instruction": body["edit"]["instruction"]})
+                if (
+                    not body["edit"].get("coverage")
+                    and not body["edit"].get("referenceIds")
+                    and phrased
+                    and phrased.resizes_zone
+                    and phrased.placement_only
+                ):
+                    raise ValueError(ZONE_NEEDS_CONTROL)
                 original = studio.jobs.source_payload(who, body["edit"]["parentJobId"])
                 # Parent owns the brief/placement, never a client-supplied artifact ID.
                 body = {**original, "idempotencyKey": body["idempotencyKey"], "edit": body["edit"]}

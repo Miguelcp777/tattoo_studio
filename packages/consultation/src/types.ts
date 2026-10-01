@@ -85,6 +85,11 @@ export interface ConsultationSlots {
          * is re-proposed when the zone changes.
          */
         proposed?: boolean | undefined;
+        /**
+         * TASK-0073: the one dimension the client stated when they gave only one. It is kept as
+         * theirs; the other is proposed. Never part of the TattooBrief.
+         */
+        stated?: 'width' | 'height' | undefined;
       }
     | undefined;
   constraints?:

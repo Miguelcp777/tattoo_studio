@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { GeneratedTattooArtifact } from '@/types/generation';
 import { ImageDetail } from './ImageDetail';
 import { messageForError } from '@/lib/client-errors';
+import { zoneProposal } from '@/lib/zone-size';
+import { Confirm } from './Confirm';
 export function TattooPreviewModal({
   artifact,
   jobId,
@@ -11,6 +13,7 @@ export function TattooPreviewModal({
   onAttach,
   editingDisabled = false,
   consentControls,
+  zoneSpan,
 }: {
   artifact: GeneratedTattooArtifact;
   /** The version being shown, so a photo taken with the camera can join it (TASK-0050). */
@@ -25,6 +28,8 @@ export function TattooPreviewModal({
   onAttach?: (file: File) => Promise<string>;
   editingDisabled?: boolean;
   consentControls?: ReactNode;
+  /** The reference span of this design's zone, to show what «Ocupar toda la zona» would print. */
+  zoneSpan?: { widthMm: number; heightMm: number } | undefined;
 }): ReactNode {
   const dialog = useRef<HTMLDialogElement>(null);
   const [reviewed, setReviewed] = useState(false);
@@ -48,6 +53,9 @@ export function TattooPreviewModal({
   // TASK-0047: a design lasts, a photo of the body expires after 24 hours. When the skin view was
   // composed on that photo it goes with it, and the design is shown without it, saying why.
   const [skinGone, setSkinGone] = useState(false);
+  // TASK-0073 (audit UX-01): a new print size is shown and confirmed before it is applied.
+  const [confirmZone, setConfirmZone] = useState(false);
+  const proposal = zoneProposal(artifact.size, zoneSpan);
   return (
     <dialog
       ref={dialog}
@@ -326,11 +334,7 @@ export function TattooPreviewModal({
               >
                 Más grande
               </button>
-              <button
-                type="button"
-                disabled={editingDisabled}
-                onClick={() => onEdit('Que ocupe toda la zona', 'full')}
-              >
+              <button type="button" disabled={editingDisabled} onClick={() => setConfirmZone(true)}>
                 Ocupar toda la zona
               </button>
             </div>
@@ -343,6 +347,39 @@ export function TattooPreviewModal({
             Crear versión con estos cambios
           </button>
         </form>
+      )}
+      {confirmZone && onEdit && (
+        <Confirm
+          title="¿Cambiar las medidas de impresión?"
+          onCancel={() => setConfirmZone(false)}
+          actions={[
+            { label: 'Cancelar', onClick: () => setConfirmZone(false) },
+            {
+              label: 'Solo ampliar la vista',
+              onClick: () => {
+                setConfirmZone(false);
+                onEdit('Ampliar la cobertura del tatuaje sobre piel', 'larger');
+              },
+            },
+            {
+              label: 'Cambiar las medidas',
+              primary: true,
+              onClick: () => {
+                setConfirmZone(false);
+                onEdit('Que ocupe toda la zona', 'full');
+              },
+            },
+          ]}
+        >
+          <p>
+            Ahora mide {artifact.size.widthMm} × {artifact.size.heightMm} mm.{' '}
+            {proposal
+              ? `Para ocupar toda la zona pasará a unos ${proposal.widthMm} × ${proposal.heightMm} mm`
+              : 'Para ocupar toda la zona cambiará a las medidas de la zona'}{' '}
+            (anatomía adulta de referencia, no la tuya: confírmalas con tu tatuador). La plantilla y
+            el PDF se volverán a exportar a esa medida; el dibujo no cambia.
+          </p>
+        </Confirm>
       )}
     </dialog>
   );

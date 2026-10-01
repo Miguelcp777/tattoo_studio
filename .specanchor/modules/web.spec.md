@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0073 (audit UX-01): «Ocupar toda la zona» opens a confirmation with the current and approximate new size (`lib/zone-size.ts`), offering «Solo ampliar la vista» instead.
+
 TASK-0072: `lib/client-errors.ts` words every failure the client sees (status, body, dropped
 connection, non-JSON answer); the worker helpers say `STUDIO_UNAVAILABLE` instead of naming the
 worker. The admin panel keeps technical detail.
