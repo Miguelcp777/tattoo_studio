@@ -1779,3 +1779,35 @@ def test_the_limits_answer_429_with_a_plain_message(tmp_path: Path) -> None:
         headers=headers,
     )
     assert second.status_code == 429 and "diseños por día" in second.json()["detail"]
+
+
+def test_a_consultation_survives_a_web_restart(tmp_path: Path) -> None:
+    """TASK-0079 (audit ARQ-01): kept by the worker, per owner, for a day after its last change."""
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    app = FastAPI()
+    app.include_router(router(studio, "test-only-token"))
+    client = TestClient(app)
+    mine = {"Authorization": "Bearer test-only-token", "X-Owner-Id": ACCOUNT}
+    other = {**mine, "X-Owner-Id": "22222222-2222-4222-8222-222222222222"}
+    cid = "33333333-3333-4333-8333-333333333333"
+    data = {"state": {"sessionId": cid, "messages": []}, "jobId": "a" * 32}
+    url = f"/studio/consultations/{cid}"
+    assert client.put(url, json={"data": data}, headers=mine).status_code == 204
+    assert client.get(url, headers=mine).json() == {"data": data}
+    # Another account neither reads nor overwrites it.
+    assert client.get(url, headers=other).status_code == 404
+    assert client.put(url, json={"data": data}, headers=other).status_code == 403
+    # A day without changes ends it, and erasing the account removes it.
+    studio.purge_expired(datetime.now(UTC) + timedelta(days=2))
+    assert client.get(url, headers=mine).status_code == 404
+    client.put(url, json={"data": data}, headers=mine)
+    studio.delete(ACCOUNT)
+    assert client.get(url, headers=mine).status_code == 404
+
+
+def test_a_consultation_is_dropped_on_request(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    cid = "33333333-3333-4333-8333-333333333333"
+    studio.save_consultation(ACCOUNT, cid, "{}")
+    studio.drop_consultation(ACCOUNT, cid)
+    assert studio.load_consultation(ACCOUNT, cid) is None

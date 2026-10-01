@@ -101,7 +101,10 @@ describe('who owns the work (TASK-0046)', () => {
     // AC-001: every call, whatever it was for.
     expect(calls.length).toBeGreaterThanOrEqual(4);
     for (const call of calls) expect(call.owner).toBe(TEST_ACCOUNT.id);
-    expect(JSON.stringify(calls)).not.toContain('99999999-9999-4999-8999-999999999999');
+    // TASK-0079: the consultation is kept under its own id, still owned by the account header;
+    // nothing else the worker is told carries the browser's session.
+    const work = calls.filter((call) => !call.url.includes('/studio/consultations/'));
+    expect(JSON.stringify(work)).not.toContain('99999999-9999-4999-8999-999999999999');
   });
 
   it('keeps one account out of another, even with the same studio session', async () => {

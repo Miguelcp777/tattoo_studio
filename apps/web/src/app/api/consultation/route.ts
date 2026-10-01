@@ -14,7 +14,7 @@ import {
   applyRenewal,
   carryRenewal,
   errorResponse,
-  forgetConsultation,
+  dropConsultation,
   input,
   orchestrator,
   reply,
@@ -23,6 +23,8 @@ import {
   reserveTurn,
   screenText,
   session,
+  replyKept,
+  restoreConsultation,
 } from '../../../lib/studio-server';
 import { attribute, report } from '../../../lib/telemetry';
 
@@ -37,6 +39,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return errorResponse(error);
   }
   try {
+    await restoreConsultation(request, caller.account.id);
     const current = session(request, false, caller.account.id);
     carryRenewal(current, caller);
 
@@ -83,6 +86,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
       throw new RequestError('Acción inválida.');
 
+    await restoreConsultation(request, caller.account.id);
+
     current = session(request, true, caller.account.id);
     carryRenewal(current, caller);
 
@@ -112,7 +117,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         );
       current.acceptedBrief = signature;
       report({ kind: 'consultation_turn', operation: 'accept_brief' }, caller.account.id);
-      return reply({ session: current.state }, current);
+      return await replyKept({ session: current.state }, current);
     }
 
     const text = body['idea'] ?? body['userMessage'] ?? '';
@@ -272,7 +277,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     delete current.jobId;
 
-    return reply({ session: current.state }, current);
+    return await replyKept({ session: current.state }, current);
   } catch (error) {
     return errorResponse(error);
   } finally {
@@ -287,7 +292,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function DELETE(request: Request): Promise<NextResponse> {
   try {
     const caller = await requireAccount(request);
-    forgetConsultation(request);
+    await dropConsultation(request, caller.account.id);
     const response = applyRenewal(
       NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } }),
       caller,

@@ -254,11 +254,13 @@ describe('generation boundary', () => {
     const stale = await post(cookie, { action: 'accept_brief', signature: `${signature}x` });
     expect(stale.status).toBe(409);
 
-    const before = calls.length;
+    // TASK-0079: keeping the consultation is a write to the studio's own store, not a model call.
+    const outbound = () => calls.filter((call) => !call.includes('/studio/consultations/')).length;
+    const before = outbound();
     const accepted = await post(cookie, { action: 'accept_brief', signature });
     expect(accepted.status).toBe(200);
     // AC-005: accepting makes no outbound call at all, model or otherwise.
-    expect(calls.length).toBe(before);
+    expect(outbound()).toBe(before);
   });
 
   it('a generic idea with no reference is generated with none (TASK-0058)', async () => {

@@ -193,6 +193,86 @@ export function forgetConsultation(request: Request): void {
   const cookie = consultationCookie(request);
   if (cookie) sessions.delete(cookie);
 }
+
+/**
+ * TASK-0079 (audit ARQ-01): the consultation is kept by the worker as well as in memory, so a web
+ * restart or a second replica does not lose it, nor the generation it is following. Memory is the
+ * cache; the worker is what survives. Both directions are best effort: a worker that cannot be
+ * reached leaves the consultation working from memory, as before.
+ */
+const CONSULTATION_ID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+
+function kept(current: Session): Record<string, unknown> {
+  return {
+    state: current.state,
+    ...(current.bodyPhotoId ? { bodyPhotoId: current.bodyPhotoId } : {}),
+    ...(current.jobId ? { jobId: current.jobId } : {}),
+    ...(current.acceptedBrief ? { acceptedBrief: current.acceptedBrief } : {}),
+  };
+}
+
+export async function persistConsultation(current: Session): Promise<void> {
+  if (!current.owner || !process.env['TATTOO_WORKER_TOKEN']) return;
+  try {
+    await worker(current.owner, `/consultations/${current.state.sessionId}`, 'PUT', {
+      data: kept(current),
+    });
+  } catch {
+    console.warn('Consultation not persisted; it stays in this replica only.');
+  }
+}
+
+/** Bring this browser's consultation back from the worker when this replica does not hold it. */
+export async function restoreConsultation(request: Request, owner: string): Promise<void> {
+  const cookie = consultationCookie(request);
+  if (!cookie || sessions.has(cookie) || !CONSULTATION_ID.test(cookie)) return;
+  if (!process.env['TATTOO_WORKER_TOKEN']) return;
+  try {
+    const response = await worker(owner, `/consultations/${cookie}`);
+    const { data } = (await response.json()) as {
+      data?: {
+        state?: OrchestrationSession;
+        bodyPhotoId?: string;
+        jobId?: string;
+        acceptedBrief?: string;
+      };
+    };
+    if (data?.state?.sessionId !== cookie) return;
+    sessions.set(cookie, {
+      owner,
+      state: data.state,
+      touched: Date.now(),
+      busy: false,
+      ...(data.bodyPhotoId ? { bodyPhotoId: data.bodyPhotoId } : {}),
+      ...(data.jobId ? { jobId: data.jobId } : {}),
+      ...(data.acceptedBrief ? { acceptedBrief: data.acceptedBrief } : {}),
+    });
+  } catch {
+    // None kept, or the worker cannot be reached: the studio starts a new consultation.
+  }
+}
+
+/** «Nuevo diseño» and sign-out: the kept copy goes too. */
+export async function dropConsultation(request: Request, owner: string): Promise<void> {
+  const cookie = consultationCookie(request);
+  forgetConsultation(request);
+  if (!cookie || !CONSULTATION_ID.test(cookie) || !process.env['TATTOO_WORKER_TOKEN']) return;
+  try {
+    await worker(owner, `/consultations/${cookie}`, 'DELETE');
+  } catch {
+    // It expires on its own a day after its last change.
+  }
+}
+
+/** `reply`, after keeping the consultation it answers for. */
+export async function replyKept(
+  value: unknown,
+  current: Session,
+  status = 200,
+): Promise<NextResponse> {
+  await persistConsultation(current);
+  return reply(value, current, status);
+}
 export function clearSession(id: string): void {
   sessions.delete(id);
 }

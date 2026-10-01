@@ -78,6 +78,12 @@ NODE_STAGES = {
     "surface_warp": "placing",
 }
 
+#: TASK-0079: a consultation in progress lives a day after its last change, as the web cookie does.
+CONSULTATION_TTL_S = 86400
+CONSULTATION_ID = "[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}"
+#: The largest consultation kept: messages are capped at 30 and references at five URLs.
+MAX_CONSULTATION_BYTES = 400_000
+
 ZONE_NEEDS_CONTROL = (
     "Para que ocupe toda la zona hay que cambiar las medidas de impresión. Usa el botón «Ocupar "
     "toda la zona»: te dirá las medidas nuevas antes de aplicarlas."
@@ -341,6 +347,12 @@ class Studio:
                 "CREATE TABLE IF NOT EXISTS consent (owner TEXT, version TEXT, created TEXT "
                 "DEFAULT CURRENT_TIMESTAMP)"
             )
+            # TASK-0079 (audit ARQ-01): the consultation in progress, kept here so a restart or a
+            # second web replica does not lose it. Its own 24-hour life, apart from designs.
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS consultations "
+                "(id TEXT PRIMARY KEY, owner TEXT, data TEXT, updated REAL)"
+            )
         self.limits = limits or Limits()
         self.jobs = JobQueue(
             root / "jobs.sqlite", self.generate, self.purge_expired, limits=self.limits
@@ -379,6 +391,35 @@ class Studio:
             self.drop_orphaned_captures()
             with self.db() as db:
                 db.execute("DELETE FROM consent WHERE created < datetime('now','-1 day')")
+                db.execute(
+                    "DELETE FROM consultations WHERE updated < ?",
+                    (moment.timestamp() - CONSULTATION_TTL_S,),
+                )
+
+    def save_consultation(self, owner: str, consultation_id: str, data: str) -> None:
+        """Keep the consultation in progress (TASK-0079). One owner per id, never handed over."""
+        with self.db() as db:
+            row = db.execute(
+                "SELECT owner FROM consultations WHERE id=?", (consultation_id,)
+            ).fetchone()
+            if row and row[0] != owner:
+                raise PermissionError("Consulta de otra cuenta.")
+            db.execute(
+                "INSERT OR REPLACE INTO consultations VALUES (?,?,?,?)",
+                (consultation_id, owner, data, time.time()),
+            )
+
+    def load_consultation(self, owner: str, consultation_id: str) -> str | None:
+        with self.db() as db:
+            row = db.execute(
+                "SELECT data FROM consultations WHERE id=? AND owner=? AND updated >= ?",
+                (consultation_id, owner, time.time() - CONSULTATION_TTL_S),
+            ).fetchone()
+        return str(row[0]) if row else None
+
+    def drop_consultation(self, owner: str, consultation_id: str) -> None:
+        with self.db() as db:
+            db.execute("DELETE FROM consultations WHERE id=? AND owner=?", (consultation_id, owner))
 
     def drop_orphaned_captures(self) -> None:
         """A kept camera photo's version whose photo has expired shows nothing: remove it."""
@@ -972,6 +1013,7 @@ class Studio:
             with self.db() as db:
                 db.execute("DELETE FROM assets WHERE owner=?", (owner,))
                 db.execute("DELETE FROM consent WHERE owner=?", (owner,))
+                db.execute("DELETE FROM consultations WHERE owner=?", (owner,))
                 # Without this the account keeps rows pointing at artwork it no longer owns.
                 db.execute("DELETE FROM design_vector WHERE owner=?", (owner,))
 
@@ -1262,6 +1304,37 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
             return studio.jobs.get(owner(request), job_id)
         except KeyError as error:
             raise HTTPException(404, "Trabajo no encontrado") from error
+
+    @routes.get("/consultations/{consultation_id}")
+    def load_consultation(consultation_id: str, request: Request) -> dict[str, Any]:
+        """TASK-0079 (audit ARQ-01): the consultation in progress, for any web replica."""
+        if not re.fullmatch(CONSULTATION_ID, consultation_id):
+            raise HTTPException(404, "Consulta no encontrada")
+        data = studio.load_consultation(owner(request), consultation_id)
+        if data is None:
+            raise HTTPException(404, "Consulta no encontrada")
+        return {"data": json.loads(data)}
+
+    @routes.put("/consultations/{consultation_id}", status_code=204)
+    async def save_consultation(consultation_id: str, request: Request) -> Response:
+        if not re.fullmatch(CONSULTATION_ID, consultation_id):
+            raise HTTPException(422, "Consulta inválida.")
+        who = owner(request)
+        body = await bounded_json(request)
+        data = json.dumps(body.get("data"))
+        if not isinstance(body.get("data"), dict) or len(data) > MAX_CONSULTATION_BYTES:
+            raise HTTPException(422, "Consulta inválida.")
+        try:
+            studio.save_consultation(who, consultation_id, data)
+        except PermissionError as error:
+            raise HTTPException(403, "Consulta de otra cuenta.") from error
+        return Response(status_code=204)
+
+    @routes.delete("/consultations/{consultation_id}", status_code=204)
+    def drop_consultation(consultation_id: str, request: Request) -> Response:
+        if re.fullmatch(CONSULTATION_ID, consultation_id):
+            studio.drop_consultation(owner(request), consultation_id)
+        return Response(status_code=204)
 
     @routes.delete("/session")
     def delete(request: Request) -> dict[str, bool]:

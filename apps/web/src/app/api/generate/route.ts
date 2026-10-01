@@ -6,7 +6,6 @@ import {
   carryRenewal,
   errorResponse,
   input,
-  reply,
   requireAccount,
   requireConsent,
   RequestError,
@@ -15,6 +14,8 @@ import {
   worker,
   referenceBytes,
   jobStatus,
+  replyKept,
+  restoreConsultation,
 } from '../../../lib/studio-server';
 import type { Authenticated } from '../../../lib/auth';
 export async function POST(request: Request): Promise<NextResponse> {
@@ -26,6 +27,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0064: age and image consent were accepted at sign-in; nothing proceeds without them.
     requireConsent(request, caller);
     const body = await input(request);
+    await restoreConsultation(request, caller.account.id);
     current = session(request, false, caller.account.id);
     carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
@@ -47,7 +49,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       });
       const status = await jobStatus(response);
       current.jobId = status.jobId;
-      return reply(status, current, 202);
+      return await replyKept(status, current, 202);
     }
     if (!current.state.brief || current.state.phase !== 'ready_to_generate')
       throw new RequestError('Completa el brief y sus medidas antes de generar.', 422);
@@ -87,7 +89,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const response = await worker(caller.account.id, '/jobs', 'POST', validated.value);
     const status = await jobStatus(response);
     current.jobId = status.jobId;
-    return reply(status, current, 202);
+    return await replyKept(status, current, 202);
   } catch (error) {
     return errorResponse(error);
   } finally {

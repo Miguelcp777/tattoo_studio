@@ -5,12 +5,13 @@ import {
   errorResponse,
   input,
   orchestrator,
-  reply,
   RequestError,
   session,
   requireAccount,
   requireConsent,
   worker,
+  replyKept,
+  restoreConsultation,
 } from '../../../lib/studio-server';
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -22,6 +23,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // TASK-0064: every upload is screened and stored under the consent given at sign-in.
     requireConsent(request, caller);
     const body = await input(request, 12000000);
+    await restoreConsultation(request, caller.account.id);
     current = session(request, true, caller.account.id);
     carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
@@ -38,7 +40,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           consent: true,
         })
       ).json();
-      return reply(data, current);
+      return await replyKept(data, current);
     }
     if (body['kind'] === 'reference' && current.state.references.length >= 5)
       throw new RequestError('Máximo cinco referencias.');
@@ -57,7 +59,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         },
       ]);
     }
-    return reply({ ...data, session: current.state }, current);
+    return await replyKept({ ...data, session: current.state }, current);
   } catch (error) {
     return errorResponse(error);
   } finally {
@@ -98,6 +100,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     await input(request);
     await worker(caller.account.id, '/session', 'DELETE');
     try {
+      await restoreConsultation(request, caller.account.id);
       clearSession(session(request, false, caller.account.id).state.sessionId);
     } catch {
       // No consultation in this browser. The account's work is deleted either way.

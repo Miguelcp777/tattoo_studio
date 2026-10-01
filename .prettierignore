@@ -38,3 +38,6 @@ pnpm-workspace.yaml
 # asserted by a test, so formatting it here would break that copy until it is regenerated.
 contracts/reference/
 contracts/python/tattoo_contracts/reference/
+
+# The developer's own Claude Code permissions; local and not part of the project (audit ARQ-04).
+.claude/settings.local.json
