@@ -3,7 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DELETE, GET, POST } from './route';
 import { GET as consultation } from '../consultation/route';
 import { displayName } from '../../../lib/auth';
-import { configureAuth, SUPABASE_ORIGIN, TEST_ACCOUNT } from '../../../lib/auth.testing';
+import {
+  ACCEPTED,
+  configureAuth,
+  consentFor,
+  SUPABASE_ORIGIN,
+  TEST_ACCOUNT,
+} from '../../../lib/auth.testing';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -19,7 +25,8 @@ const login = (body: unknown, origin?: string) =>
       host: 'localhost:3000',
       ...(origin ? { origin } : {}),
     },
-    body: JSON.stringify(body),
+    // TASK-0064: the dialog's acceptance travels with the credentials unless a test removes it.
+    body: JSON.stringify({ accepted: ACCEPTED, ...(body as object) }),
   });
 
 const cookies = (response: Response): string[] => response.headers.getSetCookie();
@@ -46,6 +53,28 @@ describe('signing in (TASK-0045)', () => {
     }
     // Nothing about the account is echoed into the body.
     expect(await response.json()).toEqual({ ok: true });
+  });
+
+  it('enters only with the current terms and image consent accepted (TASK-0064)', async () => {
+    const fetched = vi.fn(async (url: string | URL | Request) =>
+      String(url).endsWith('/user')
+        ? Response.json(TEST_ACCOUNT)
+        : Response.json({ access_token: 'access-1', refresh_token: 'refresh-1' }),
+    );
+    vi.stubGlobal('fetch', fetched);
+    for (const accepted of [undefined, { terms: 'old', images: ACCEPTED.images }, {}]) {
+      const refused = await POST(login({ email: 'owner@studio.test', password: 'x', accepted }));
+      expect(refused.status).toBe(400);
+      expect(cookieFor(refused, 'inkcraft_at')).toBe('');
+    }
+    // Refused before Supabase is asked anything.
+    expect(fetched).not.toHaveBeenCalled();
+
+    const response = await POST(login({ email: 'owner@studio.test', password: 'x' }));
+    expect(response.status).toBe(200);
+    const consent = cookieFor(response, 'inkcraft_ok');
+    expect(consent).toContain(consentFor(TEST_ACCOUNT));
+    expect(consent).toMatch(/HttpOnly/i);
   });
 
   it('says the same thing for an unknown address and a wrong password', async () => {
@@ -109,7 +138,8 @@ describe('signing in (TASK-0045)', () => {
       { url: `${SUPABASE_ORIGIN}/auth/v1/logout?scope=local`, bearer: 'Bearer access-1' },
     ]);
     // Both tokens and the consultation go: the next person on this browser starts clean.
-    for (const name of ['inkcraft_at', 'inkcraft_rt', 'inkcraft'])
+    // TASK-0064: the consent goes too, so the next sign-in asks again.
+    for (const name of ['inkcraft_at', 'inkcraft_rt', 'inkcraft', 'inkcraft_ok'])
       expect(cookieFor(response, name)).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
   });
 
@@ -139,7 +169,15 @@ describe('signing in (TASK-0045)', () => {
     expect((await signed.json()).account).toEqual({
       email: TEST_ACCOUNT.email,
       displayName: 'owner',
+      // TASK-0064: this session never accepted; the studio will ask once.
+      consented: false,
     });
+    const accepted = await GET(
+      new Request('http://localhost:3000/api/auth', {
+        headers: { cookie: `inkcraft_at=t; ${consentFor(TEST_ACCOUNT)}` },
+      }),
+    );
+    expect((await accepted.json()).account.consented).toBe(true);
 
     const anonymous = await GET(new Request('http://localhost:3000/api/auth'));
     expect((await anonymous.json()).account).toBeNull();

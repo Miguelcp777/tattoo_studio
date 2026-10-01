@@ -11,7 +11,14 @@ import {
   signIn,
   signOut,
 } from '../../../lib/auth';
+import {
+  acceptsCurrent,
+  clearConsentCookie,
+  hasConsent,
+  setConsentCookie,
+} from '../../../lib/consent';
 import { forgetConsultation } from '../../../lib/studio-server';
+import { IMAGES_VERSION, TERMS_VERSION } from '../../../content/legal';
 import { report } from '../../../lib/telemetry';
 
 /**
@@ -29,6 +36,8 @@ export async function GET(request: Request): Promise<NextResponse> {
             // TASK-0055: only decides whether the header offers the panel; the panel's own routes
             // check the role with Supabase on every request.
             ...(found.account.admin ? { admin: true } : {}),
+            // TASK-0064: a session from before sign-in consent existed is asked for it once.
+            consented: hasConsent(request, found.account.id),
           }
         : null,
     },
@@ -47,11 +56,19 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') throw new AuthError('Solicitud inválida.', 400);
-    const { email, password } = body as { email?: unknown; password?: unknown };
+    const { email, password, accepted } = body as {
+      email?: unknown;
+      password?: unknown;
+      accepted?: unknown;
+    };
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password)
       throw new AuthError('Escribe tu correo y tu contraseña.', 400);
     if (email.length > 320 || password.length > 200)
       throw new AuthError('Solicitud inválida.', 400);
+    // TASK-0064 (ADR-0028): nobody enters without accepting the current terms and image consent.
+    // Checked before Supabase is asked anything.
+    if (!acceptsCurrent(accepted))
+      throw new AuthError('Acepta las condiciones y el uso de tus imágenes para entrar.', 400);
 
     let tokens;
     try {
@@ -78,13 +95,16 @@ export async function POST(request: Request): Promise<NextResponse> {
           kind: 'sign_in',
           operation: 'password',
           ...(account.email ? { text: account.email } : {}),
+          // TASK-0064: the evidence of what was accepted, and when (the event's own time).
+          detail: { terms: TERMS_VERSION, images: IMAGES_VERSION },
         },
         account.id,
       );
-    return setAuthCookies(
+    const response = setAuthCookies(
       NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } }),
       tokens,
     );
+    return account ? setConsentCookie(response, account.id) : response;
   } catch (error) {
     // Never echo the provider's message: it distinguishes an unknown address from a wrong password.
     const status = error instanceof AuthError ? error.status : 500;
@@ -103,7 +123,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   await signOut(accessTokenOf(request));
   // The conversation in this browser is the signed-out person's; the next one starts clean.
   forgetConsultation(request);
-  const response = clearAuthCookies(NextResponse.json({ ok: true }));
+  const response = clearConsentCookie(clearAuthCookies(NextResponse.json({ ok: true })));
   response.cookies.delete('inkcraft');
   return response;
 }

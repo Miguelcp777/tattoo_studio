@@ -8,6 +8,7 @@ import {
   input,
   reply,
   requireAccount,
+  requireConsent,
   RequestError,
   session,
   worker,
@@ -21,17 +22,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     // TASK-0045: generation is the expensive path; it never runs unauthenticated.
     const caller = await requireAccount(request);
+    // TASK-0064: age and image consent were accepted at sign-in; nothing proceeds without them.
+    requireConsent(request, caller);
     const body = await input(request);
     current = session(request, false, caller.account.id);
     carryRenewal(current, caller);
     if (current.busy) throw new RequestError('Espera a que termine la operación anterior.', 409);
     current.busy = true;
     locked = true;
-    if (body['adult'] !== true || body['consent'] !== true)
-      throw new RequestError(
-        'Confirma la mayoría de edad y el permiso para procesar las imágenes.',
-        422,
-      );
     if (
       typeof body['idempotencyKey'] !== 'string' ||
       !/^[a-f0-9-]{36}$/.test(body['idempotencyKey'])
@@ -64,8 +62,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         const res = await worker(caller.account.id, '/media', 'POST', {
           data: await referenceBytes(reference.source),
           kind: 'reference',
-          consent: body['consent'] === true,
-          adult: body['adult'] === true,
+          consent: true,
+          adult: true,
         });
         reference.assetId = (await res.json()).assetId;
       }

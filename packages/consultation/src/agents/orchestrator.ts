@@ -33,7 +33,7 @@ const message = (sender: MultiAgentMessage['sender'], content: string): MultiAge
 function closingMessage(session: OrchestrationSession): string {
   const summary = proposalSummary(session.slots);
   if (session.phase === 'ready_to_generate')
-    return `Propuesta lista: ${summary}. Siguiente paso: revisa «Esto es lo que vamos a tatuar» y pulsa «Aceptar y continuar». Puedes cambiar cualquier valor en el panel.`;
+    return `Propuesta lista: ${summary}. Siguiente paso: pulsa «Generar diseño y plantilla»; antes verás el resumen para confirmarlo. Puedes cambiar cualquier valor en el panel.`;
   const lead = summary ? `Propuesta: ${summary}. ` : '';
   const essential = session.missingFields
     .filter((field) => field.startsWith(MISSING_REFERENCE))

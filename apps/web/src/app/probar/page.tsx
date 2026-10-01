@@ -5,7 +5,7 @@
  *
  * The live frames stay in the page: they are drawn to a canvas, blended with the design by
  * `try-on`/`skin-blend` and thrown away. The one exception is a photograph the client takes with
- * the shutter and then chooses to keep, having confirmed their age and consent; `lib/capture` is
+ * the shutter and then chooses to keep, under the consent given at sign-in; `lib/capture` is
  * the only code that can compose it into bytes or send it, and this page calls it only from those
  * two buttons. Otherwise the only request is the GET that fetches the client's own design.
  *
@@ -48,8 +48,6 @@ export default function TryOnPage(): ReactNode {
   // TASK-0050: the version this design belongs to, so a kept photo can join it.
   const [parentJobId, setParentJobId] = useState('');
   const [shot, setShot] = useState<Snapshot | null>(null);
-  const [adult, setAdult] = useState(false);
-  const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [captureError, setCaptureError] = useState('');
@@ -199,8 +197,6 @@ export default function TryOnPage(): ReactNode {
       await saveCapture({
         blob: shot.blob,
         parentJobId,
-        adult,
-        consent,
         idempotencyKey: saveKey.current,
       });
       URL.revokeObjectURL(shot.preview);
@@ -297,30 +293,14 @@ export default function TryOnPage(): ReactNode {
         <section ref={review} className="try-on-review" aria-label="Revisa la foto">
           {/* A local object URL: the picture has not left the phone yet. */}
           <img src={shot.preview} alt="Tu foto con el tatuaje superpuesto" />
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={adult}
-              onChange={(event) => setAdult(event.target.checked)}
-            />
-            Soy mayor de edad.
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(event) => setConsent(event.target.checked)}
-            />
-            Acepto que esta foto de mi cuerpo se guarde en mi cuenta. Se revisa su contenido, se
-            guarda cifrada, no se usa para generar imágenes y se borra al eliminar mis datos.
-          </label>
+          {/* TASK-0064: age and consent were accepted at sign-in; this says what keeping means. */}
+          <p className="small-note">
+            Se guarda en tu cuenta, cifrada. Se revisa su contenido, no se usa para generar imágenes
+            y se borra a las 24 horas o al eliminar tus datos.
+          </p>
           {captureError && <p role="alert">{captureError}</p>}
           <div className="try-on-review-actions">
-            <button
-              type="button"
-              onClick={() => void keep()}
-              disabled={!adult || !consent || saving}
-            >
+            <button type="button" onClick={() => void keep()} disabled={saving}>
               {saving ? 'Guardando…' : 'Guardar como propuesta'}
             </button>
             <button type="button" className="link-button" onClick={discard} disabled={saving}>

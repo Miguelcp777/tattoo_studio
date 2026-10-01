@@ -2,11 +2,14 @@
  * What stands between the client and "Generar diseño y plantilla", and the one next action
  * (TASK-0034).
  *
- * Generation needs several independent things — a complete brief, any essential reference, the brief
- * accepted, age and permission confirmed, references reviewed, no unsaved panel edits. The button
- * used to be disabled with no word about which. These pure functions name each blocker in order
- * and point at the section that clears it. They read the state the page already holds and decide
- * nothing (WEB-INV-001): the gates themselves are unchanged.
+ * Generation needs a complete brief and any essential reference. The button used to be disabled
+ * with no word about which. These pure functions name each blocker in order and point at the
+ * section that clears it. They read the state the page already holds and decide nothing
+ * (WEB-INV-001).
+ *
+ * TASK-0064: age and image consent are accepted at sign-in, and unsaved panel edits, the body and
+ * the final acceptance are each asked in a pop-up when «Generar» is pressed (`generation-flow.ts`),
+ * so none of them blocks the button any more.
  */
 
 export interface GateInput {
@@ -14,22 +17,17 @@ export interface GateInput {
   busy: boolean;
   activeJob: boolean;
   hasArtifact: boolean;
-  unsaved: boolean;
-  /** What the master brief still lacks, e.g. ["el tamaño"]. */
+  /** What the master brief still lacks, e.g. ["el tamaño"], without what a pop-up asks. */
   briefMissing: string[];
   /** Labels of essential references still missing, e.g. ["el escudo del FC Barcelona"]. */
   missingReferences: string[];
-  briefAccepted: boolean;
-  adult: boolean;
-  consent: boolean;
-  referencesReviewed: boolean;
   /** The consultation says everything it needs is present. */
   phaseReady: boolean;
 }
 
 export interface Blocker {
   /** Section anchor suffix: `step-${step}`. */
-  step: 'idea' | 'brief' | 'estilo' | 'referencias' | 'resumen' | 'permisos' | 'diseno';
+  step: 'idea' | 'brief' | 'estilo' | 'referencias' | 'resumen' | 'diseno';
   text: string;
 }
 
@@ -44,11 +42,6 @@ const list = (items: string[]): string =>
 
 export function generationBlockers(g: GateInput): Blocker[] {
   const blockers: Blocker[] = [];
-  if (g.unsaved)
-    blockers.push({
-      step: 'brief',
-      text: 'Guarda los cambios del panel con «Guardar preferencias».',
-    });
   if (g.briefMissing.length)
     blockers.push({ step: 'brief', text: `Indica ${list(g.briefMissing)} en el panel.` });
   if (g.missingReferences.length)
@@ -58,16 +51,6 @@ export function generationBlockers(g: GateInput): Blocker[] {
     });
   if (!g.phaseReady && !blockers.length)
     blockers.push({ step: 'brief', text: 'Completa los datos pendientes del panel.' });
-  if (!g.briefAccepted)
-    blockers.push({ step: 'resumen', text: 'Lee el resumen y pulsa «Aceptar y continuar».' });
-  if (!g.adult) blockers.push({ step: 'permisos', text: 'Marca «Soy mayor de 18 años».' });
-  if (!g.consent)
-    blockers.push({ step: 'permisos', text: 'Marca el permiso para procesar las imágenes.' });
-  if (!g.referencesReviewed)
-    blockers.push({
-      step: 'permisos',
-      text: 'Confirma que las referencias corresponden a tu idea.',
-    });
   return blockers;
 }
 

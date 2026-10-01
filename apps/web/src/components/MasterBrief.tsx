@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * The master brief and its acceptance gate (TASK-0029, ADR-0013).
+ * The master brief (TASK-0029, ADR-0013).
  *
- * Nothing is generated until the client has read this and said yes. It is a reading of the brief
+ * Nothing is generated until the client has read this and said yes. TASK-0064: the yes is given in
+ * the final pop-up before generating, which shows this same reading; the panel only shows it. It is a reading of the brief
  * that will be sent, not a second description of it, so a line being wrong here means the tattoo
  * would have been wrong too.
  */
@@ -16,20 +17,9 @@ export interface MasterBriefProps {
   prompt: MasterPrompt;
   /** The exact brief the worker will receive, shown for anyone who wants to check. */
   brief?: unknown;
-  accepted: boolean;
-  disabled?: boolean;
-  onAccept: () => void;
-  onReopen: () => void;
 }
 
-export function MasterBrief({
-  prompt,
-  brief,
-  accepted,
-  disabled,
-  onAccept,
-  onReopen,
-}: MasterBriefProps): React.JSX.Element {
+export function MasterBrief({ prompt, brief }: MasterBriefProps): React.JSX.Element {
   const [showTechnical, setShowTechnical] = useState(false);
 
   return (
@@ -75,24 +65,6 @@ export function MasterBrief({
             </>
           )}
         </div>
-      )}
-
-      {accepted ? (
-        <p className="master-brief-accepted" role="status">
-          Resumen aceptado.{' '}
-          <button type="button" className="link-button" onClick={onReopen} disabled={disabled}>
-            Cambiar algo
-          </button>
-        </p>
-      ) : (
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={disabled || !prompt.complete}
-          onClick={onAccept}
-        >
-          Aceptar y continuar
-        </button>
       )}
     </section>
   );

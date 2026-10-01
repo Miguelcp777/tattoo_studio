@@ -9,6 +9,13 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0064 (ADR-0028): signing in opens «Antes de entrar» (terms with age, and image use, two
+sections, one button); `/api/auth` refuses without the current versions and sets the signed
+`inkcraft_ok` cookie (`lib/consent.ts`); `/api/consent` accepts for an open session. `/api/media`,
+`/api/generate` and `/api/captures` answer 428 without it. The studio, the change dialog and the
+camera try-on have no consent checkboxes; «Generar» asks through `Confirm` pop-ups only what applies
+(`lib/generation-flow.ts`: save, body, summary). `/condiciones` and `/privacidad` are public.
+
 TASK-0062: the sign-in card's brand (`.brand-card`) is centred, its trailing letter-spacing balanced.
 
 TASK-0058 (ADR-0026): `referenceBytes` also downloads an Openverse thumbnail (and no other Openverse

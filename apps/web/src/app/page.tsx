@@ -19,6 +19,10 @@ import { GenerationProgress } from '@/components/GenerationProgress';
 import { StepFlow } from '@/components/StepFlow';
 import { StylePicker } from '@/components/StylePicker';
 import { MasterBrief } from '@/components/MasterBrief';
+import { Confirm } from '@/components/Confirm';
+import { ConsentDialog } from '@/components/ConsentDialog';
+import { IMAGES_VERSION, TERMS_VERSION } from '@/content/legal';
+import { missingBeyondDialogs, nextDialog, type GenerationDialog } from '@/lib/generation-flow';
 
 import { buildSteps } from '@/lib/steps';
 import { generationBlockers, nextAction } from '@/lib/next-step';
@@ -77,19 +81,14 @@ export default function ConsultationPage(): ReactNode {
 
   const [error, setError] = useState('');
 
-  const [adult, setAdult] = useState(false);
+  // TASK-0064 (ADR-0028): age and image consent are accepted at sign-in. A session opened before
+  // that existed, or after the texts changed version, is asked here once.
+  const [needsConsent, setNeedsConsent] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
 
-  const [consent, setConsent] = useState(false);
-
-  const [referencesReviewed, setReferencesReviewed] = useState(false);
-  // TASK-0058 (ADR-0026): a design may have no reference; then there is nothing to review.
-  const hasReferences = (session?.references.length ?? 0) > 0;
-  const referencesConfirmed = referencesReviewed || !hasReferences;
-
-  // TASK-0029: nothing is generated until the client has read the brief and said yes.
-  // Storing what they accepted, rather than that they accepted, means any later change
-  // invalidates it on its own: they agreed to what they read, not to whatever it becomes.
-  const [acceptedSignature, setAcceptedSignature] = useState('');
+  // TASK-0064: «Generar» walks through the pop-ups that apply, one at a time (generation-flow.ts).
+  const [flowing, setFlowing] = useState(false);
+  const [dialog, setDialog] = useState<GenerationDialog | null>(null);
 
   const [bodyPhotoId, setBodyPhotoId] = useState('');
 
@@ -128,6 +127,15 @@ export default function ConsultationPage(): ReactNode {
   const messagesEnd = useRef<HTMLDivElement>(null);
 
   const activeJob = job?.state === 'queued' || job?.state === 'running';
+
+  useEffect(() => {
+    void fetch('/api/auth', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((body: { account?: { consented?: boolean } | null }) => {
+        if (body.account && body.account.consented === false) setNeedsConsent(true);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,8 +281,6 @@ export default function ConsultationPage(): ReactNode {
     setSavedForm(nextForm);
 
     setArtifact(null);
-
-    setReferencesReviewed(false);
   }
 
   async function call(url: string, body: unknown, method = 'POST') {
@@ -288,23 +294,36 @@ export default function ConsultationPage(): ReactNode {
 
     const data = await res.json();
 
+    if (res.status === 428) setNeedsConsent(true);
+
     if (!res.ok) throw new Error(data.error ?? 'No se pudo completar la solicitud.');
 
     return data;
   }
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>): Promise<boolean> {
     setError('');
 
     setBusy(true);
 
     try {
       await action();
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      return false;
     } finally {
       setBusy(false);
     }
+  }
+
+  async function acceptConsent() {
+    setConsentBusy(true);
+    const ok = await run(async () => {
+      await call('/api/consent', { accepted: { terms: TERMS_VERSION, images: IMAGES_VERSION } });
+    });
+    setConsentBusy(false);
+    if (ok) setNeedsConsent(false);
   }
 
   async function send() {
@@ -319,30 +338,30 @@ export default function ConsultationPage(): ReactNode {
     });
   }
 
-  async function save() {
+  async function save(values: Form = form): Promise<boolean> {
     const preferences: Record<string, unknown> = {};
 
-    if (form.style) preferences['style'] = { primary: form.style };
+    if (values.style) preferences['style'] = { primary: values.style };
 
-    if (form.body)
+    if (values.body)
       preferences['placement'] = {
-        bodyPart: form.body,
+        bodyPart: values.body,
 
         orientation: 'vertical',
 
-        ...(form.side ? { side: form.side } : {}),
+        ...(values.side ? { side: values.side } : {}),
 
-        ...(form.bodyType ? { bodyType: form.bodyType } : {}),
+        ...(values.bodyType ? { bodyType: values.bodyType } : {}),
       };
 
-    if (form.color)
+    if (values.color)
       preferences['colour'] = {
-        mode: form.color,
+        mode: values.color,
 
-        ...(form.color === 'black_and_grey' || !form.palette.trim()
+        ...(values.color === 'black_and_grey' || !values.palette.trim()
           ? {}
           : {
-              palette: form.palette
+              palette: values.palette
 
                 .split(',')
 
@@ -354,11 +373,11 @@ export default function ConsultationPage(): ReactNode {
 
     // TASK-0034: an untouched studio proposal stays a proposal, so it is re-made if the zone
     // changes; only a size the client typed becomes their measurement.
-    const sizeTouched = form.width !== savedForm.width || form.height !== savedForm.height;
-    if (form.width && form.height && (sizeTouched || !session?.slots.size?.proposed))
-      preferences['size'] = { widthMm: Number(form.width), heightMm: Number(form.height) };
+    const sizeTouched = values.width !== savedForm.width || values.height !== savedForm.height;
+    if (values.width && values.height && (sizeTouched || !session?.slots.size?.proposed))
+      preferences['size'] = { widthMm: Number(values.width), heightMm: Number(values.height) };
 
-    await run(async () =>
+    return run(async () =>
       accept((await call('/api/consultation', { action: 'preferences', preferences })).session),
     );
   }
@@ -379,7 +398,7 @@ export default function ConsultationPage(): ReactNode {
         reader.readAsDataURL(file);
       });
 
-      const data = await call('/api/media', { data: base64, kind, adult, consent });
+      const data = await call('/api/media', { data: base64, kind });
 
       accept(data.session);
 
@@ -394,11 +413,8 @@ export default function ConsultationPage(): ReactNode {
         const data = await call('/api/generate', {
           idempotencyKey: crypto.randomUUID(),
 
-          adult,
-
-          consent,
-
-          referencesReviewed: referencesConfirmed,
+          // TASK-0064: confirmed in the final pop-up, with the summary they belong to.
+          referencesReviewed: true,
 
           ...(bodyPhotoId ? { bodyPhotoId } : {}),
 
@@ -446,8 +462,6 @@ export default function ConsultationPage(): ReactNode {
       data: base64,
       kind: 'reference',
       purpose: 'edit',
-      adult,
-      consent,
     });
     return data.assetId;
   }
@@ -463,8 +477,6 @@ export default function ConsultationPage(): ReactNode {
       await run(async () => {
         const data = await call('/api/generate', {
           idempotencyKey: crypto.randomUUID(),
-          adult,
-          consent,
           edit: {
             parentJobId: selectedJobId,
             instruction,
@@ -495,7 +507,6 @@ export default function ConsultationPage(): ReactNode {
 
   // TASK-0037: the same function the server uses, so a correct acceptance cannot be refused.
   const currentSignature = briefSignature(masterPrompt);
-  const briefAccepted = masterPrompt.complete && currentSignature === acceptedSignature;
 
   // TASK-0028: offer catalogue variants once a style is known, so the client chooses by
   // looking rather than by imagining.
@@ -510,15 +521,11 @@ export default function ConsultationPage(): ReactNode {
     busy,
     activeJob,
     hasArtifact: Boolean(artifact),
-    unsaved,
-    briefMissing: session ? masterPrompt.missing : [],
+    // TASK-0064: the body is asked in a pop-up when «Generar» is pressed, so it does not block.
+    briefMissing: session ? missingBeyondDialogs(masterPrompt.missing) : [],
     missingReferences: missingFields
       .filter((f) => f.startsWith('referencia: '))
       .map((f) => f.slice('referencia: '.length)),
-    briefAccepted,
-    adult,
-    consent,
-    referencesReviewed: referencesConfirmed,
     phaseReady: session?.phase === 'ready_to_generate',
   };
   const blockers = generationBlockers(gate);
@@ -526,12 +533,32 @@ export default function ConsultationPage(): ReactNode {
 
   // TASK-0037: marked accepted only once the server has recorded it; the server is what
   // generation checks, so a local-only acceptance would be a promise it does not keep.
-  async function acceptBrief() {
+  // TASK-0064: the final pop-up accepts what it shows and generates, in one answer.
+  async function acceptAndGenerate() {
     const signature = currentSignature;
-    await run(async () => {
+    const accepted = await run(async () => {
       accept((await call('/api/consultation', { action: 'accept_brief', signature })).session);
-      setAcceptedSignature(signature);
     });
+    if (accepted) await generate();
+  }
+
+  // TASK-0064: the next pop-up is chosen from the state as it is after the last answer, so the
+  // summary shown last is the brief that will actually be sent.
+  const missingKey = masterPrompt.missing.join('|');
+  useEffect(() => {
+    if (!flowing || busy || dialog) return;
+    setDialog(nextDialog({ unsaved, briefMissing: masterPrompt.missing }));
+    // `missingKey` stands for `masterPrompt.missing`, a new array on every render.
+  }, [flowing, busy, dialog, unsaved, missingKey]);
+
+  function stopFlow() {
+    setFlowing(false);
+    setDialog(null);
+  }
+
+  async function answer(step: () => Promise<boolean>) {
+    setDialog(null);
+    if (!(await step())) setFlowing(false);
   }
 
   async function chooseStyleVariant(variantId: string) {
@@ -544,9 +571,6 @@ export default function ConsultationPage(): ReactNode {
     hasIdea: Boolean(slots?.subject?.description),
     hasBrief,
     referenceCount: session?.references.length ?? 0,
-    adult,
-    consent,
-    referencesReviewed: referencesConfirmed,
     hasArtifact: Boolean(artifact),
     proposedSize: slots?.size,
   });
@@ -817,14 +841,7 @@ export default function ConsultationPage(): ReactNode {
             onSelect={(id) => void chooseStyleVariant(id)}
           />
 
-          <MasterBrief
-            prompt={masterPrompt}
-            brief={session?.brief}
-            accepted={briefAccepted}
-            disabled={disabled}
-            onAccept={() => void acceptBrief()}
-            onReopen={() => setAcceptedSignature('')}
-          />
+          <MasterBrief prompt={masterPrompt} brief={session?.brief} />
 
           <h3 id="step-referencias">Referencias</h3>
           {session?.missingFields.some((field) => field.startsWith('referencia')) && (
@@ -880,37 +897,12 @@ export default function ConsultationPage(): ReactNode {
             ))}
           </div>
 
-          <label className="check-row" id="step-permisos">
-            <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
-            Soy mayor de 18 años.
-          </label>
-
-          <label className="check-row">
-            <input
-              type="checkbox"
-
-              checked={consent}
-
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            Tengo permiso para estas imágenes y acepto su revisión de contenido y procesamiento para
-            este diseño. La foto corporal debe ser mía.
-          </label>
-
           <div className="upload-actions">
-            <button
-              disabled={disabled || !adult || !consent}
-
-              onClick={() => referenceInput.current?.click()}
-            >
+            <button disabled={disabled} onClick={() => referenceInput.current?.click()}>
               Adjuntar referencia
             </button>
 
-            <button
-              disabled={disabled || !adult || !consent}
-
-              onClick={() => bodyInput.current?.click()}
-            >
+            <button disabled={disabled} onClick={() => bodyInput.current?.click()}>
               Mi foto de piel
             </button>
 
@@ -1016,33 +1008,11 @@ export default function ConsultationPage(): ReactNode {
             </label>
           </details>
 
-          {hasReferences && (
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={referencesReviewed}
-                onChange={(e) => setReferencesReviewed(e.target.checked)}
-              />
-              He revisado que las referencias corresponden a mi idea.
-            </label>
-          )}
-
           <button
             id="step-diseno"
             className="btn-primary generate-button"
-
-            disabled={
-              disabled ||
-              unsaved ||
-              session?.phase !== 'ready_to_generate' ||
-              !adult ||
-              !consent ||
-              !referencesConfirmed ||
-              !briefAccepted ||
-              blockers.length > 0
-            }
-
-            onClick={() => void generate()}
+            disabled={disabled || session?.phase !== 'ready_to_generate' || blockers.length > 0}
+            onClick={() => setFlowing(true)}
           >
             {activeJob ? 'Generando…' : 'Generar diseño y plantilla'}
           </button>
@@ -1123,8 +1093,6 @@ export default function ConsultationPage(): ReactNode {
                 setSelectedJobId('');
 
                 setJob(null);
-
-                setReferencesReviewed(false);
               })
             }
           >
@@ -1153,30 +1121,102 @@ export default function ConsultationPage(): ReactNode {
             void editProposal(instruction, coverage, referenceIds)
           }
           onAttach={attachForEdit}
-          editingDisabled={Boolean(
-            disabled || submittingGeneration || !adult || !consent || !selectedJobId,
-          )}
-          consentControls={
-            <>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={adult}
-                  onChange={(e) => setAdult(e.target.checked)}
-                />
-                Soy mayor de 18 años.
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                />
-                Tengo permiso para procesar estas imágenes y crear otra versión.
-              </label>
-            </>
-          }
+          editingDisabled={Boolean(disabled || submittingGeneration || !selectedJobId)}
         />
+      )}
+
+      {needsConsent && (
+        <ConsentDialog
+          confirmLabel="Acepto y continúo"
+          busy={consentBusy}
+          onAccept={() => void acceptConsent()}
+          onCancel={() => {
+            // Declining means leaving: the studio cannot process images without it.
+            void fetch('/api/auth', { method: 'DELETE' }).finally(() =>
+              window.location.replace('/entrar'),
+            );
+          }}
+        />
+      )}
+
+      {dialog === 'save' && (
+        <Confirm
+          title="¿Quieres guardar tus preferencias?"
+          onCancel={stopFlow}
+          actions={[
+            {
+              label: 'Descartar cambios',
+              onClick: () =>
+                void answer(async () => {
+                  setForm(savedForm);
+                  return true;
+                }),
+            },
+            { label: 'Guardar', primary: true, onClick: () => void answer(() => save()) },
+          ]}
+        >
+          <p>Has cambiado valores del panel que aún no se han guardado.</p>
+        </Confirm>
+      )}
+
+      {dialog === 'body' && (
+        <Confirm
+          title="¿Sobre qué cuerpo lo vemos?"
+          onCancel={stopFlow}
+          actions={[
+            { label: 'Cancelar', onClick: stopFlow },
+            {
+              label: 'Hombre',
+              primary: true,
+              onClick: () => void answer(() => save({ ...form, bodyType: 'masculine' })),
+            },
+            {
+              label: 'Mujer',
+              primary: true,
+              onClick: () => void answer(() => save({ ...form, bodyType: 'feminine' })),
+            },
+          ]}
+        >
+          <p>Lo usamos para la vista sobre piel. Puedes cambiarlo después en el panel.</p>
+        </Confirm>
+      )}
+
+      {dialog === 'confirm' && (
+        <Confirm
+          wide
+          title="¿Generamos tu diseño?"
+          onCancel={stopFlow}
+          actions={[
+            { label: 'Cancelar', onClick: stopFlow },
+            {
+              label: 'Generar diseño y plantilla',
+              primary: true,
+              onClick: () => {
+                stopFlow();
+                void acceptAndGenerate();
+              },
+            },
+          ]}
+        >
+          <MasterBrief prompt={masterPrompt} />
+          {(session?.references.length ?? 0) > 0 && (
+            <div className="reference-grid confirm-references">
+              {session?.references.map((r, i) => (
+                <figure key={r.source}>
+                  <img src={r.source} alt={r.label ?? `Referencia ${i + 1}`} />
+                  <figcaption>{r.label}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+          <p className="small-note">
+            Al generar aceptas este resumen
+            {(session?.references.length ?? 0) > 0
+              ? ' y confirmas que estas referencias corresponden a tu idea'
+              : ''}
+            .
+          </p>
+        </Confirm>
       )}
     </div>
   );

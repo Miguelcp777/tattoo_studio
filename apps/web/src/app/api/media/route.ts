@@ -9,6 +9,7 @@ import {
   RequestError,
   session,
   requireAccount,
+  requireConsent,
   worker,
 } from '../../../lib/studio-server';
 
@@ -18,6 +19,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     // TASK-0045: an upload is screened by a paid moderation call, so it needs an account too.
     const caller = await requireAccount(request);
+    // TASK-0064: every upload is screened and stored under the consent given at sign-in.
+    requireConsent(request, caller);
     const body = await input(request, 12000000);
     current = session(request, true, caller.account.id);
     carryRenewal(current, caller);
@@ -31,15 +34,17 @@ export async function POST(request: Request): Promise<NextResponse> {
         await worker(caller.account.id, '/media', 'POST', {
           data: body['data'],
           kind: 'reference',
-          adult: body['adult'],
-          consent: body['consent'],
+          adult: true,
+          consent: true,
         })
       ).json();
       return reply(data, current);
     }
     if (body['kind'] === 'reference' && current.state.references.length >= 5)
       throw new RequestError('Máximo cinco referencias.');
-    const data = await (await worker(caller.account.id, '/media', 'POST', body)).json();
+    const data = await (
+      await worker(caller.account.id, '/media', 'POST', { ...body, adult: true, consent: true })
+    ).json();
     if (body['kind'] === 'body') current.bodyPhotoId = data.assetId;
     if (body['kind'] === 'reference') {
       current.state = await orchestrator.handleUserInteraction(current.state, '', [

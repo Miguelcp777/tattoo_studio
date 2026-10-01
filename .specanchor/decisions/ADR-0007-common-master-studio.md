@@ -1,5 +1,7 @@
 # ADR-0007 — Common line-art master and local queued studio
 
+> **Amended by ADR-0028 (2026-10-01).** The adult consent for own-body uploads is given at sign-in, for the session.
+
 Status: accepted for implementation under TASK-0019 (user authorized audit remediation).
 
 REQ-011 extension: for colour/accent briefs, the single flat colour artwork is the source.

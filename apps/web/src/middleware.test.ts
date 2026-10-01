@@ -29,6 +29,10 @@ describe('the page gate (TASK-0045, TASK-0048)', () => {
       expect(gated(path), path).toBe(false);
   });
 
+  it('lets the terms and the privacy policy be read before signing in (TASK-0064)', () => {
+    for (const path of ['/condiciones', '/privacidad']) expect(gated(path), path).toBe(false);
+  });
+
   it('leaves the API to answer 401 itself rather than redirecting it', () => {
     expect(gated('/api/generate')).toBe(false);
   });

@@ -13,6 +13,7 @@ import {
   isOpenverseThumbnail,
 } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
+import { CONSENT_REQUIRED, hasConsent } from './consent';
 
 import {
   authConfigured,
@@ -150,6 +151,18 @@ export function clearSession(id: string): void {
  * Every route that can spend money or read stored work calls this first. An unconfigured
  * deployment refuses rather than opening: a studio that cannot tell who is asking must say no.
  */
+/**
+ * TASK-0064 (ADR-0028): the account accepted the current terms and image consent when it signed
+ * in. Routes that process images ask for this instead of checkboxes on each action.
+ */
+export function requireConsent(request: Request, caller: Authenticated): void {
+  if (!hasConsent(request, caller.account.id))
+    throw new RequestError(
+      'Acepta las condiciones y el uso de tus imágenes para continuar.',
+      CONSENT_REQUIRED,
+    );
+}
+
 export async function requireAccount(request: Request): Promise<Authenticated> {
   if (!authConfigured())
     throw new RequestError('La autenticación no está configurada en el servidor.', 503);

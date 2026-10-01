@@ -12,9 +12,6 @@ export interface StepInput {
   hasIdea: boolean;
   hasBrief: boolean;
   referenceCount: number;
-  adult: boolean;
-  consent: boolean;
-  referencesReviewed: boolean;
   hasArtifact: boolean;
   /** Millimetres already proposed by the design process, if any. */
   proposedSize?: { widthMm?: number | undefined; heightMm?: number | undefined } | undefined;
@@ -29,9 +26,8 @@ export function describeSize(size: StepInput['proposedSize']): string {
 }
 
 export function buildSteps(input: StepInput): Step[] {
-  const permitted = input.adult && input.consent;
-  const cleared = permitted && input.referencesReviewed;
-  const readyToGenerate = input.hasBrief && cleared;
+  // TASK-0064: permissions are accepted at sign-in; a complete brief is all the design step needs.
+  const readyToGenerate = input.hasBrief;
   const size = describeSize(input.proposedSize);
 
   return [
@@ -55,16 +51,6 @@ export function buildSteps(input: StepInput): Step[] {
         : 'Puedes adjuntar imágenes',
       state: stateOf(input.referenceCount > 0, input.hasBrief),
       optional: true,
-    },
-    {
-      id: 'permisos',
-      label: 'Permisos y revisión',
-      hint: permitted
-        ? input.referencesReviewed
-          ? 'Confirmado'
-          : 'Falta confirmar las referencias'
-        : 'Edad y permiso de uso',
-      state: stateOf(cleared, input.hasBrief),
     },
     {
       id: 'diseno',

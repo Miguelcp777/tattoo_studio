@@ -27,7 +27,10 @@ export const config = {
    * a fetch that receives login HTML instead of JSON is a confusing failure. `/entrar` is excluded
    * for the obvious reason, and the PWA's own files so an installed app can still start and show
    * the sign-in page offline. `brand` holds the background and the logo the sign-in page itself
-   * shows, so it has to load before anyone is signed in (TASK-0048).
+   * shows, so it has to load before anyone is signed in (TASK-0048). The terms and the privacy
+   * policy are read before signing in too (TASK-0064).
    */
-  matcher: ['/((?!api|entrar|_next|icons|brand/|sw.js|manifest.webmanifest|favicon.ico).*)'],
+  matcher: [
+    '/((?!api|entrar|condiciones|privacidad|_next|icons|brand/|sw.js|manifest.webmanifest|favicon.ico).*)',
+  ],
 };

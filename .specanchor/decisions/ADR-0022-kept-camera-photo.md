@@ -8,6 +8,8 @@ amends: ADR-0019
 
 # ADR-0022: One camera photograph may be kept, when the client takes it and chooses to
 
+> **Amended by ADR-0028 (2026-10-01).** The consent for a kept camera photo is the one given at sign-in.
+
 ## Context
 
 ADR-0019 made the camera try-on's central promise: **the frames never leave the device**. It was

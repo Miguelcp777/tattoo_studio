@@ -10,12 +10,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { Brand } from '@/components/Brand';
+import { ConsentDialog } from '@/components/ConsentDialog';
+import { IMAGES_VERSION, TERMS_VERSION } from '@/content/legal';
 
 export default function SignInPage(): ReactNode {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // TASK-0064: «Entrar» asks for the terms and image consent; only accepting signs in.
+  const [asking, setAsking] = useState(false);
 
   // Someone already signed in has no business on this page.
   useEffect(() => {
@@ -27,24 +31,35 @@ export default function SignInPage(): ReactNode {
       .catch(() => undefined);
   }, []);
 
-  async function submit(event: React.FormEvent): Promise<void> {
+  function submit(event: React.FormEvent): void {
     event.preventDefault();
+    setError('');
+    setAsking(true);
+  }
+
+  async function enter(): Promise<void> {
     setBusy(true);
     setError('');
     try {
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          accepted: { terms: TERMS_VERSION, images: IMAGES_VERSION },
+        }),
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
+        setAsking(false);
         setError(body.error ?? 'No se ha podido iniciar sesión.');
         return;
       }
       // A full load, so the server sees the new cookies on the first request.
       window.location.replace('/');
     } catch {
+      setAsking(false);
       setError('No se ha podido contactar con el servidor.');
     } finally {
       setBusy(false);
@@ -53,7 +68,7 @@ export default function SignInPage(): ReactNode {
 
   return (
     <main className="sign-in">
-      <form onSubmit={(event) => void submit(event)}>
+      <form onSubmit={submit}>
         <Brand variant="card" />
         <h1>Entra al estudio</h1>
         <p className="sign-in-note">Las cuentas las crea el estudio. Si necesitas uno, pídelo.</p>
@@ -95,7 +110,18 @@ export default function SignInPage(): ReactNode {
         <button type="submit" disabled={busy || !email || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </button>
+        <p className="sign-in-legal">
+          <a href="/condiciones">Condiciones de uso</a> · <a href="/privacidad">Privacidad</a>
+        </p>
       </form>
+      {asking && (
+        <ConsentDialog
+          confirmLabel="Acepto y entro"
+          busy={busy}
+          onAccept={() => void enter()}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </main>
   );
 }

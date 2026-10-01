@@ -6,9 +6,6 @@ const blank: StepInput = {
   hasIdea: false,
   hasBrief: false,
   referenceCount: 0,
-  adult: false,
-  consent: false,
-  referencesReviewed: false,
   hasArtifact: false,
 };
 
@@ -21,7 +18,6 @@ describe('buildSteps', () => {
       idea: 'current',
       brief: 'pending',
       referencias: 'pending',
-      permisos: 'pending',
       diseno: 'pending',
     });
   });
@@ -38,35 +34,16 @@ describe('buildSteps', () => {
     const steps = buildSteps({ ...blank, hasIdea: true, hasBrief: true });
     expect(steps.find((s) => s.id === 'referencias')?.optional).toBe(true);
     // TASK-0026/AC-003: the design step becomes reachable without a single reference.
-    const cleared = state({
-      ...blank,
-      hasIdea: true,
-      hasBrief: true,
-      adult: true,
-      consent: true,
-      referencesReviewed: true,
-    });
-    expect(cleared.permisos).toBe('done');
+    const cleared = state({ ...blank, hasIdea: true, hasBrief: true });
     expect(cleared.diseno).toBe('current');
   });
 
-  it('will not clear permissions on age alone', () => {
-    expect(state({ ...blank, hasIdea: true, hasBrief: true, adult: true }).permisos).toBe(
-      'current',
-    );
-    expect(
-      state({ ...blank, hasIdea: true, hasBrief: true, adult: true, consent: true }).permisos,
-    ).toBe('current');
+  it('has no permissions step: they are accepted at sign-in (TASK-0064)', () => {
+    expect(buildSteps(blank).map((step) => step.id)).not.toContain('permisos');
   });
 
   it('never reports the design as ready before the brief is complete', () => {
-    const steps = state({
-      ...blank,
-      hasIdea: true,
-      adult: true,
-      consent: true,
-      referencesReviewed: true,
-    });
+    const steps = state({ ...blank, hasIdea: true });
     expect(steps.brief).toBe('current');
     expect(steps.diseno).toBe('pending');
   });
@@ -89,16 +66,8 @@ describe('buildSteps', () => {
   });
 
   it('reports a generated design as done', () => {
-    expect(
-      state({
-        ...blank,
-        hasIdea: true,
-        hasBrief: true,
-        adult: true,
-        consent: true,
-        referencesReviewed: true,
-        hasArtifact: true,
-      }).diseno,
-    ).toBe('done');
+    expect(state({ ...blank, hasIdea: true, hasBrief: true, hasArtifact: true }).diseno).toBe(
+      'done',
+    );
   });
 });

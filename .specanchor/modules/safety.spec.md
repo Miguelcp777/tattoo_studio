@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: safety
 
+TASK-0064 (ADR-0028): SAFETY-INV-003's record is the `sign_in` event, which carries the accepted
+terms and image-consent versions with its time; the consent is given at sign-in for the session.
+
 TASK-0032 (ADR-0015/0016): two obligations become load-bearing. (1) Scouted open-web candidates
 (the Claude Sonnet 5 scout's fallback) are screened before they can become references — a candidate
 depicting a real person is rejected, as ordinary references already are. (2) Activating the mockup

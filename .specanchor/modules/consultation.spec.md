@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0064: the closing "Propuesta lista" message points at «Generar diseño y plantilla», where the
+summary is confirmed; «Aceptar y continuar» no longer exists.
+
 TASK-0061: the planner searches for the subject only, never a style, its ingredients or a tattoo;
 `subjectQuery` strips such words from what it returns and drops a query left empty. The judge reads
 the client's whole idea and refuses style ingredients and any tattoo, tattoo design or flash

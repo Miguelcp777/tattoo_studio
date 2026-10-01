@@ -7,13 +7,8 @@ const ready: GateInput = {
   busy: false,
   activeJob: false,
   hasArtifact: false,
-  unsaved: false,
   briefMissing: [],
   missingReferences: [],
-  briefAccepted: true,
-  adult: true,
-  consent: true,
-  referencesReviewed: true,
   phaseReady: true,
 };
 
@@ -26,28 +21,16 @@ describe('generationBlockers (TASK-0034)', () => {
   it('names every gate, in the order the client meets them', () => {
     const blocked = generationBlockers({
       ...ready,
-      unsaved: true,
       briefMissing: ['el tamaño'],
       missingReferences: ['el escudo del FC Barcelona'],
-      briefAccepted: false,
-      adult: false,
-      consent: false,
-      referencesReviewed: false,
       phaseReady: false,
     });
-    expect(blocked.map((b) => b.step)).toEqual([
-      'brief',
-      'brief',
-      // TASK-0038: a missing reference is answered in «Referencias», not by a style pick.
-      // TASK-0058: only an essential one; a generic idea needs none.
-      'referencias',
-      'resumen',
-      'permisos',
-      'permisos',
-      'permisos',
-    ]);
-    expect(blocked[1]?.text).toBe('Indica el tamaño en el panel.');
-    expect(blocked[2]?.text).toContain('el escudo del FC Barcelona');
+    // TASK-0038: a missing reference is answered in «Referencias», not by a style pick.
+    // TASK-0058: only an essential one. TASK-0064: consent, unsaved edits and acceptance are
+    // pop-ups, not blockers.
+    expect(blocked.map((b) => b.step)).toEqual(['brief', 'referencias']);
+    expect(blocked[0]?.text).toBe('Indica el tamaño en el panel.');
+    expect(blocked[1]?.text).toContain('el escudo del FC Barcelona');
   });
 
   it('never leaves a not-ready consultation without a reason', () => {
@@ -67,15 +50,15 @@ describe('generationBlockers (TASK-0034)', () => {
 describe('nextAction (TASK-0034)', () => {
   it('starts at the idea, then follows the first blocker', () => {
     expect(nextAction({ ...ready, hasSession: false }).step).toBe('idea');
-    expect(nextAction({ ...ready, briefAccepted: false })).toEqual({
+    expect(nextAction({ ...ready, briefMissing: ['la zona'] })).toEqual({
       title: 'Siguiente paso',
-      detail: 'Lee el resumen y pulsa «Aceptar y continuar».',
-      step: 'resumen',
+      detail: 'Indica la zona en el panel.',
+      step: 'brief',
     });
   });
 
   it('reports work in progress and a finished design before any blocker', () => {
-    expect(nextAction({ ...ready, busy: true, adult: false }).title).toBe('Un momento…');
+    expect(nextAction({ ...ready, busy: true, phaseReady: false }).title).toBe('Un momento…');
     expect(nextAction({ ...ready, activeJob: true }).title).toBe('Generando tu diseño');
     expect(nextAction({ ...ready, hasArtifact: true }).title).toBe('Tu diseño está listo');
   });

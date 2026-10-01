@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as signIn } from './auth/route';
 import { POST as consult } from './consultation/route';
 import {
+  ACCEPTED,
   answerAuth,
   configureAuth,
   signedInAs,
@@ -97,7 +98,7 @@ describe('monitoring from the web tier (TASK-0054)', () => {
         new Request('http://localhost:3000/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', host: 'localhost:3000' },
-          body: JSON.stringify({ email, password: 'x' }),
+          body: JSON.stringify({ email, password: 'x', accepted: ACCEPTED }),
         }),
       );
 
@@ -123,7 +124,13 @@ describe('monitoring from the web tier (TASK-0054)', () => {
       // TASK-0055: a successful sign-in names its address, so the panel can tell accounts apart.
       {
         account: TEST_ACCOUNT.id,
-        event: { kind: 'sign_in', operation: 'password', text: TEST_ACCOUNT.email },
+        event: {
+          kind: 'sign_in',
+          operation: 'password',
+          text: TEST_ACCOUNT.email,
+          // TASK-0064: what was accepted is recorded with the sign-in.
+          detail: ACCEPTED,
+        },
       },
       {
         account: undefined,

@@ -6,8 +6,8 @@
  *
  * - `snapshot` composes **one** frame, when the client presses the shutter. It is local: the
  *   picture exists only in this page until the client decides otherwise.
- * - `saveCapture` sends that one picture, when the client chooses to keep it, having confirmed they
- *   are an adult and agree to it being stored. It goes to `/api/captures` and nowhere else, where
+ * - `saveCapture` sends that one picture, when the client chooses to keep it, under the adult
+ *   image consent given at sign-in (TASK-0064). It goes to `/api/captures` and nowhere else, where
  *   it takes the same path as any own-body photograph: screened, stripped, encrypted, deletable,
  *   and never shown to an image model.
  *
@@ -57,19 +57,15 @@ export interface KeptVersion {
 }
 
 /**
- * Keep the picture as a version of the design it shows. Refuses before any request is made unless
- * the client has confirmed both their age and their consent.
+ * Keep the picture as a version of the design it shows. Age and consent were given at sign-in
+ * (TASK-0064); the server checks them.
  */
 export async function saveCapture(options: {
   blob: Blob;
   parentJobId: string;
-  adult: boolean;
-  consent: boolean;
   idempotencyKey: string;
 }): Promise<KeptVersion> {
-  const { blob, parentJobId, adult, consent, idempotencyKey } = options;
-  if (adult !== true || consent !== true)
-    throw new CaptureRefused('Confirma que eres mayor de edad y que aceptas guardar la foto.');
+  const { blob, parentJobId, idempotencyKey } = options;
   if (!/^[a-f0-9]{32}$/.test(parentJobId))
     throw new CaptureRefused('Abre la cámara desde tu diseño para poder guardar la foto.');
 
@@ -79,8 +75,6 @@ export async function saveCapture(options: {
     body: JSON.stringify({
       parentJobId,
       idempotencyKey,
-      adult,
-      consent,
       data: await base64(blob),
     }),
   });

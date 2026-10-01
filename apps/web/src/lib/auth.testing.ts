@@ -10,6 +10,9 @@
 
 import { vi } from 'vitest';
 
+import { IMAGES_VERSION, TERMS_VERSION } from '../content/legal';
+import { consentCookieValue } from './consent';
+
 export const SUPABASE_ORIGIN = 'http://supabase.test';
 
 /**
@@ -53,6 +56,17 @@ export const ACCESS_COOKIE = `inkcraft_at=${tokenFor(TEST_ACCOUNT)}`;
 export function configureAuth(): void {
   vi.stubEnv('SUPABASE_URL', SUPABASE_ORIGIN);
   vi.stubEnv('SUPABASE_ANON_KEY', 'test-anon-key');
+  // TASK-0064: what signs the consent cookie, so a test browser can carry a valid one.
+  vi.stubEnv('TATTOO_CONSENT_SECRET', 'test-consent-secret');
+}
+
+/** What the sign-in dialog sends when the client accepts (TASK-0064). */
+export const ACCEPTED = { terms: TERMS_VERSION, images: IMAGES_VERSION };
+
+/** The consent cookie a browser that accepted at sign-in holds, for this account. */
+export function consentFor(account: { id: string }): string {
+  const value = consentCookieValue(account.id);
+  return value ? `inkcraft_ok=${value}` : '';
 }
 
 /**
@@ -73,12 +87,19 @@ export function answerAuth(url: string, init?: RequestInit): Response | undefine
 
 /** A cookie header presenting a signed-in caller, plus whatever studio session is in play. */
 export function signedIn(sessionCookie = ''): string {
+  return [ACCESS_COOKIE, consentFor(TEST_ACCOUNT), sessionCookie].filter(Boolean).join('; ');
+}
+
+/** Signed in from a session that has not accepted the current terms and image consent. */
+export function signedInWithoutConsent(sessionCookie = ''): string {
   return [ACCESS_COOKIE, sessionCookie].filter(Boolean).join('; ');
 }
 
 /** The same, for a chosen account. */
 export function signedInAs(account: { id: string }, sessionCookie = ''): string {
-  return [`inkcraft_at=${tokenFor(account)}`, sessionCookie].filter(Boolean).join('; ');
+  return [`inkcraft_at=${tokenFor(account)}`, consentFor(account), sessionCookie]
+    .filter(Boolean)
+    .join('; ');
 }
 
 /**

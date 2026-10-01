@@ -7,6 +7,8 @@ created: 2026-09-23
 
 # ADR-0013: Nothing is generated until the client agrees to the brief
 
+> **Amended by ADR-0028 (2026-10-01).** The client accepts the brief in the final pop-up before generating; the server gate is unchanged.
+
 ## Context
 
 The owner's stated goal is a tattoo that resembles the client's idea **on the first attempt**.
