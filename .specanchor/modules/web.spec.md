@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0080: `app/api/persistence.test.ts` restores a consultation from the worker after emptying the process memory.
+
 TASK-0079 (audit ARQ-01): `restoreConsultation` before `session()`, `replyKept` after changes, `dropConsultation` on «Nuevo diseño»; memory is the cache, the worker what survives a restart.
 
 TASK-0078: `reserveTurn` counts a paid consultation turn (message or reference search) in the worker before the models are called, only when the consultation uses paid models.

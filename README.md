@@ -5,15 +5,17 @@ Turn a tattoo idea into two things that matter: a **stencil a tattooer can actua
 
 ## Status
 
-**Local prototype, partial implementation of the product goal.** TASK-0019 connects the real
-reference search, cumulative consultation, encrypted media, persistent queue and a common
-line-art master to SVG/PDF and a geometric skin preview. No placeholder image is returned
-as a successful provider result.
+**Deployed pilot, partial implementation of the product goal.** Inkcraft runs at
+`inkcraft.aurevanta.es` on the owner's VM (Coolify). Accounts are created by the studio in
+Supabase; sign-in asks for the terms and image consent. A guided studio takes an idea through
+missing details, references (Wikimedia Commons, Openverse and, when configured, Brave), an editable
+summary and the design: artwork in colour or black and grey, a mockup on generated skin or on the
+client's own photo, and a stencil as SVG and PDF with a mirrored copy and a calibration bar.
+Daily limits per account and for the studio stop runaway spending.
 
-The current engine produces **black contour proposals**. Colour rendering, realistic shading,
-automatic anatomical curvature and guaranteed cultural fidelity are not implemented or certified.
-Colour requests fail visibly before image generation. A tattooer must review every stencil.
-Physical printing and final tattoo quality remain unverified; passing software tests is not that approval.
+What it is not: stencils of realistic or colour work are approximate contours for a tattooer to
+review, the skin uses reference anatomy rather than the client's measurements, and physical
+printing and final tattoo quality are unverified. Passing software tests is not that approval.
 
 ## Run locally
 
@@ -24,7 +26,8 @@ pnpm install
 uv sync --project services/worker
 ```
 
-Set `OPENAI_API_KEY` in `services/worker/.env` (never commit it), then:
+Set `OPENAI_API_KEY` in `services/worker/.env`, and `SUPABASE_URL` and `SUPABASE_ANON_KEY` in
+`apps/web/.env.local` (never commit either), then:
 
 ```powershell
 pnpm dev
@@ -42,10 +45,10 @@ Use an explicit idea, style, placement, colour and dimensions, for example:
 solo negro, 8 x 15 cm". Review each reference before generating.
 The optional body-photo width calibrates a planar preview, not anatomical surface measurements.
 
-Local session ownership uses an HttpOnly cookie and in-memory web state; restarting the web
-expires consultations. A reload restores the brief, body-photo selection and latest submitted job
-while the web session exists. Media expires after 24 hours; cleanup runs while the worker is active.
-This single-worker prototype is not a multi-host public deployment.
+Sign-in uses HttpOnly cookies issued from Supabase tokens. The consultation in progress is kept by
+the worker for a day after its last change, so a web restart does not lose it (TASK-0079); designs
+belong to the account and do not expire. Photos of a body expire after 24 hours, with everything
+composed on them. The worker runs one job at a time on one replica.
 
 ## Product target (partly pending)
 

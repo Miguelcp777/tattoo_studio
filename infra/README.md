@@ -16,18 +16,13 @@ generation credentials, and its only caller is the web app.
 
 ## Read this before you attach a public domain
 
-**There is no authentication yet.** Anyone who reaches the URL can run a consultation and generate
-designs, and every generation spends money on your OpenAI and BFL keys. A single design costs
-several image calls.
+**Every route that spends or reads stored work requires a signed-in account** (Supabase,
+ADR-0021); accounts are created by the studio, there is no self-registration. Spending is also
+capped per account and for the whole studio each day (`TATTOO_DAILY_DESIGNS`,
+`TATTOO_DAILY_DESIGNS_TOTAL`, `TATTOO_DAILY_TURNS`; TASK-0078). Still watch the provider
+dashboards: a single design costs several image calls.
 
-Until authentication exists (Phase 0, still an open decision), do one of:
-
-- point the hostname only at your own network or VPN, or
-- put Coolify's basic authentication in front of the resource, or
-- accept the risk knowingly and watch the provider dashboards.
-
-The camera only needs a *secure context*, not a *public* one, so a private hostname with a real
-certificate is a perfectly good combination.
+The camera only needs a *secure context*, so the site must be served over HTTPS.
 
 ---
 
@@ -92,8 +87,14 @@ be two schedulers over one SQLite file, handing the same job to both. The compos
 **Retention.** Uploads expire after 24 hours and a deleted photo takes every artifact derived from
 it with it. That is the worker's behaviour, not the deployment's.
 
-**Supabase.** It is installed on this VM but the studio does not use it yet: storage is still
-SQLite plus the encrypted file store. Migrating to it is its own task.
+**Supabase.** The studio uses it for accounts only (sign-in, roles). Stored work stays in the
+worker: SQLite plus the encrypted file store, including the consultation in progress
+(TASK-0079). Events go to SQLite unless `TATTOO_TELEMETRY_DSN` points at Postgres.
+
+**Security headers.** The web app sends them itself (TASK-0074). After a deploy, check them where
+the public sees them: `curl -sI https://<your-domain>/entrar` must show `Content-Security-Policy`,
+`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and
+`Strict-Transport-Security`.
 
 ## Troubleshooting
 
@@ -103,7 +104,7 @@ SQLite plus the encrypted file store. Migrating to it is its own task.
 | Traefik answers `404 page not found` for the real hostname | Coolify holds no domain for the `web` service. Set it in **Domains for web** as `http://<host>:3000` and redeploy so the routing labels are regenerated. Never declare `SERVICE_FQDN_WEB_3000` in the compose file: a value there, even an empty default, overwrites Coolify's on every read and the UI silently will not save. |
 | The deploy fails binding a port | Something in the compose file publishes 80 or 443, which Coolify already owns. No service here should have `ports:`. |
 | The site loads but the camera button does nothing | Not a secure context. Confirm the URL is `https://` and the certificate is trusted on that phone. |
-| Generating returns 503 "no se puede conectar con el worker" | The worker container is unhealthy. Check its logs in Coolify. |
-| Generating fails with 429 | The provider account is out of credit. |
-| Every message says "la sesión ha caducado" | The web container restarted: sessions are in memory and do not survive a restart. |
+| The studio says "El estudio no está disponible en este momento" | The worker container is unhealthy or unreachable. Check its logs in Coolify. |
+| A client is told they reached the daily limit | `TATTOO_DAILY_DESIGNS` / `TATTOO_DAILY_TURNS` (per account) or `TATTOO_DAILY_DESIGNS_TOTAL` (studio). Raise them in Coolify if intended. |
+| Designs fail with a generic message and the Panel shows `HTTP 429` or `402` | The provider account is out of credit or rate-limited. |
 | The build runs out of memory | The web image installs a full pnpm workspace. Give the VM more RAM or build it once and push the image. |

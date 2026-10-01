@@ -27,9 +27,14 @@ Specifically:
 
 ## Current state
 
-The local studio is implemented under TASK-0019; consult its evidence and ADR-0007.
-Modules remain `draft` because the full realistic-colour/anatomical product target is incomplete.
-Distinguish tested local contour delivery from professional tattoo readiness and from deployment.
+The studio is deployed with Coolify (ADR-0020) at `inkcraft.aurevanta.es`: Supabase accounts
+(ADR-0021, created by the studio), consent at sign-in (ADR-0028), the guided studio (ADR-0029), the
+Claude consultation with a scout over Commons, Openverse and optionally Brave (ADR-0026, ADR-0030),
+colour and black-and-grey artwork, a geometric mockup with a constrained AI finish (ADR-0016,
+ADR-0018), stencils as SVG/PDF, and daily spending limits (TASK-0078). The external audit of
+2026-10-01 (`.specanchor/evidence/audit-2026-10-01/`) and the tasks from TASK-0072 record what was
+done about it. Modules remain `draft`: realistic-colour stencils are approximate contours, and
+anatomy is reference anatomy. Distinguish tested software from professional tattoo readiness.
 Historical task claims are not current evidence.
 
 ## Evidence discipline
@@ -79,4 +84,13 @@ python scripts/check-spec-sync.py --baseline
 python scripts/check-spec-sync.py --review .specanchor/evidence/impact-review.json
 ```
 
-Project test suites do not exist yet and will be added in TASK-0001.
+Tests and checks (pnpm is user-scoped on the owner's machine: see the project memory):
+
+```sh
+pnpm test                    # contracts, consultation and web (vitest)
+pnpm lint                    # eslint + prettier --check
+pnpm typecheck
+cd services/worker && ./.venv/Scripts/python.exe -m pytest -q   # worker
+cd services/worker && ./.venv/Scripts/python.exe -m ruff check . && ./.venv/Scripts/python.exe -m mypy .
+cd contracts/python && python -m uv run pytest -q               # Python contract corpus
+```
