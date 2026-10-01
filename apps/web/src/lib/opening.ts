@@ -37,3 +37,20 @@ export function reopensNewest(opening: Opening, jobState?: string): boolean {
   if (opening.restore === 'designs') return true;
   return jobState !== 'queued' && jobState !== 'running';
 }
+
+/**
+ * Whether a design is the result of the consultation on screen (TASK-0075, audit UX-02).
+ *
+ * The auditor reopened a Valencian consultation and was shown «Tu diseño está listo» with an older
+ * dragon from the history: the newest stored design was restored next to a conversation it did not
+ * come from. A design belongs to a consultation when its brief is that consultation's (`briefId` is
+ * the consultation's session id). With no consultation open, the design shown is simply the one
+ * opened from «Tus diseños».
+ */
+export function isCurrentDesign(
+  design: { briefId?: string | undefined } | null | undefined,
+  sessionId: string | undefined,
+): boolean {
+  if (!design) return false;
+  return !sessionId || design.briefId === sessionId;
+}

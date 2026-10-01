@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0075 (audit UX-02): `isCurrentDesign` (`lib/opening.ts`): with a consultation open only a design with its `briefId` is restored as its result or counted by the "design ready" gates; a restored failed job shows its plain message.
+
 TASK-0074 (audit SEG-01): `security-headers.mjs`, applied by `next.config.mjs` to every path: nosniff, frame denial, referrer policy, camera-only permissions, a minimal enforced CSP and the complete CSP as Report-Only; HSTS in production.
 
 TASK-0073 (audit UX-01): «Ocupar toda la zona» opens a confirmation with the current and approximate new size (`lib/zone-size.ts`), offering «Solo ampliar la vista» instead.

@@ -44,7 +44,7 @@ import { DoneStep, WorkingStep } from '@/components/wizard/DoneStep';
 import { buildSteps } from '@/lib/steps';
 import { generationBlockers, nextAction } from '@/lib/next-step';
 
-import { openingFor, reopensNewest } from '@/lib/opening';
+import { isCurrentDesign, openingFor, reopensNewest } from '@/lib/opening';
 
 import type { StudioJobStatus, GeneratedTattooArtifact } from '@/types/generation';
 
@@ -135,14 +135,16 @@ export default function ConsultationPage(): ReactNode {
   const [versions, setVersions] = useState<StudioJobStatus[]>([]);
   const [selectedJobId, setSelectedJobId] = useState('');
 
-  async function refreshVersions(restoreLatest = false) {
+  async function refreshVersions(restoreLatest = false, sessionId?: string) {
     try {
       const response = await fetch('/api/generate?history=true');
       if (response.ok) {
         const history: StudioJobStatus[] = await response.json();
         setVersions(history);
         const latest = history[0];
-        if (restoreLatest && latest?.result) {
+        // TASK-0075 (audit UX-02): only a design of the consultation on screen is restored as
+        // its result; an older one stays in «Tus diseños».
+        if (restoreLatest && latest?.result && isCurrentDesign(latest.result, sessionId)) {
           setArtifact(latest.result);
           setSelectedJobId(latest.jobId);
         }
@@ -226,6 +228,9 @@ export default function ConsultationPage(): ReactNode {
               if (status.state === 'succeeded') {
                 setArtifact(status.result);
                 setSelectedJobId(status.jobId);
+              } else if (status.state === 'failed') {
+                // TASK-0075: a design that failed while the page was closed says so on return.
+                setError(messageForError(status.error));
               }
             }
           }
@@ -239,7 +244,10 @@ export default function ConsultationPage(): ReactNode {
                 ? 'done'
                 : resumeStep(data.session),
           );
-          await refreshVersions(reopensNewest(opening, jobState));
+          await refreshVersions(
+            reopensNewest(opening, jobState),
+            opening.restore === 'conversation' ? data.session?.sessionId : undefined,
+          );
         }
       })
 
@@ -602,7 +610,7 @@ export default function ConsultationPage(): ReactNode {
     hasSession: Boolean(slots?.subject?.description),
     busy,
     activeJob,
-    hasArtifact: Boolean(artifact),
+    hasArtifact: isCurrentDesign(artifact, session?.sessionId),
     // TASK-0064: the body is asked in a pop-up when «Generar» is pressed, so it does not block.
     briefMissing: session ? missingBeyondDialogs(masterPrompt.missing) : [],
     missingReferences: missingFields
@@ -714,7 +722,7 @@ export default function ConsultationPage(): ReactNode {
     hasIdea: Boolean(slots?.subject?.description),
     hasBrief,
     referenceCount: session?.references.length ?? 0,
-    hasArtifact: Boolean(artifact),
+    hasArtifact: isCurrentDesign(artifact, session?.sessionId),
     proposedSize: slots?.size,
   });
 
