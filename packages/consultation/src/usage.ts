@@ -8,8 +8,8 @@
  */
 
 export interface ProviderUsage {
-  provider: 'anthropic' | 'openai';
-  operation: 'consultation' | 'scout_plan' | 'scout_judge';
+  provider: 'anthropic' | 'openai' | 'brave';
+  operation: 'consultation' | 'scout_plan' | 'scout_judge' | 'web_image_search';
   model: string;
   outcome: 'ok' | 'error';
   durationMs: number;

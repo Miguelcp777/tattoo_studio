@@ -35,3 +35,19 @@ describe('live consultation agents are opt-in (TASK-0033/AC-007)', () => {
       expect(buildOrchestrator(env)).toBeInstanceOf(OrchestratorAgent);
   });
 });
+
+describe('web image search is opted into, never implied by a key (TASK-0068)', () => {
+  it('needs the Claude judge, the switch and the key', () => {
+    const all = {
+      TATTOO_SCOUT_PLANNER: 'claude',
+      TATTOO_WEB_IMAGE_SEARCH: 'brave',
+      BRAVE_SEARCH_API_KEY: 'k',
+    };
+    expect(liveAgentConfig(all).webImageSearch).toBe('brave');
+    expect(liveAgentConfig({ ...all, BRAVE_SEARCH_API_KEY: '' }).webImageSearch).toBeUndefined();
+    expect(liveAgentConfig({ ...all, TATTOO_WEB_IMAGE_SEARCH: '' }).webImageSearch).toBeUndefined();
+    // Without the judge, web results would go unchecked: not enabled.
+    expect(liveAgentConfig({ ...all, TATTOO_SCOUT_PLANNER: '' }).webImageSearch).toBeUndefined();
+    expect(liveAgentConfig({ BRAVE_SEARCH_API_KEY: 'k' }).webImageSearch).toBeUndefined();
+  });
+});

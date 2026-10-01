@@ -184,11 +184,15 @@ export class VisualSearchAgent {
       const judged = await this.judgedImages(params.userInput, queries);
       if (!judged) return result([], UNCHECKED);
       const images = [...judged];
-      for (const query of queries) {
-        if (images.length >= MAX_REFERENCES) break;
-        if (images.some((image) => image.referenceQuery === query)) continue;
-        const web = await this.openWebFallback(query);
-        if (web) images.push(web);
+      // TASK-0068 (ADR-0030): the open web only for an essential reference the licensed sources
+      // lacked — a named logo, crest or flag — and its candidates face the same judge.
+      const essential = new Set(plan.filter((p) => p.essential).map((p) => p.query));
+      const lacking = queries.filter(
+        (query) => essential.has(query) && !images.some((image) => image.referenceQuery === query),
+      );
+      if (lacking.length && this.options.openWeb && images.length < MAX_REFERENCES) {
+        const web = await this.judgedWebImages(params.userInput, lacking);
+        images.push(...web.slice(0, MAX_REFERENCES - images.length));
       }
       return result(images, images.length ? FOUND : NONE);
     }
@@ -222,6 +226,36 @@ export class VisualSearchAgent {
       const screened = await this.screened(image);
       if (screened) accepted.push(screened);
     }
+    return this.judge(subject, pool, accepted);
+  }
+
+  /** Open-web candidates for essential queries, judged like licensed ones (TASK-0068). */
+  private async judgedWebImages(subject: string, queries: string[]): Promise<ReferenceImage[]> {
+    const pools = await Promise.all(
+      queries.map(async (query) => {
+        try {
+          const found = await this.options.openWeb!.search(query);
+          return found
+            .slice(0, CANDIDATES_PER_QUERY)
+            .map((image) => ({ ...image, referenceQuery: query }));
+        } catch {
+          // The web search is a last resort; its failure leaves the client to add the image.
+          return [];
+        }
+      }),
+    );
+    return (await this.judge(subject, pools.flat(), [])) ?? [];
+  }
+
+  /**
+   * Show the pool to the judge and keep at most one accepted image per query, after `accepted`.
+   * `undefined` when the judge could not decide and nothing was accepted beforehand.
+   */
+  private async judge(
+    subject: string,
+    pool: ReferenceImage[],
+    accepted: ReferenceImage[],
+  ): Promise<ReferenceImage[] | undefined> {
     if (!pool.length) return accepted;
     const downloaded = await Promise.all(pool.map((image) => this.thumbnail(image)));
     const shown = pool

@@ -50,3 +50,12 @@ it('downloads an Openverse thumbnail and nothing else from that host (TASK-0058)
   );
   await expect(referenceBytes(`${thumb}?full_size=true`)).rejects.toThrow(/no permitida/);
 });
+it('downloads a Brave thumbnail, and nothing else from that host (TASK-0068)', async () => {
+  const thumb = 'https://imgs.search.brave.com/abc123/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9leC5wbmc';
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(new Uint8Array([4, 5]))),
+  );
+  expect(Buffer.from(await referenceBytes(thumb), 'base64')).toEqual(Buffer.from([4, 5]));
+  await expect(referenceBytes(`${thumb}?w=1`)).rejects.toThrow(/no permitida/);
+});

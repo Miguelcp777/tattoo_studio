@@ -73,6 +73,9 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:?set it in Coolify}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set it in Coolify}
       TATTOO_SCOUT_PLANNER: ${TATTOO_SCOUT_PLANNER:-}
+      # TASK-0068: web image search for essential references (logos, crests). Both are needed.
+      TATTOO_WEB_IMAGE_SEARCH: ${TATTOO_WEB_IMAGE_SEARCH:-}
+      BRAVE_SEARCH_API_KEY: ${BRAVE_SEARCH_API_KEY:-}
     expose:
       - '3000'
     depends_on:

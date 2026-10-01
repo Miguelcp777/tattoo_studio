@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0068 (ADR-0030): `BraveImageSearch` (`agents/brave-search.ts`) is the open-web source. With a
+judge, `VisualSearchAgent` asks it only for essential queries the licensed sources lacked and shows
+its candidates to the judge (`judgedWebImages`, sharing `judge` with the licensed path).
+
 TASK-0067: `OrchestrationSession.waivedReferences` lifts the essential-reference block once the
 client chooses to go on without it (cleared when the idea changes); `ofSpanish` contracts «de el».
 

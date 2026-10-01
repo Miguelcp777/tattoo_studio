@@ -150,6 +150,7 @@ const OPERATION: Record<string, string> = {
   consultation: 'Conversación',
   scout_plan: 'Búsqueda: plan',
   scout_judge: 'Búsqueda: juez',
+  web_image_search: 'Búsqueda web de imágenes',
 };
 
 async function read<T>(url: string): Promise<T> {

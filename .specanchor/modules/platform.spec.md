@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0068: the compose web service passes `TATTOO_WEB_IMAGE_SEARCH` and `BRAVE_SEARCH_API_KEY`.
+
 TASK-0060 (ADR-0027): `Studio.plate` serves the library plate and falls back to the provider;
 `build_studio` passes `PlateLibrary()`. `python -m app.build_plate_library [--zone Z] [--body B]
 [--force]` builds the library with OpenAI whatever the configured backend.

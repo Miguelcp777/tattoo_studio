@@ -8,6 +8,8 @@ amends: ADR-0017
 
 # ADR-0026: A generic idea needs no reference; Openverse joins Commons
 
+> **Amended by ADR-0030 (2026-10-01).** An essential reference the licensed sources lack is searched on the web through Brave, and judged.
+
 > **Amended by TASK-0067 (2026-10-01).** A missing essential reference no longer blocks for good: the client may go on without it after a warning that the design will be an interpretation.
 
 ## Context

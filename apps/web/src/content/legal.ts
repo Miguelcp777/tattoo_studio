@@ -11,7 +11,8 @@
 
 /** Bump a version whenever its text changes: everyone signs in to accept it again. */
 export const TERMS_VERSION = '2026-10-01';
-export const IMAGES_VERSION = '2026-10-01';
+// TASK-0068: Brave Search added as a processor, so the consent and privacy text is asked again.
+export const IMAGES_VERSION = '2026-10-01.2';
 
 export const LEGAL_DRAFT = true;
 
@@ -87,7 +88,7 @@ export const TERMS: LegalSection[] = [
     paragraphs: [
       'Lo que subes sigue siendo tuyo. Nos autorizas a procesarlo solo para prestarte el servicio, como explica la política de privacidad.',
       'Puedes usar los diseños que generes para tu tatuaje. Al crearse con inteligencia artificial, no podemos garantizar que sean únicos ni que generen derechos de propiedad intelectual a tu favor.',
-      'Las referencias que el estudio encuentra proceden de Wikimedia Commons y Openverse, con la licencia que se indica junto a cada una.',
+      'Las referencias que el estudio encuentra proceden de Wikimedia Commons y Openverse, con la licencia que se indica junto a cada una. Cuando falta la imagen de algo concreto, como un logo, el estudio puede buscarla en la web: esas imágenes tienen los derechos de su autor y se usan solo como referencia para tu diseño personal.',
     ],
   },
   {
@@ -129,7 +130,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: '4. Con quién se comparten',
     paragraphs: [
-      'Con los proveedores que hacen funcionar el estudio, como encargados del tratamiento: Supabase (cuentas), OpenAI (revisión de contenido, análisis de referencias y generación de imágenes), Anthropic (la consulta y la búsqueda de referencias) y Black Forest Labs (generación de imágenes).',
+      'Con los proveedores que hacen funcionar el estudio, como encargados del tratamiento: Supabase (cuentas), OpenAI (revisión de contenido, análisis de referencias y generación de imágenes), Anthropic (la consulta y la búsqueda de referencias), Black Forest Labs (generación de imágenes) y Brave Search (búsqueda de imágenes de referencia en la web; solo recibe el texto de la búsqueda).',
       'Algunos de ellos pueden tratar datos fuera del Espacio Económico Europeo; en ese caso se hace con las garantías que exige el Reglamento General de Protección de Datos.',
       'Las fotos de tu cuerpo solo pasan por la revisión de contenido; nunca se envían al generador de imágenes.',
     ],

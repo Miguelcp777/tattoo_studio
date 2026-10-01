@@ -11,6 +11,8 @@ import {
   type ConsultationProvider,
   type OrchestrationSession,
   isOpenverseThumbnail,
+  isBraveThumbnail,
+  BraveImageSearch,
 } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 import { CONSENT_REQUIRED, hasConsent } from './consent';
@@ -47,6 +49,8 @@ const sessions = (root.inkcraftSessions ??= new Map<string, Session>());
 export interface LiveAgentConfig {
   architect: 'claude' | 'openai' | undefined;
   scoutPlanner: boolean;
+  /** TASK-0068: Brave image search for essential references, when opted in with a key. */
+  webImageSearch: 'brave' | undefined;
 }
 
 /**
@@ -61,6 +65,13 @@ export function liveAgentConfig(
   return {
     architect: backend === 'claude' || backend === 'openai' ? backend : undefined,
     scoutPlanner: env['TATTOO_SCOUT_PLANNER'] === 'claude',
+    // Opt-in and judged: it needs the Claude judge, the switch and the key.
+    webImageSearch:
+      env['TATTOO_SCOUT_PLANNER'] === 'claude' &&
+      env['TATTOO_WEB_IMAGE_SEARCH'] === 'brave' &&
+      Boolean(env['BRAVE_SEARCH_API_KEY'])
+        ? 'brave'
+        : undefined,
   };
 }
 
@@ -78,7 +89,13 @@ export function buildOrchestrator(
   const scout = new VisualSearchAgent(
     undefined,
     config.scoutPlanner
-      ? { planner: new ClaudeScoutQueryPlanner(), judge: new ClaudeReferenceJudge() }
+      ? {
+          planner: new ClaudeScoutQueryPlanner(),
+          judge: new ClaudeReferenceJudge(),
+          ...(config.webImageSearch === 'brave'
+            ? { openWeb: new BraveImageSearch(env['BRAVE_SEARCH_API_KEY']!) }
+            : {}),
+        }
       : {},
   );
   return new OrchestratorAgent(scout, architect);
@@ -281,10 +298,13 @@ export async function referenceBytes(source: string): Promise<string> {
   const officialCrest = url.href === 'https://www.valenciacf.com/svg/escudo.svg';
   // TASK-0058: an Openverse thumbnail of one exact shape, the only form the scout produces.
   const openverse = isOpenverseThumbnail(url.href);
+  // TASK-0068: a Brave-proxied thumbnail, the only form the web search produces.
+  const brave = isBraveThumbnail(url.href);
   if (
     url.protocol !== 'https:' ||
     (!officialCrest &&
       !openverse &&
+      !brave &&
       !['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(url.hostname)) ||
     url.username ||
     url.password ||

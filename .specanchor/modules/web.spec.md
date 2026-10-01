@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0068 (ADR-0030): `liveAgentConfig.webImageSearch` is `brave` only with the Claude scout,
+`TATTOO_WEB_IMAGE_SEARCH=brave` and `BRAVE_SEARCH_API_KEY`; `referenceBytes` accepts a Brave
+thumbnail. The privacy policy names Brave and `IMAGES_VERSION` is `2026-10-01.2`.
+
 TASK-0067: step 3 never dead-ends: with an essential reference missing it leads with «Añadir la
 imagen» and offers «Buscar otra vez» and «Continuar sin ella», which warns first and sends
 `waive_references`. Disabled answers are visibly dimmed.
