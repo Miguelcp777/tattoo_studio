@@ -50,5 +50,7 @@ export default tseslint.config(
         __dirname: 'readonly',
       },
     },
+    // Plain JavaScript cannot annotate types; JSDoc documents them (TASK-0074).
+    rules: { '@typescript-eslint/explicit-module-boundary-types': 'off' },
   },
 );

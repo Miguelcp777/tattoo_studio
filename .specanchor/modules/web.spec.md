@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0074 (audit SEG-01): `security-headers.mjs`, applied by `next.config.mjs` to every path: nosniff, frame denial, referrer policy, camera-only permissions, a minimal enforced CSP and the complete CSP as Report-Only; HSTS in production.
+
 TASK-0073 (audit UX-01): «Ocupar toda la zona» opens a confirmation with the current and approximate new size (`lib/zone-size.ts`), offering «Solo ampliar la vista» instead.
 
 TASK-0072: `lib/client-errors.ts` words every failure the client sees (status, body, dropped
