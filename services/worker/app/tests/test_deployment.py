@@ -88,11 +88,13 @@ def test_the_domain_is_not_declared_in_the_compose_file() -> None:
 
 
 def test_the_runbook_states_the_exposure_before_the_steps() -> None:
-    """There is no authentication yet: anyone who reaches the URL spends the owner's credits. The
-    warning is worth nothing below the instructions."""
+    """Who can spend the owner's credits, and how much, is said before the instructions; a warning
+    below them is worth nothing. TASK-0080: since TASK-0045 that is a signed-in account, within the
+    daily limits of TASK-0078."""
     readme = (INFRA / "README.md").read_text(encoding="utf-8")
-    warning = readme.index("There is no authentication yet")
-    assert warning < readme.index("## 1. Create the resource")
+    steps = readme.index("## 1. Create the resource")
+    assert readme.index("requires a signed-in account") < steps
+    assert readme.index("TATTOO_DAILY_DESIGNS") < steps
 
 
 def test_the_web_image_pins_the_pnpm_that_wrote_the_lockfile() -> None:

@@ -152,3 +152,15 @@ def test_nothing_recorded_is_an_empty_report_not_an_error() -> None:
     assert report["totals"]["successRate"] is None
     assert report["totals"]["durationMs"] == {"avg": None, "p50": None, "p95": None}
     assert report["byModel"] == report["byDay"] == report["byAccount"] == report["errors"] == []
+
+
+def test_the_queue_wait_is_reported_for_every_job() -> None:
+    """TASK-0085 (audit REN-01): before scaling, measure how long designs wait to start."""
+    rows = [
+        row(5, "job", "generate", outcome="ok", duration_ms=60_000, detail={"waitMs": 1_000}),
+        row(4, "job", "generate", outcome="error", duration_ms=5_000, detail={"waitMs": 9_000}),
+        row(3, "job", "edit", outcome="ok", duration_ms=50_000, detail={"waitMs": 2_000}),
+        row(2, "job", "generate", outcome="ok", duration_ms=40_000),
+    ]
+    wait = overview(rows)["totals"]["waitMs"]
+    assert wait["p50"] == 2_000 and wait["p95"] == 9_000

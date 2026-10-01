@@ -253,6 +253,8 @@ class JobQueue:
                 return False
             db.execute("UPDATE jobs SET state='running' WHERE id=?", (row["id"],))
         payload = json.loads(row["payload"])
+        # TASK-0085 (audit REN-01): how long the job waited in the queue, for the panel's p50/p95.
+        waited_ms = max(0, int((time.time() - row["created"]) * 1000))
         started = time.monotonic()
         # Every provider call made for this job is attributed to its owner and to it (TASK-0054).
         token = _running.set(row["id"])
@@ -273,6 +275,7 @@ class JobQueue:
                 outcome="ok" if state == "succeeded" else "error",
                 duration_ms=int((time.monotonic() - started) * 1000),
                 detail={
+                    "waitMs": waited_ms,
                     "error": cause,
                     "style": (brief.get("style") or {}).get("primary"),
                     "zone": (brief.get("placement") or {}).get("bodyPart"),

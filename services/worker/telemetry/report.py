@@ -73,6 +73,8 @@ def overview(rows: list[Row]) -> dict[str, Any]:
         "failed": len(jobs) - len(done),
         "successRate": round(len(done) / len(jobs), 4) if jobs else None,
         "durationMs": _durations(done),
+        # TASK-0085 (audit REN-01): time in the queue before a job started, every outcome.
+        "waitMs": _durations({"duration_ms": (r.get("detail") or {}).get("waitMs")} for r in jobs),
         "calls": len(calls),
         "callErrors": sum(1 for r in calls if r["outcome"] != "ok"),
         "inputTokens": sum(r.get("input_tokens") or 0 for r in calls),

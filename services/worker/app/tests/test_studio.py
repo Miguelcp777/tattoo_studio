@@ -1811,3 +1811,16 @@ def test_a_consultation_is_dropped_on_request(tmp_path: Path) -> None:
     studio.save_consultation(ACCOUNT, cid, "{}")
     studio.drop_consultation(ACCOUNT, cid)
     assert studio.load_consultation(ACCOUNT, cid) is None
+
+
+def test_a_job_records_how_long_it_waited(tmp_path: Path, recorded: EventStore) -> None:
+    """TASK-0085 (audit REN-01)."""
+    queue = JobQueue(tmp_path / "jobs.db", lambda owner, body: {})
+    queue.enqueue("owner", payload())
+    with queue.connect() as db:
+        db.execute("UPDATE jobs SET created = created - 3")
+    queue.tick()
+    (event,) = [
+        e for e in recorded.events(datetime.now(UTC) - timedelta(hours=1)) if e["kind"] == "job"
+    ]
+    assert event["detail"]["waitMs"] >= 3_000

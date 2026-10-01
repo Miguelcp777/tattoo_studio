@@ -9,6 +9,8 @@ last_reviewed: 2026-09-30
 
 # Module: telemetry
 
+TASK-0085: the overview reports `totals.waitMs` (avg, p50, p95) over every job.
+
 TASK-0059: a failed provider call records the provider's short error code beside the status
 ("HTTP 400 moderation_blocked"), validated as `[a-z0-9_]{1,40}`; the provider's message is never
 kept.

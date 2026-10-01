@@ -26,6 +26,8 @@ interface Overview {
     failed: number;
     successRate: number | null;
     durationMs: Durations;
+    /** TASK-0085 (audit REN-01): time in the queue before a job started. */
+    waitMs?: Durations;
     calls: number;
     callErrors: number;
     inputTokens: number;
@@ -238,6 +240,11 @@ export default function AdminPage(): ReactNode {
               <Card label="Tiempo por diseño" value={seconds(totals.durationMs.avg)}>
                 mediana {seconds(totals.durationMs.p50)} · p95 {seconds(totals.durationMs.p95)}
               </Card>
+              {totals.waitMs && (
+                <Card label="Espera en cola" value={seconds(totals.waitMs.p50)}>
+                  mediana · p95 {seconds(totals.waitMs.p95)}
+                </Card>
+              )}
               <Card label="Llamadas a modelos" value={number.format(totals.calls)}>
                 {totals.callErrors} con error · {number.format(totals.images)} imágenes
               </Card>
