@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0084 (audit): the result viewer shows the images, then three short notices, and folds the long notice; the style picker shows `content/style-hints.ts` (Spanish) instead of the English prompt characteristics.
+
 TASK-0082 (audit ACC-01): `Confirm belowHeader` no longer sets `aria-modal`; while any is open the `main` regions it covers are `inert`.
 
 TASK-0081 (audit UX-04): «Solicitar acceso» (mailto) and «¿Has olvidado tu contraseña?» on `/entrar`; `/recuperar` → `/api/auth/recover` (Supabase `/recover`, same answer for any address); `/restablecer` → `/api/auth/password` (Supabase `PUT /user` with the link token). Both pages are public in the middleware.

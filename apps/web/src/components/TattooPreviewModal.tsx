@@ -82,7 +82,6 @@ export function TattooPreviewModal({
           Cerrar ✕
         </button>
       </header>
-      <p className="notice-banner">{artifact.notice}</p>
       {artifact.edit && (
         <p>
           Cambio solicitado: {artifact.edit.instruction}
@@ -186,10 +185,30 @@ export function TattooPreviewModal({
           </figcaption>
         </figure>
       </div>
-      <p className="small-note">
-        Ambos archivos proceden del mismo maestro. Esto acredita el origen compartido, no la
-        exactitud cultural ni la idoneidad para tatuar.
-      </p>
+      {/* TASK-0084 (audit): the result first, then three short notices; the long one folds. */}
+      <ul className="result-notices" aria-label="Lo que debes saber">
+        <li>
+          {artifact.capture
+            ? 'Foto de tu cámara con el diseño superpuesto'
+            : artifact.backgroundKind === 'own_photo'
+              ? 'Sobre tu propia foto'
+              : 'Piel generada, no es tu cuerpo'}
+        </li>
+        <li>
+          {artifact.transform.scaleCalibrated
+            ? 'Escala según tu calibración'
+            : 'Tamaño sobre la piel orientativo'}
+        </li>
+        <li>Un tatuador debe revisar el diseño y la plantilla</li>
+      </ul>
+      <details className="result-details">
+        <summary>Detalles del resultado</summary>
+        <p>{artifact.notice}</p>
+        <p>
+          Ambos archivos proceden del mismo maestro. Esto acredita el origen compartido, no la
+          exactitud cultural ni la idoneidad para tatuar.
+        </p>
+      </details>
       <details>
         <summary>Referencias y trazabilidad</summary>
         <p>{artifact.referenceAnalysis}</p>

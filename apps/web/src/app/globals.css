@@ -2392,3 +2392,24 @@ body::after {
     opacity: 0.5;
   }
 }
+
+/* TASK-0084 (audit): three short notices after the result; the long one is folded below. */
+.result-notices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+.result-notices li {
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(216, 171, 147, 0.3);
+  color: #e8c3ad;
+}
+.result-details {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}

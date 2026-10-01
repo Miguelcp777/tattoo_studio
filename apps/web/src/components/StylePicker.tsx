@@ -10,6 +10,8 @@
 
 import type { StyleVariantOffer } from '@tattoo/consultation/style-library';
 
+import { STYLE_HINTS } from '@/content/style-hints';
+
 export interface StylePickerProps {
   offers: StyleVariantOffer[];
   /** Identifier of the current pick, if any. */
@@ -51,7 +53,9 @@ export function StylePicker({
                   loading="lazy"
                 />
                 <span className="style-option-label">{offer.label}</span>
-                <span className="style-option-hint">{offer.characteristics}</span>
+                <span className="style-option-hint">
+                  {STYLE_HINTS[`${offer.style}.${offer.variant}`] ?? ''}
+                </span>
               </button>
             </li>
           );
