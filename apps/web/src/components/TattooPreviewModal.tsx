@@ -4,6 +4,7 @@ import type { GeneratedTattooArtifact } from '@/types/generation';
 import { ImageDetail } from './ImageDetail';
 import { messageForError } from '@/lib/client-errors';
 import { zoneProposal } from '@/lib/zone-size';
+import { IMAGE_FAILURE_TEXT, imageFailure, probe, type ImageFailure } from '@/lib/image-failure';
 import { Confirm } from './Confirm';
 export function TattooPreviewModal({
   artifact,
@@ -52,7 +53,11 @@ export function TattooPreviewModal({
   const skin = artifact.capture?.photo ?? artifact.mockup;
   // TASK-0047: a design lasts, a photo of the body expires after 24 hours. When the skin view was
   // composed on that photo it goes with it, and the design is shown without it, saying why.
-  const [skinGone, setSkinGone] = useState(false);
+  // TASK-0077 (audit UX-05): why the skin view did not load, asked of its own address.
+  const [skinFailure, setSkinFailure] = useState<ImageFailure | null>(null);
+  const [skinAttempt, setSkinAttempt] = useState(0);
+  const skinGone = skinFailure !== null;
+  const fromOwnPhoto = Boolean(artifact.capture) || artifact.backgroundKind === 'own_photo';
   // TASK-0073 (audit UX-01): a new print size is shown and confirmed before it is applied.
   const [confirmZone, setConfirmZone] = useState(false);
   const proposal = zoneProposal(artifact.size, zoneSpan);
@@ -103,12 +108,19 @@ export function TattooPreviewModal({
       <div className="result-grid" hidden={Boolean(detail)}>
         {skinGone ? (
           <figure className="skin-gone">
-            <p>
-              La foto de tu cuerpo se borró a las 24 horas, y con ella esta vista sobre la piel.
-            </p>
-            <p>
-              El diseño y la plantilla siguen aquí. Sube otra foto si quieres volver a verlo puesto.
-            </p>
+            <p role="status">{IMAGE_FAILURE_TEXT[skinFailure]}</p>
+            {skinFailure === 'retry' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSkinFailure(null);
+                  setSkinAttempt((n) => n + 1);
+                }}
+              >
+                Reintentar
+              </button>
+            )}
+            {skinFailure === 'session' && <a href="/entrar">Entrar de nuevo</a>}
           </figure>
         ) : (
           <figure>
@@ -121,8 +133,13 @@ export function TattooPreviewModal({
               }}
             >
               <img
+                key={skinAttempt}
                 src={url(skin.assetId)}
-                onError={() => setSkinGone(true)}
+                onError={() =>
+                  void probe(url(skin.assetId)).then((status) =>
+                    setSkinFailure(imageFailure(status, fromOwnPhoto)),
+                  )
+                }
                 alt={
                   artifact.capture
                     ? 'Tu foto con la cámara, con el tatuaje superpuesto'
