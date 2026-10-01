@@ -1090,9 +1090,11 @@ body::after {
   color: transparent;
 }
 
+/* TASK-0062: centred on the sign-in card, the lockup it is (the owner: "debe quedar centrado"). */
 .brand-card {
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   gap: 0.35rem;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
@@ -1103,12 +1105,15 @@ body::after {
 .brand-card .brand-name {
   font-size: 1.9rem;
   letter-spacing: 0.2em;
+  /* Tracking adds space after the last letter too; this balances it, so the word is centred. */
+  padding-left: 0.2em;
   margin: 0;
 }
 
 .brand-card .brand-by {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
   margin: 0;
 }

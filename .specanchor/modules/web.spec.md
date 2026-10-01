@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0062: the sign-in card's brand (`.brand-card`) is centred, its trailing letter-spacing balanced.
+
 TASK-0058 (ADR-0026): `referenceBytes` also downloads an Openverse thumbnail (and no other Openverse
 URL). With no reference the review checkbox is hidden and not required, and the "no reference"
 blocker is gone from `next-step.ts`.

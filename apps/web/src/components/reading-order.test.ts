@@ -51,3 +51,16 @@ describe('the camera try-on has a way back (TASK-0053)', () => {
     expect(bar?.[2]).toMatch(/position:\s*sticky/);
   });
 });
+
+describe('the sign-in card centres the brand (TASK-0062)', () => {
+  const rule = (selector: string): string =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(([, s]) => s!.trim() === selector)?.[2] ?? '';
+
+  it('centres the name and the Aurevanta Labs line', () => {
+    expect(rule('.brand-card')).toMatch(/align-items:\s*center/);
+    expect(rule('.brand-card')).toMatch(/text-align:\s*center/);
+    expect(rule('.brand-card .brand-by')).toMatch(/justify-content:\s*center/);
+    // The trailing tracking is balanced, or the word sits a letter-space left of centre.
+    expect(rule('.brand-card .brand-name')).toMatch(/padding-left:\s*0\.2em/);
+  });
+});
