@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { GeneratedTattooArtifact } from '@/types/generation';
 import { ImageDetail } from './ImageDetail';
+import { messageForError } from '@/lib/client-errors';
 export function TattooPreviewModal({
   artifact,
   jobId,
@@ -265,7 +266,7 @@ export function TattooPreviewModal({
                     const assetId = await onAttach(file);
                     setAttached((list) => [...list, { assetId, name: file.name }]);
                   } catch (error) {
-                    setAttachError(error instanceof Error ? error.message : String(error));
+                    setAttachError(messageForError(error));
                   } finally {
                     setAttaching(false);
                   }

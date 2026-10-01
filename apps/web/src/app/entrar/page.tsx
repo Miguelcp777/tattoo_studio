@@ -12,6 +12,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Brand } from '@/components/Brand';
 import { ConsentDialog } from '@/components/ConsentDialog';
 import { IMAGES_VERSION, TERMS_VERSION } from '@/content/legal';
+import { isPlain } from '@/lib/client-errors';
 
 export default function SignInPage(): ReactNode {
   const [email, setEmail] = useState('');
@@ -53,7 +54,10 @@ export default function SignInPage(): ReactNode {
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         setAsking(false);
-        setError(body.error ?? 'No se ha podido iniciar sesión.');
+        // TASK-0072: the auth route words its refusals; anything else is said plainly.
+        setError(
+          isPlain(body.error) ? body.error : 'No se ha podido iniciar sesión. Inténtalo de nuevo.',
+        );
         return;
       }
       // A full load, so the server sees the new cookies on the first request.

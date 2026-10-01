@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0072: `lib/client-errors.ts` words every failure the client sees (status, body, dropped
+connection, non-JSON answer); the worker helpers say `STUDIO_UNAVAILABLE` instead of naming the
+worker. The admin panel keeps technical detail.
+
 TASK-0070 (ADR-0031): `liveAgentConfig.textModeration` is `openai` with a live architect and
 `OPENAI_API_KEY`; `buildTextScreen` feeds the orchestrator and `screenText`, which the consultation
 route applies to an edited `subject.refined` and the generate route to a change request.

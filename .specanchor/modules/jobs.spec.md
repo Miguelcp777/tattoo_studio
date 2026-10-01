@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: jobs
 
+TASK-0072: a failed job stores `for_client(cause)` (`jobs/client_messages.py`): plain words, never a
+status code or vendor; the job event keeps the cause for the panel.
+
 TASK-0054 (ADR-0024): `tick` runs each job inside `telemetry.activity(owner, job)`, so every call it
 makes is attributed, and records a `job` event with its outcome, duration and brief summary.
 

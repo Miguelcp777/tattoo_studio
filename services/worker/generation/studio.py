@@ -51,8 +51,8 @@ ZONE_VIEWS: dict[str, str] = {
 # TASK-0059: what the client reads when the image provider's safety system will not draw a skin
 # plate for their zone, even after asking again. Their own photograph needs no plate.
 PLATE_REFUSED = (
-    "El filtro de contenido del proveedor de imágenes no ha aceptado la foto de piel de esta "
-    "zona. Prueba con tu propia foto («Mi foto de piel») o con otra zona. No se ha generado nada."
+    "El generador de imágenes no ha aceptado la piel de estudio de esta zona. Prueba con tu "
+    "propia foto («Mi foto de piel») o con otra zona. No se ha generado nada."
 )
 
 

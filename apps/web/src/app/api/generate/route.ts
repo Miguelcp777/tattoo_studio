@@ -119,10 +119,12 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 async function history(owner: string): Promise<StudioJobStatus[]> {
   const items = await (await worker(owner, '/jobs')).json();
-  if (!Array.isArray(items)) throw new RequestError('Historial no disponible.', 502);
+  if (!Array.isArray(items))
+    throw new RequestError('No hemos podido cargar tus diseños. Recarga la página.', 502);
   return items.map((item) => {
     const checked = validateAgainst<StudioJobStatus>('studio-status', item);
-    if (!checked.valid) throw new RequestError('Historial inválido.', 502);
+    if (!checked.valid)
+      throw new RequestError('No hemos podido cargar tus diseños. Recarga la página.', 502);
     return checked.value;
   });
 }

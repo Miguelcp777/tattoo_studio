@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0072: `PLATE_REFUSED` no longer names «el proveedor».
+
 TASK-0070 (ADR-0031): `StudioProvider.check` turns a `moderation_blocked` answer into
 `CONTENT_REFUSED`, which names the refusal; other errors keep the «(400)» message.
 

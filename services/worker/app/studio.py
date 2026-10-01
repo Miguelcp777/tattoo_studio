@@ -22,6 +22,7 @@ from app.settings import Settings, SettingsError
 from generation.bfl_studio import BflStudioProvider
 from generation.plate_library import PlateLibrary
 from generation.studio import StudioProvider
+from jobs.client_messages import for_client
 from jobs.queue import JobQueue
 from media.sanitize import sanitize
 from media.store import AssetNotFoundError, EncryptedFileStore, RetentionClass
@@ -1014,7 +1015,7 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
 
             return await run_in_threadpool(studio.ingest, who, body)
         except ValueError as error:
-            raise HTTPException(422, str(error)) from error
+            raise HTTPException(422, for_client(str(error))) from error
 
     def admin(request: Request) -> str:
         """
@@ -1122,7 +1123,7 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
                 studio.own_photo(who, body["bodyPhotoId"])
             return studio.jobs.enqueue(who, body)
         except (KeyError, ValueError) as error:
-            raise HTTPException(422, str(error)) from error
+            raise HTTPException(422, for_client(str(error))) from error
 
     @routes.post("/events", status_code=202)
     async def web_events(request: Request) -> dict[str, int]:
@@ -1170,7 +1171,7 @@ def router(studio: Studio, token: str, events: EventStore | None = None) -> APIR
         except KeyError as error:
             raise HTTPException(404, "La propuesta original no está disponible.") from error
         except ValueError as error:
-            raise HTTPException(422, str(error)) from error
+            raise HTTPException(422, for_client(str(error))) from error
 
     @routes.get("/jobs")
     def history(request: Request) -> list[dict[str, Any]]:

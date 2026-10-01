@@ -28,6 +28,7 @@ import {
   type Authenticated,
   type Tokens,
 } from './auth';
+import { GENERIC_FAILURE } from './client-errors';
 
 interface Session {
   /**
@@ -128,6 +129,13 @@ export function buildOrchestrator(
 }
 
 export const orchestrator = buildOrchestrator();
+/**
+ * TASK-0072: the client never reads "worker", a status or a setup instruction. The worker's own
+ * refusals are already worded for the client (`jobs/client_messages.py`).
+ */
+export const STUDIO_UNAVAILABLE =
+  'El estudio no está disponible en este momento. Inténtalo de nuevo en unos minutos.';
+
 export class RequestError extends Error {
   constructor(
     message: string,
@@ -139,7 +147,7 @@ export class RequestError extends Error {
 
 export async function jobStatus(response: Response): Promise<StudioJobStatus> {
   const result = validateAgainst<StudioJobStatus>('studio-status', await response.json());
-  if (!result.valid) throw new RequestError('El worker devolvió un estado inválido.', 502);
+  if (!result.valid) throw new RequestError(STUDIO_UNAVAILABLE, 502);
   return result.value;
 }
 function consultationCookie(request: Request): string | undefined {
@@ -231,7 +239,7 @@ export async function requireAdmin(request: Request): Promise<Authenticated> {
  */
 export async function adminWorker(admin: string, path: string): Promise<Response> {
   const token = process.env['TATTOO_WORKER_TOKEN'];
-  if (!token) throw new RequestError('El worker no está configurado.', 503);
+  if (!token) throw new RequestError(STUDIO_UNAVAILABLE, 503);
   let response: Response;
   try {
     response = await fetch(
@@ -243,12 +251,12 @@ export async function adminWorker(admin: string, path: string): Promise<Response
       },
     );
   } catch {
-    throw new RequestError('No se puede conectar con el worker.', 503);
+    throw new RequestError(STUDIO_UNAVAILABLE, 503);
   }
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new RequestError(
-      typeof data.detail === 'string' ? data.detail : 'El worker rechazó la solicitud.',
+      typeof data.detail === 'string' ? data.detail : GENERIC_FAILURE,
       response.status,
     );
   }
@@ -398,11 +406,7 @@ export async function worker(
   body?: unknown,
 ): Promise<Response> {
   const token = process.env['TATTOO_WORKER_TOKEN'];
-  if (!token)
-    throw new RequestError(
-      'El worker de imágenes no está configurado. Ejecuta el inicio local del proyecto.',
-      503,
-    );
+  if (!token) throw new RequestError(STUDIO_UNAVAILABLE, 503);
   let response: Response;
   try {
     response = await fetch(
@@ -421,12 +425,12 @@ export async function worker(
       },
     );
   } catch {
-    throw new RequestError('No se puede conectar con el worker. Comprueba que está iniciado.', 503);
+    throw new RequestError(STUDIO_UNAVAILABLE, 503);
   }
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new RequestError(
-      typeof data.detail === 'string' ? data.detail : 'El worker rechazó la solicitud.',
+      typeof data.detail === 'string' ? data.detail : GENERIC_FAILURE,
       response.status,
     );
   }

@@ -17,6 +17,7 @@ import { SessionMenu } from '@/components/SessionMenu';
 import { TattooPreviewModal } from '@/components/TattooPreviewModal';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { InkWorking } from '@/components/InkWorking';
+import { messageForError, messageForResponse } from '@/lib/client-errors';
 import type { InkTask } from '@/lib/ink-progress';
 import { StepFlow } from '@/components/StepFlow';
 import { StylePicker } from '@/components/StylePicker';
@@ -268,18 +269,19 @@ export default function ConsultationPage(): ReactNode {
       try {
         const res = await fetch(`/api/generate?id=${job.jobId}`);
 
-        const data = await res.json();
+        // TASK-0072: a proxy's error page is not JSON; it must not become the message.
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
           if (res.status === 401 || res.status === 404) {
             setJob(null);
 
-            setError(data.error);
+            setError(messageForResponse(res.status, data));
 
             return;
           }
 
-          throw new Error(data.error);
+          throw new Error(messageForResponse(res.status, data));
         }
 
         if (stopped) return;
@@ -292,12 +294,12 @@ export default function ConsultationPage(): ReactNode {
           void refreshVersions();
 
           setShowResult(true);
-        } else if (data.state === 'failed') setError(data.error);
+        } else if (data.state === 'failed') setError(messageForError(data.error));
 
         if (data.state === 'queued' || data.state === 'running') timer = setTimeout(poll, 1500);
       } catch (e) {
         if (!stopped) {
-          setError(String(e));
+          setError(messageForError(e));
 
           timer = setTimeout(poll, 5000);
         }
@@ -354,11 +356,12 @@ export default function ConsultationPage(): ReactNode {
       body: JSON.stringify(body),
     });
 
-    const data = await res.json();
+    // TASK-0072: plain words for every failure, whatever the server or the network answered.
+    const data = await res.json().catch(() => ({}));
 
     if (res.status === 428) setNeedsConsent(true);
 
-    if (!res.ok) throw new Error(data.error ?? 'No se pudo completar la solicitud.');
+    if (!res.ok) throw new Error(messageForResponse(res.status, data));
 
     return data;
   }
@@ -373,7 +376,7 @@ export default function ConsultationPage(): ReactNode {
       await action();
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(messageForError(e));
       return false;
     } finally {
       setBusy(false);

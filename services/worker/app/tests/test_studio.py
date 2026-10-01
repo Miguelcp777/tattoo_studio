@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 
 from app.studio import Studio, router
 from generation.studio import StudioProvider
+from jobs import client_messages
 from jobs.queue import JobQueue
 from media.store import EncryptedFileStore, RetentionClass
 from mockup.anatomy import ZONE_SPAN_MM
@@ -273,7 +274,8 @@ def test_provider_failure_never_returns_an_artifact(tmp_path: Path) -> None:
     queue.tick()
     result = queue.get("owner", job["jobId"])
     assert result["state"] == "failed" and result["result"] is None
-    assert result["error"] == "Proveedor no disponible"
+    # TASK-0072: a technical cause is told to the client plainly.
+    assert result["error"] == client_messages.GENERIC
 
 
 def test_interrupted_job_is_not_automatically_recharged(tmp_path: Path) -> None:
@@ -1213,8 +1215,8 @@ def test_a_plate_that_fails_costs_no_artwork(tmp_path: Path) -> None:
     assert studio.jobs.tick()
     failed = studio.jobs.get(ACCOUNT, job["jobId"])
     assert failed["state"] == "failed"
-    # The client is told what actually happened.
-    assert failed["error"] == "FLUX ha superado el tiempo máximo de espera."
+    # The client is told what happened, in plain words (TASK-0072).
+    assert failed["error"] == client_messages.BUSY
     # And no drawing was paid for.
     assert provider.calls == 0
 
@@ -1552,3 +1554,40 @@ def test_each_upload_refusal_says_its_own_reason(tmp_path: Path) -> None:
         Studio(tmp_path / "b", b"x" * 32, explicit).ingest(ACCOUNT, an_upload())
     with pytest.raises(ValueError, match="No hemos podido revisar"):
         Studio(tmp_path / "c", b"x" * 32, _FailingModeration()).ingest(ACCOUNT, an_upload())
+
+
+def test_a_failed_job_tells_the_client_plainly_and_the_panel_the_cause(
+    tmp_path: Path, recorded: EventStore
+) -> None:
+    """TASK-0072: «El proveedor no ha completado la solicitud (400)» reached the client."""
+
+    def fail(owner: str, body: dict[str, Any]) -> dict[str, Any]:
+        raise ValueError("El proveedor no ha completado la solicitud (400). No hay resultado.")
+
+    queue = JobQueue(tmp_path / "jobs.db", fail)
+    job = queue.enqueue("owner", payload())
+    queue.tick()
+    assert queue.get("owner", job["jobId"])["error"] == client_messages.GENERIC
+    (event,) = [
+        e for e in recorded.events(datetime.now(UTC) - timedelta(hours=1)) if e["kind"] == "job"
+    ]
+    assert "(400)" in event["detail"]["error"]
+
+
+def test_an_interrupted_job_is_explained_plainly(tmp_path: Path) -> None:
+    queue = JobQueue(tmp_path / "jobs.db", lambda owner, body: {})
+    job = queue.enqueue("owner", payload())
+    with queue.connect() as db:
+        db.execute("UPDATE jobs SET state='running'")
+    error = JobQueue(tmp_path / "jobs.db", lambda owner, body: {}).get("owner", job["jobId"])[
+        "error"
+    ]
+    assert client_messages.for_client(error) == error and "worker" not in error
+
+
+def test_the_generation_refusals_reach_the_client_unchanged() -> None:
+    """TASK-0072: they are written for the client, so the plain-words rule leaves them alone."""
+    from generation.studio import CONTENT_REFUSED, PLATE_REFUSED
+
+    for plain in (CONTENT_REFUSED, PLATE_REFUSED):
+        assert client_messages.for_client(plain) == plain

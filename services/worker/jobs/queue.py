@@ -14,6 +14,7 @@ from typing import Any
 
 from tattoo_contracts.validation import validate
 
+from jobs.client_messages import GENERIC, for_client
 from telemetry import activity, record
 
 
@@ -35,8 +36,8 @@ class JobQueue:
                 "UNIQUE(owner,idem))"
             )
             db.execute(
-                "UPDATE jobs SET state='failed',error='El worker se reinició durante la "
-                "generación. Reintenta manualmente.' WHERE state='running'"
+                "UPDATE jobs SET state='failed',error='El estudio se reinició mientras creaba "
+                "tu diseño. Vuelve a generarlo.' WHERE state='running'"
             )
         self.thread = threading.Thread(target=self.run, daemon=True)
 
@@ -190,11 +191,9 @@ class JobQueue:
             except ValueError as failure:
                 result, state, error = None, "failed", str(failure)[:400]
             except Exception:
-                result, state, error = (
-                    None,
-                    "failed",
-                    "No se pudo completar el trabajo. No hay un resultado válido.",
-                )
+                result, state, error = None, "failed", GENERIC
+            # TASK-0072: the panel keeps the cause as raised; the client reads it plainly.
+            cause = error
             brief = payload.get("brief") or {}
             record(
                 "job",
@@ -202,7 +201,7 @@ class JobQueue:
                 outcome="ok" if state == "succeeded" else "error",
                 duration_ms=int((time.monotonic() - started) * 1000),
                 detail={
-                    "error": error,
+                    "error": cause,
                     "style": (brief.get("style") or {}).get("primary"),
                     "zone": (brief.get("placement") or {}).get("bodyPart"),
                     "colour": (brief.get("colour") or {}).get("mode"),
@@ -212,7 +211,12 @@ class JobQueue:
         with self.connect() as db:
             db.execute(
                 "UPDATE jobs SET state=?,result=?,error=? WHERE id=? AND state='running'",
-                (state, json.dumps(result) if result else None, error, row["id"]),
+                (
+                    state,
+                    json.dumps(result) if result else None,
+                    for_client(error) if error else None,
+                    row["id"],
+                ),
             )
         return True
 
