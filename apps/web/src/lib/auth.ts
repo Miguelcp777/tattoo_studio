@@ -126,6 +126,42 @@ export async function signIn(email: string, password: string): Promise<Tokens> {
   return { accessToken: body.access_token, refreshToken: body.refresh_token };
 }
 
+/**
+ * Ask Supabase to email a password-reset link (TASK-0081, audit UX-04).
+ *
+ * Never says whether the address has an account: the caller answers the same either way. The
+ * link returns to `redirectTo`, which must be in Supabase's allowed redirect URLs.
+ */
+export async function requestRecovery(email: string, redirectTo: string): Promise<void> {
+  try {
+    await auth(`/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new AuthError('No se puede contactar con el servicio de cuentas.', 503);
+  }
+}
+
+/** Set a new password with the access token of a recovery link (TASK-0081). */
+export async function updatePassword(accessToken: string, password: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await auth('/user', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ password }),
+    });
+  } catch {
+    throw new AuthError('No se puede contactar con el servicio de cuentas.', 503);
+  }
+  if (!response.ok)
+    throw new AuthError(
+      'El enlace ha caducado o ya se ha usado. Pide otro desde «¿Has olvidado tu contraseña?».',
+      401,
+    );
+}
+
 /** Who this token belongs to, or null when it is expired, revoked or forged. */
 export async function accountFor(accessToken: string): Promise<Account | null> {
   let response: Response;

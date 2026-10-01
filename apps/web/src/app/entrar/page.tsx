@@ -11,7 +11,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 
 import { Brand } from '@/components/Brand';
 import { ConsentDialog } from '@/components/ConsentDialog';
-import { IMAGES_VERSION, TERMS_VERSION } from '@/content/legal';
+import { IMAGES_VERSION, LEGAL_ENTITY, TERMS_VERSION } from '@/content/legal';
 import { isPlain } from '@/lib/client-errors';
 
 export default function SignInPage(): ReactNode {
@@ -75,7 +75,15 @@ export default function SignInPage(): ReactNode {
       <form onSubmit={submit}>
         <Brand variant="card" />
         <h1>Entra al estudio</h1>
-        <p className="sign-in-note">Las cuentas las crea el estudio. Si necesitas uno, pídelo.</p>
+        {/* TASK-0081 (audit UX-04): a visitor without an account knows how to ask for one. */}
+        <p className="sign-in-note">
+          Las cuentas las crea el estudio.{' '}
+          <a
+            href={`mailto:${LEGAL_ENTITY.email}?subject=${encodeURIComponent('Acceso a Inkcraft')}`}
+          >
+            Solicitar acceso
+          </a>
+        </p>
         {/* TASK-0054: what is recorded is said before anyone signs in, not discovered later. */}
         <p className="sign-in-note sign-in-privacy">
           Registramos el uso del estudio —tus mensajes, tus diseños, los tiempos y el consumo— para
@@ -114,6 +122,9 @@ export default function SignInPage(): ReactNode {
         <button type="submit" disabled={busy || !email || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </button>
+        <p className="sign-in-legal">
+          <a href="/recuperar">¿Has olvidado tu contraseña?</a>
+        </p>
         <p className="sign-in-legal">
           <a href="/condiciones">Condiciones de uso</a> · <a href="/privacidad">Privacidad</a>
         </p>

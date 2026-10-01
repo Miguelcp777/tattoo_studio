@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0081: password recovery needs Supabase SMTP and `/restablecer` among its allowed redirect URLs (`infra/README.md`).
+
 TASK-0080 (audit ARQ-04): `infra/README.md` describes authentication, daily limits, Supabase's role, the security-header check and current troubleshooting.
 
 TASK-0079 (audit ARQ-01): `consultations` table and `GET/PUT/DELETE /studio/consultations/{id}`, per owner, 24 h after the last change, removed on erasure. Prettier uses `endOfLine: auto` and ignores the local `.claude/settings.local.json` (ARQ-04).

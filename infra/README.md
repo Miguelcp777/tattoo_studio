@@ -91,6 +91,12 @@ it with it. That is the worker's behaviour, not the deployment's.
 worker: SQLite plus the encrypted file store, including the consultation in progress
 (TASK-0079). Events go to SQLite unless `TATTOO_TELEMETRY_DSN` points at Postgres.
 
+**Password recovery.** «¿Has olvidado tu contraseña?» asks Supabase to email a link (TASK-0081).
+For it to work, the Supabase deployment needs SMTP configured (`SMTP_HOST`, `SMTP_USER`,
+`SMTP_PASS`, `SMTP_ADMIN_EMAIL`) and `https://<your-domain>/restablecer` in its allowed redirect
+URLs (`ADDITIONAL_REDIRECT_URLS`). Without SMTP no email leaves, and the page still says the same
+neutral sentence, so test it once with your own address.
+
 **Security headers.** The web app sends them itself (TASK-0074). After a deploy, check them where
 the public sees them: `curl -sI https://<your-domain>/entrar` must show `Content-Security-Policy`,
 `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and

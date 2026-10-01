@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0081 (audit UX-04): «Solicitar acceso» (mailto) and «¿Has olvidado tu contraseña?» on `/entrar`; `/recuperar` → `/api/auth/recover` (Supabase `/recover`, same answer for any address); `/restablecer` → `/api/auth/password` (Supabase `PUT /user` with the link token). Both pages are public in the middleware.
+
 TASK-0080: `app/api/persistence.test.ts` restores a consultation from the worker after emptying the process memory.
 
 TASK-0079 (audit ARQ-01): `restoreConsultation` before `session()`, `replyKept` after changes, `dropConsultation` on «Nuevo diseño»; memory is the cache, the worker what survives a restart.

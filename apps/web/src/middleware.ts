@@ -31,6 +31,6 @@ export const config = {
    * policy are read before signing in too (TASK-0064).
    */
   matcher: [
-    '/((?!api|entrar|condiciones|privacidad|_next|icons|brand/|sw.js|manifest.webmanifest|favicon.ico).*)',
+    '/((?!api|entrar|recuperar|restablecer|condiciones|privacidad|_next|icons|brand/|sw.js|manifest.webmanifest|favicon.ico).*)',
   ],
 };
