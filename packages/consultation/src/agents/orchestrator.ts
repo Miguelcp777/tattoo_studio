@@ -5,7 +5,7 @@ import type { ConsultationSlots, ReferenceImage } from '../types';
 import type { MultiAgentMessage, OrchestrationSession } from './types';
 import { consultArchitect, mergeArchitect, textReadings } from './architect';
 import { VisualSearchAgent, referenceQueries, type ScoutResult } from './image-scout';
-import { buildMasterPrompt, proposalSummary, spanishList } from './master-prompt';
+import { buildMasterPrompt, ofSpanish, proposalSummary, spanishList } from './master-prompt';
 import {
   extractPreferences,
   missingPreferences,
@@ -39,7 +39,7 @@ function closingMessage(session: OrchestrationSession): string {
     .filter((field) => field.startsWith(MISSING_REFERENCE))
     .map((field) => field.slice(MISSING_REFERENCE.length));
   if (essential.length)
-    return `${lead}Para ser fiel necesito una imagen de ${spanishList(essential)}. Siguiente paso: adjúntala en «Referencias» o pulsa «Buscar las referencias pendientes».`;
+    return `${lead}Para ser fiel necesito una imagen ${ofSpanish(spanishList(essential))}. Siguiente paso: adjúntala en «Referencias» o pulsa «Buscar las referencias pendientes».`;
   const gaps = buildMasterPrompt(session.slots, session.references, session.stylePick).missing;
   if (gaps.length)
     return `${lead}Siguiente paso: indica ${spanishList(gaps)} en el panel y pulsa «Guardar preferencias».`;
@@ -149,6 +149,7 @@ export class OrchestratorAgent {
       delete next.referencePlan; // the plan belonged to the previous subject
       delete next.essentialReferences;
       delete next.referenceLabels;
+      delete next.waivedReferences;
     }
     if (scouted === 'failed') {
       next.messages.push(
@@ -191,7 +192,11 @@ export class OrchestratorAgent {
     // TASK-0034: only an essential reference blocks — a specific emblem, flag, landmark or artwork
     // whose exact look matters. A generic motif can be drawn without one. A reference of the
     // client's own settles it.
-    if (!next.references.some((r) => r.verification === 'user_supplied')) {
+    // TASK-0067: nor does it once the client has chosen to go on without it.
+    if (
+      !next.waivedReferences &&
+      !next.references.some((r) => r.verification === 'user_supplied')
+    ) {
       for (const query of next.essentialReferences ?? []) {
         if (!next.references.some((r) => r.referenceQuery === query))
           next.missingFields.push(`${MISSING_REFERENCE}${next.referenceLabels?.[query] ?? query}`);

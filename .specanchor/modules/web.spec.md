@@ -9,6 +9,10 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0067: step 3 never dead-ends: with an essential reference missing it leads with «Añadir la
+imagen» and offers «Buscar otra vez» and «Continuar sin ella», which warns first and sends
+`waive_references`. Disabled answers are visibly dimmed.
+
 TASK-0066: the wizard's pop-ups open below the header (`Confirm belowHeader`: non-modal, own
 backdrop), so «Modo avanzado», «Panel» and «Salir» stay usable; the header wraps on a phone. Every
 visit starts guided; the mode lasts for the tab (`sessionStorage`). The switch is a pill.

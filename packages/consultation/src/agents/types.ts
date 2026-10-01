@@ -34,6 +34,11 @@ export interface OrchestrationSession {
   /** Spanish label per planned query, for messages to the client (TASK-0034). */
   referenceLabels?: Record<string, string> | undefined;
   /**
+   * TASK-0067: the client chose to go on without the essential references, after being told the
+   * design will be an interpretation. Cleared when the idea changes.
+   */
+  waivedReferences?: boolean | undefined;
+  /**
    * The catalogue variant the client pointed at (TASK-0038, ADR-0017). It settles the style and
    * nothing else: it is not a reference, and its image never leaves the web app.
    */

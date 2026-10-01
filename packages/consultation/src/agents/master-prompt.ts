@@ -105,6 +105,11 @@ export function proposalSummary(slots: ConsultationSlots): string {
 
 export { spanishList };
 
+/** "de" before a phrase, contracted before "el": «una imagen del logo», «una imagen de la bandera». */
+export function ofSpanish(phrase: string): string {
+  return /^el\s/i.test(phrase) ? `del ${phrase.slice(3)}` : `de ${phrase}`;
+}
+
 /**
  * What a client accepts, as one comparable value (TASK-0037).
  *

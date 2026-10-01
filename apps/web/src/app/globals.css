@@ -2104,6 +2104,12 @@ body::after {
   min-height: 44px;
   padding: 0 18px;
 }
+/* TASK-0067: a disabled answer must look disabled; a dimmed gold one read as pressable. */
+.confirm-dialog .confirm-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
 .consent-part {
   border: 1px solid rgba(216, 171, 147, 0.18);
   border-radius: var(--radius-md);

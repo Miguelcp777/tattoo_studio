@@ -8,6 +8,8 @@ amends: ADR-0017
 
 # ADR-0026: A generic idea needs no reference; Openverse joins Commons
 
+> **Amended by TASK-0067 (2026-10-01).** A missing essential reference no longer blocks for good: the client may go on without it after a warning that the design will be an interpretation.
+
 ## Context
 
 On the deployed studio the owner asked for a biomechanical tattoo on the right thigh. The scout

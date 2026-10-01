@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0067: `OrchestrationSession.waivedReferences` lifts the essential-reference block once the
+client chooses to go on without it (cleared when the idea changes); `ofSpanish` contracts «de el».
+
 TASK-0065 (ADR-0029): the architect drafts `subject.refined`, a professional description in Spanish
 that keeps every element the client named (system prompt rule 10); `sanitizeArchitectSlots` bounds
 it at 1200 characters, `mergeArchitect` lets the client's edit win, the brief carries it and the

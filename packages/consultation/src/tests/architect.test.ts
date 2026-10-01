@@ -308,6 +308,20 @@ describe('scout plan on the live route (TASK-0033 live finding)', () => {
     expect(s.missingFields.some((f) => f.includes(brief))).toBe(false);
     expect(s.phase).toBe('needs_details');
   });
+
+  it('lets the client go on without it once they choose to (TASK-0067)', async () => {
+    const o = new OrchestratorAgent(
+      new VisualSearchAgent(commonsPerQuery(['Great Wave Hokusai']), { planner }),
+    );
+    const blocked = await o.handleUserInteraction(o.createSession(), brief);
+    expect(blocked.phase).toBe('needs_details');
+
+    const waived = await o.handleUserInteraction({ ...blocked, waivedReferences: true }, '');
+    expect(waived.missingFields.filter((f) => f.startsWith('referencia'))).toEqual([]);
+    expect(waived.phase).toBe('ready_to_generate');
+    // The plan still knows what was essential; only the block is lifted.
+    expect(waived.essentialReferences).toEqual(['Great Wave Hokusai']);
+  });
 });
 
 describe('relevant references (TASK-0034)', () => {

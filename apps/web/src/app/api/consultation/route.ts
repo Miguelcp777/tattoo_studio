@@ -74,6 +74,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         'preferences',
         'references',
         'retry_references',
+        'waive_references',
         'style_variant',
         'accept_brief',
       ].includes(String(body['action']))
@@ -119,9 +120,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (
       !text.trim() &&
-      !['preferences', 'references', 'retry_references', 'style_variant'].includes(
-        String(body['action']),
-      )
+      ![
+        'preferences',
+        'references',
+        'retry_references',
+        'waive_references',
+        'style_variant',
+      ].includes(String(body['action']))
     )
       throw new RequestError('Escribe tu idea.');
 
@@ -213,6 +218,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (current.state.slots.style?.primary !== offer.style)
         current.state.slots.style = { ...current.state.slots.style, primary: offer.style };
     }
+
+    // TASK-0067: the client goes on without an essential reference, having been warned.
+    if (body['action'] === 'waive_references') current.state.waivedReferences = true;
 
     if (body['removeReference'] !== undefined)
       current.state.references = current.state.references.filter(

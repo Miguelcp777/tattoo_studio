@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildMasterPrompt } from '../agents/master-prompt';
+import { buildMasterPrompt, ofSpanish } from '../agents/master-prompt';
 import type { ConsultationSlots, ReferenceImage } from '../types';
 
 const full: ConsultationSlots = {
@@ -120,5 +120,14 @@ describe('the professional description in the summary (TASK-0065)', () => {
       value: 'Murciélago de frente, alas abiertas.',
       proposed: true,
     });
+  });
+});
+
+describe('naming what is missing in Spanish (TASK-0067)', () => {
+  it('contracts «de el» into «del»', () => {
+    expect(ofSpanish('el logo de la banda Ramones')).toBe('del logo de la banda Ramones');
+    expect(ofSpanish('El escudo')).toBe('del escudo');
+    expect(ofSpanish('la Senyera valenciana')).toBe('de la Senyera valenciana');
+    expect(ofSpanish('elefante')).toBe('de elefante');
   });
 });

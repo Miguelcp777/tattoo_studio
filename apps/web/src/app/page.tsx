@@ -8,7 +8,7 @@ import { BODY_OPTIONS, STYLE_OPTIONS } from '@tattoo/consultation/preferences';
 
 import { styleOffers } from '@tattoo/consultation/style-library';
 
-import { briefSignature, buildMasterPrompt } from '@tattoo/consultation/master-prompt';
+import { briefSignature, buildMasterPrompt, ofSpanish } from '@tattoo/consultation/master-prompt';
 
 import { Brand } from '@/components/Brand';
 
@@ -111,6 +111,8 @@ export default function ConsultationPage(): ReactNode {
 
   const [mode, setMode] = useState<Mode>('guided');
   const [step, setStep] = useState<GuidedStep>('idea');
+  // TASK-0067: asking before going on without an essential reference.
+  const [waiving, setWaiving] = useState(false);
 
   // TASK-0064: «Generar» walks through the pop-ups that apply, one at a time (generation-flow.ts).
   const [flowing, setFlowing] = useState(false);
@@ -1263,7 +1265,7 @@ export default function ConsultationPage(): ReactNode {
         />
       )}
 
-      {mode === 'guided' && !needsConsent && !showResult && (
+      {mode === 'guided' && !needsConsent && !showResult && !waiving && (
         <>
           {activeJob || submittingGeneration ? (
             <WorkingStep
@@ -1303,6 +1305,7 @@ export default function ConsultationPage(): ReactNode {
                   accept((await call('/api/consultation', { action: 'retry_references' })).session),
                 )
               }
+              onWaive={() => setWaiving(true)}
               onBack={() => setStep('details')}
               onContinue={() => setStep('summary')}
             />
@@ -1330,6 +1333,33 @@ export default function ConsultationPage(): ReactNode {
             />
           )}
         </>
+      )}
+
+      {waiving && (
+        <Confirm
+          belowHeader
+          title="¿Continuar sin esa imagen?"
+          onCancel={() => setWaiving(false)}
+          actions={[
+            { label: 'Volver', onClick: () => setWaiving(false), disabled: busy },
+            {
+              label: 'Continuar igualmente',
+              primary: true,
+              disabled: busy,
+              onClick: () =>
+                void run(async () => {
+                  accept((await call('/api/consultation', { action: 'waive_references' })).session);
+                  setWaiving(false);
+                  setStep('summary');
+                }),
+            },
+          ]}
+        >
+          <p>
+            Sin una imagen {ofSpanish(essentialMissing(session).join(', '))}, el diseño será una
+            interpretación y puede no parecerse al original.
+          </p>
+        </Confirm>
       )}
 
       {needsConsent && (

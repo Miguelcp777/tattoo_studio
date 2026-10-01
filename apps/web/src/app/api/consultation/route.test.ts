@@ -138,3 +138,20 @@ describe('a new design (TASK-0065)', () => {
     expect(stranger.status).toBe(401);
   });
 });
+
+describe('going on without an essential reference (TASK-0067)', () => {
+  it('is recorded on the server session when the client chooses it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url: string | URL | Request) =>
+          answerAuth(String(url)) ?? Response.json({ query: { pages: {} } }),
+      ),
+    );
+    const started = await POST(req({ action: 'orchestrate', userMessage: 'El logo de una banda' }));
+    const cookie = started.headers.get('set-cookie')!.split(';')[0]!;
+    const waived = await POST(req({ action: 'waive_references' }, cookie));
+    expect(waived.status).toBe(200);
+    expect((await waived.json()).session.waivedReferences).toBe(true);
+  });
+});
