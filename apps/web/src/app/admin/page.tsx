@@ -151,6 +151,7 @@ const OPERATION: Record<string, string> = {
   scout_plan: 'Búsqueda: plan',
   scout_judge: 'Búsqueda: juez',
   web_image_search: 'Búsqueda web de imágenes',
+  text_moderation: 'Revisión del texto',
 };
 
 async function read<T>(url: string): Promise<T> {

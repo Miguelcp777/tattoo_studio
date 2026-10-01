@@ -9,7 +9,7 @@
 
 export interface ProviderUsage {
   provider: 'anthropic' | 'openai' | 'brave';
-  operation: 'consultation' | 'scout_plan' | 'scout_judge' | 'web_image_search';
+  operation: 'consultation' | 'scout_plan' | 'scout_judge' | 'web_image_search' | 'text_moderation';
   model: string;
   outcome: 'ok' | 'error';
   durationMs: number;

@@ -20,6 +20,7 @@ import {
   reply,
   requireAccount,
   RequestError,
+  screenText,
   session,
 } from '../../../lib/studio-server';
 import { attribute, report } from '../../../lib/telemetry';
@@ -206,6 +207,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
 
       preferences = patch as ConsultationSlots;
+      // TASK-0070: a professional description edited in the summary is the client's words too.
+      await screenText(preferences.subject?.refined);
     }
 
     // TASK-0028: a catalogue pick is resolved here, never taken from the request; anything that

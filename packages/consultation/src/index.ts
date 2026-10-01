@@ -10,6 +10,7 @@ export * from './agents/types';
 export * from './agents/image-scout';
 export * from './agents/scout-planner';
 export * from './agents/brave-search';
+export * from './agents/content-screen';
 export * from './agents/researcher';
 export * from './agents/creator';
 export * from './agents/orchestrator';

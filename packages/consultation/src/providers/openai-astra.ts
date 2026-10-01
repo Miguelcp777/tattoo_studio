@@ -98,6 +98,7 @@ export class OpenAIAstraProvider implements ConsultationProvider {
           'Entendido. ¿Deseas que preparemos tu diseño para generar la plantilla y el mockup real?',
         readyForGeneration: Boolean(parsed.readyForGeneration),
         mimicryDetected: parsed.mimicryDetected ?? undefined,
+        contentRefused: parsed.contentRefused ?? undefined,
       };
     } catch (err) {
       throw new OpenAIAstraError(`Failed to parse Astra JSON response: ${String(err)}`);

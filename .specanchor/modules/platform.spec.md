@@ -23,6 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0070 (ADR-0031): the web service also receives `OPENAI_API_KEY`, for the free text
+moderation of the client's words (only with a live consultation backend).
+
 TASK-0068: the compose web service passes `TATTOO_WEB_IMAGE_SEARCH` and `BRAVE_SEARCH_API_KEY`.
 
 TASK-0060 (ADR-0027): `Studio.plate` serves the library plate and falls back to the provider;

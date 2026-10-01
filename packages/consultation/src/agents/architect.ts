@@ -268,6 +268,8 @@ export interface ArchitectProposal {
   size?: { widthMm: number; heightMm: number };
   /** Set only for a genuine request to imitate a named living artist (PROD-INV-004). */
   mimicry?: { artistName: string; explanation?: string };
+  /** TASK-0070: the idea asks for sexually explicit content (rule 11). */
+  refused?: true;
 }
 
 /** A usable size recommendation: both dimensions within the contract's 5–600 mm. */
@@ -300,6 +302,7 @@ export async function consultArchitect(
       slots: sanitizeArchitectSlots(output.extractedSlots),
       ...(size ? { size } : {}),
       ...(artistName ? { mimicry: { artistName, ...(explanation ? { explanation } : {}) } } : {}),
+      ...(output.contentRefused ? { refused: true as const } : {}),
     };
   } catch (error) {
     // No user text, response body or credential in the log line.

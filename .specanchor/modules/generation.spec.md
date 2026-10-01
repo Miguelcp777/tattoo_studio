@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0070 (ADR-0031): `StudioProvider.check` turns a `moderation_blocked` answer into
+`CONTENT_REFUSED`, which names the refusal; other errors keep the «(400)» message.
+
 TASK-0065 (ADR-0029): `artwork_prompt` leads with the accepted professional description when the
 brief has one, still followed by the client's brief.
 

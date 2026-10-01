@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OrchestratorAgent } from '@tattoo/consultation';
 
-import { buildOrchestrator, liveAgentConfig } from './studio-server';
+import { ContentRefusedError, OpenAITextModeration } from '@tattoo/consultation';
+
+import {
+  buildOrchestrator,
+  buildTextScreen,
+  errorResponse,
+  liveAgentConfig,
+} from './studio-server';
 
 describe('live consultation agents are opt-in (TASK-0033/AC-007)', () => {
   it('enables nothing by default', () => {
@@ -50,4 +57,44 @@ describe('web image search is opted into, never implied by a key (TASK-0068)', (
     expect(liveAgentConfig({ ...all, TATTOO_SCOUT_PLANNER: '' }).webImageSearch).toBeUndefined();
     expect(liveAgentConfig({ BRAVE_SEARCH_API_KEY: 'k' }).webImageSearch).toBeUndefined();
   });
+});
+
+describe('the text moderation (TASK-0070)', () => {
+  it('runs with a live architect and the OpenAI key, never from the key alone', () => {
+    const live = { TATTOO_CONSULTATION_BACKEND: 'claude', OPENAI_API_KEY: 'k' };
+    expect(liveAgentConfig(live).textModeration).toBe('openai');
+    expect(buildTextScreen(live)).toBeInstanceOf(OpenAITextModeration);
+    expect(liveAgentConfig({ OPENAI_API_KEY: 'k' }).textModeration).toBeUndefined();
+    expect(buildTextScreen({ OPENAI_API_KEY: 'k' })).toBeUndefined();
+    expect(
+      liveAgentConfig({ TATTOO_CONSULTATION_BACKEND: 'claude' }).textModeration,
+    ).toBeUndefined();
+  });
+
+  it('a refused idea answers 422 with the studio message', async () => {
+    const response = errorResponse(new ContentRefusedError());
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toContain('contenido sexual explícito');
+  });
+
+  it('screenText refuses through the configured moderation', async () => {
+    vi.stubEnv('TATTOO_CONSULTATION_BACKEND', 'claude');
+    vi.stubEnv('OPENAI_API_KEY', 'test-not-a-secret');
+    vi.resetModules();
+    const fetch = vi.fn(async (url: unknown) => {
+      expect(String(url)).toBe('https://api.openai.com/v1/moderations');
+      return Response.json({ results: [{ categories: {}, category_scores: { sexual: 0.95 } }] });
+    });
+    vi.stubGlobal('fetch', fetch);
+    const server = await import('./studio-server');
+    await expect(server.screenText('un texto explícito')).rejects.toThrow('sexual explícito');
+    await expect(server.screenText('  ')).resolves.toBeUndefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.resetModules();
 });

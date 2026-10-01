@@ -221,6 +221,15 @@ def test_other_provider_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) 
     provider.close()
 
 
+def test_a_design_refused_for_its_content_says_so() -> None:
+    """TASK-0070: the artwork or an edit refused by the safety system names the reason."""
+    with pytest.raises(ValueError, match="rechazado este diseño por su contenido"):
+        StudioProvider.check(BLOCKED)
+    with pytest.raises(ValueError, match=r"\(400\)"):
+        StudioProvider.check(_Answer(400, {"error": {"code": "invalid_value"}}))
+    StudioProvider.check(_Answer(200, {}))
+
+
 def test_a_womans_chest_is_described_with_what_covers_it() -> None:
     """TASK-0060: without it the model drew a bearded man for a woman's chest."""
     woman = StudioProvider.background_prompt(

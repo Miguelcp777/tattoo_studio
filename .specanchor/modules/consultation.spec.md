@@ -9,6 +9,12 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0070 (ADR-0031): `agents/content-screen.ts` holds `TextScreen`, `OpenAITextModeration`
+(`omni-moderation-latest`, refuses at `sexual` ≥ 0.9 or `sexual/minors`, lets the idea through on
+failure) and `ContentRefusedError`. `OrchestratorAgent` takes an optional screen and throws before
+any model or search; the architect's required, nullable `contentRefused` (system-prompt rule 11)
+throws after it. The session is never changed by a refused message.
+
 TASK-0068 (ADR-0030): `BraveImageSearch` (`agents/brave-search.ts`) is the open-web source. With a
 judge, `VisualSearchAgent` asks it only for essential queries the licensed sources lacked and shows
 its candidates to the judge (`judgedWebImages`, sharing `judge` with the licensed path).

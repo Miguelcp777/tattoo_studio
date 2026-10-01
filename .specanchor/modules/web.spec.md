@@ -9,6 +9,11 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0070 (ADR-0031): `liveAgentConfig.textModeration` is `openai` with a live architect and
+`OPENAI_API_KEY`; `buildTextScreen` feeds the orchestrator and `screenText`, which the consultation
+route applies to an edited `subject.refined` and the generate route to a change request.
+`errorResponse` answers `ContentRefusedError` with 422 and its message.
+
 TASK-0069: while an agent works, `InkWorking` shows a gloved hand tattooing a rose, the task's
 title, a timed line about its stages, a bar and the clock (`lib/ink-progress.ts`). Nothing in it is
 reported by the server: the lines stay on the last stage and the bar never passes 94 %. Used by every

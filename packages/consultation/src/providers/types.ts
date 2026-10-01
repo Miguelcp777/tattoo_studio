@@ -12,6 +12,8 @@ export interface ProviderExtractionOutput {
         explanation: string;
       }
     | undefined;
+  /** TASK-0070: set only when the idea asks for sexually explicit content (rule 11). */
+  contentRefused?: { explanation: string } | undefined;
 }
 
 export interface ConsultationProvider {

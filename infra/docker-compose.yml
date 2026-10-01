@@ -68,6 +68,8 @@ services:
       TATTOO_WORKER_TOKEN: ${TATTOO_WORKER_TOKEN:?set it in Coolify}
       # The consultation agent runs inside the web app, not the worker.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # TASK-0070: the free text moderation on the client's words (with a live consultation).
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       TATTOO_CONSULTATION_BACKEND: ${TATTOO_CONSULTATION_BACKEND:-}
       # TASK-0045: without these the studio refuses every caller rather than opening the door.
       SUPABASE_URL: ${SUPABASE_URL:?set it in Coolify}

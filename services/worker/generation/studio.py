@@ -56,6 +56,13 @@ PLATE_REFUSED = (
 )
 
 
+# TASK-0070: said when the image model's safety system refuses the design itself.
+CONTENT_REFUSED = (
+    "El generador de imágenes ha rechazado este diseño por su contenido. Cambia la descripción "
+    "(sin contenido sexual explícito) e inténtalo de nuevo. No se ha generado nada."
+)
+
+
 def refused_by_safety(response: Any) -> bool:
     """OpenAI's safety system refused the request: HTTP 400 with `moderation_blocked`."""
     if getattr(response, "status_code", None) != 400:
@@ -165,6 +172,8 @@ class StudioProvider:
 
     @staticmethod
     def check(response: Any) -> None:
+        if refused_by_safety(response):
+            raise ValueError(CONTENT_REFUSED)
         if response.status_code >= 400:
             raise ValueError(
                 f"El proveedor no ha completado la solicitud ({response.status_code}). No se "

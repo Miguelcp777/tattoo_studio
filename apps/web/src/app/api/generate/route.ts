@@ -10,6 +10,7 @@ import {
   requireAccount,
   requireConsent,
   RequestError,
+  screenText,
   session,
   worker,
   referenceBytes,
@@ -36,6 +37,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
       throw new RequestError('Identificador de solicitud inválido.', 422);
     if (body['edit']) {
+      // TASK-0070: a change request is the client's words, checked like the idea.
+      const instruction = (body['edit'] as Record<string, unknown> | null)?.['instruction'];
+      await screenText(typeof instruction === 'string' ? instruction : undefined);
       const response = await worker(caller.account.id, '/jobs', 'POST', {
         edit: body['edit'],
         idempotencyKey: body['idempotencyKey'],

@@ -4,6 +4,7 @@ import { brief as extractBrief } from '../state-machine';
 import type { ConsultationSlots, ReferenceImage } from '../types';
 import type { MultiAgentMessage, OrchestrationSession } from './types';
 import { consultArchitect, mergeArchitect, textReadings } from './architect';
+import { ContentRefusedError, type TextScreen } from './content-screen';
 import { VisualSearchAgent, referenceQueries, type ScoutResult } from './image-scout';
 import { buildMasterPrompt, ofSpanish, proposalSummary, spanishList } from './master-prompt';
 import {
@@ -50,10 +51,12 @@ export class OrchestratorAgent {
   /**
    * `architect` is the prompt architect (TASK-0033): when present, chat turns with text are
    * enriched by it after the explicit extraction. Absent, the route is fully deterministic.
+   * `screen` (TASK-0070) checks each message for sexually explicit content before anything runs.
    */
   constructor(
     private readonly scout = new VisualSearchAgent(),
     private readonly architect?: ConsultationProvider,
+    private readonly screen?: TextScreen,
   ) {}
   createSession(sessionId: string = randomUUID()): OrchestrationSession {
     return {
@@ -75,6 +78,9 @@ export class OrchestratorAgent {
     preferences?: ConsultationSlots,
     retryReferences = false,
   ): Promise<OrchestrationSession> {
+    // TASK-0070 (ADR-0031): an explicit idea is refused before any model or search is paid for,
+    // and the session is left as it was, so the refused message is not kept.
+    if (input.trim() && (await this.screen?.refuses(input))) throw new ContentRefusedError();
     const next = structuredClone(session);
     next.revision++;
     if (input.trim())
@@ -130,6 +136,8 @@ export class OrchestratorAgent {
             )
         : Promise.resolve(undefined),
     ]);
+    // TASK-0070: the architect read what the moderation scored too low.
+    if (proposal?.refused) throw new ContentRefusedError();
     if (proposal?.mimicry) {
       delete next.brief;
       next.phase = 'needs_details';

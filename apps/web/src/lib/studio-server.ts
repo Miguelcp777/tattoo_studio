@@ -13,6 +13,9 @@ import {
   isOpenverseThumbnail,
   isBraveThumbnail,
   BraveImageSearch,
+  ContentRefusedError,
+  OpenAITextModeration,
+  type TextScreen,
 } from '@tattoo/consultation';
 import { validateAgainst, type StudioJobStatus } from '@tattoo/contracts';
 import { CONSENT_REQUIRED, hasConsent } from './consent';
@@ -51,6 +54,8 @@ export interface LiveAgentConfig {
   scoutPlanner: boolean;
   /** TASK-0068: Brave image search for essential references, when opted in with a key. */
   webImageSearch: 'brave' | undefined;
+  /** TASK-0070: OpenAI's free text moderation on the client's words, with the live agents. */
+  textModeration: 'openai' | undefined;
 }
 
 /**
@@ -72,7 +77,28 @@ export function liveAgentConfig(
       Boolean(env['BRAVE_SEARCH_API_KEY'])
         ? 'brave'
         : undefined,
+    // With a live architect only, so a developer's key alone still calls nothing in tests.
+    textModeration:
+      (backend === 'claude' || backend === 'openai') && Boolean(env['OPENAI_API_KEY'])
+        ? 'openai'
+        : undefined,
   };
+}
+
+/** The check on the client's words (TASK-0070), or none. */
+export function buildTextScreen(
+  env: Record<string, string | undefined> = process.env,
+): TextScreen | undefined {
+  return liveAgentConfig(env).textModeration === 'openai'
+    ? new OpenAITextModeration(env['OPENAI_API_KEY']!)
+    : undefined;
+}
+
+export const textScreen = buildTextScreen();
+
+/** Refuses sexually explicit text with the studio's message (TASK-0070). */
+export async function screenText(text: string | undefined): Promise<void> {
+  if (text?.trim() && (await textScreen?.refuses(text))) throw new ContentRefusedError();
 }
 
 export function buildOrchestrator(
@@ -98,7 +124,7 @@ export function buildOrchestrator(
         }
       : {},
   );
-  return new OrchestratorAgent(scout, architect);
+  return new OrchestratorAgent(scout, architect, buildTextScreen(env));
 }
 
 export const orchestrator = buildOrchestrator();
@@ -285,11 +311,18 @@ export function errorResponse(error: unknown): NextResponse {
   return NextResponse.json(
     {
       error:
-        error instanceof RequestError
+        error instanceof RequestError || error instanceof ContentRefusedError
           ? error.message
           : 'No se pudo completar la solicitud. Inténtalo de nuevo.',
     },
-    { status: error instanceof RequestError ? error.status : 500 },
+    {
+      status:
+        error instanceof RequestError
+          ? error.status
+          : error instanceof ContentRefusedError
+            ? 422
+            : 500,
+    },
   );
 }
 /** Bounded server-side fetch of a search candidate; never accept arbitrary hosts/redirects. */

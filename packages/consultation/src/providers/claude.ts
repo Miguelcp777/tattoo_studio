@@ -91,6 +91,10 @@ export const CONSULTATION_OUTPUT_SCHEMA = object(
         ),
       ],
     },
+    // TASK-0070: required but nullable, like `mimicryDetected`, so it adds no optional parameter.
+    contentRefused: {
+      anyOf: [{ type: 'null' }, object({ explanation: text }, ['explanation'])],
+    },
     extractedSlots: object(
       {
         subject: object({ description: text, elements: strings, refined: text }),
@@ -129,7 +133,7 @@ export const CONSULTATION_OUTPUT_SCHEMA = object(
       SLOT_GROUPS,
     ),
   },
-  ['assistantReply', 'readyForGeneration', 'mimicryDetected', 'extractedSlots'],
+  ['assistantReply', 'readyForGeneration', 'mimicryDetected', 'contentRefused', 'extractedSlots'],
 );
 
 function imageBlock(reference: ReferenceImage): Anthropic.ImageBlockParam {
@@ -229,6 +233,7 @@ export class ClaudeConsultationProvider implements ConsultationProvider {
           'Entendido. ¿Deseas que preparemos tu diseño para generar la plantilla y el mockup real?',
         readyForGeneration: Boolean(parsed.readyForGeneration),
         mimicryDetected: parsed.mimicryDetected ?? undefined,
+        contentRefused: parsed.contentRefused ?? undefined,
       };
     } catch (err) {
       if (err instanceof ClaudeError) throw err;
