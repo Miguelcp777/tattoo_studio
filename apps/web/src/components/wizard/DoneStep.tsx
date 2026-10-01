@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { Confirm } from '../Confirm';
 import { GenerationProgress } from '../GenerationProgress';
+import type { InkStep } from '@/lib/ink-progress';
 import type { StudioJobStatus } from '@/types/generation';
 
 /** The account's earlier designs, newest first, as the advanced panel lists them (TASK-0046). */
@@ -39,11 +40,19 @@ export function VersionList({
 }
 
 /** While the studio works (TASK-0065): nothing to answer, only progress. */
-export function WorkingStep({ phase }: { phase: 'preparing' | 'queued' | 'running' }): ReactNode {
+export function WorkingStep({
+  phase,
+  stage,
+  queuePosition,
+}: {
+  phase: 'preparing' | 'queued' | 'running';
+  stage?: InkStep | undefined;
+  queuePosition?: number | undefined;
+}): ReactNode {
   return (
     <Confirm belowHeader title="Estamos creando tu diseño" onCancel={() => undefined} actions={[]}>
       <p>Puede tardar unos minutos. Cuando esté listo verás la vista en piel y la plantilla.</p>
-      <GenerationProgress phase={phase} />
+      <GenerationProgress phase={phase} stage={stage} queuePosition={queuePosition} />
     </Confirm>
   );
 }

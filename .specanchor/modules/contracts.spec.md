@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: contracts
 
+TASK-0076 (audit UX-03): `studio-status` has optional `stage` (references, skin, drawing, stencil, placing, finishing) and `queuePosition` (≥ 1). Fixtures `running-stage`, `queued-position`, `unknown-stage`, `queue-position-zero`.
+
 TASK-0065 (ADR-0029): `subject.refined` (optional string, 1–1200) in `tattoo-brief` and in the brief
 `studio-job` embeds. Fixtures `valid/subject-refined.json`, `invalid/subject-refined-too-long.json`.
 

@@ -1,51 +1,46 @@
 import { describe, expect, it } from 'vitest';
 
-import { BAR_CEILING, clock, inkStage, type InkTask } from './ink-progress';
+import { clock, inkStage, STEPS, type InkTask } from './ink-progress';
 
-const TASKS: InkTask[] = [
-  'idea',
-  'save',
-  'search',
-  'image',
-  'accept',
-  'reset',
-  'preparing',
-  'queued',
-  'running',
-];
+const WAITS: InkTask[] = ['idea', 'save', 'search', 'image', 'accept', 'reset', 'preparing'];
 
-describe('inkStage (TASK-0069)', () => {
-  it('starts at the first line with an empty bar', () => {
-    for (const task of TASKS) {
-      const stage = inkStage(task, 0);
+describe('inkStage (TASK-0069, TASK-0076)', () => {
+  it('a wait the server does not report has one description and no claimed progress', () => {
+    for (const task of WAITS) {
+      const stage = inkStage(task);
       expect(stage.title).toBeTruthy();
       expect(stage.line).toBeTruthy();
-      expect(stage.progress).toBe(0);
+      expect(stage.progress).toBeNull();
     }
   });
 
-  it('moves through the lines and stays on the last one', () => {
-    expect(inkStage('idea', 0).line).toBe('Leyendo tu idea…');
-    expect(inkStage('idea', 5000).line).not.toBe('Leyendo tu idea…');
-    const last = inkStage('idea', 60_000).line;
-    expect(inkStage('idea', 10 * 60_000).line).toBe(last);
+  it('a running design shows the step the worker reports, and only that one', () => {
+    const stencil = inkStage('running', { stage: 'stencil' });
+    expect(stencil.title).toContain('paso 4 de 6');
+    expect(stencil.line).toBe('Trazando la plantilla…');
+    expect(stencil.progress).toBeCloseTo(3.5 / 6);
+    // Audit UX-03: no "retoques" before the worker gets there.
+    expect(inkStage('running', { stage: 'drawing' }).line).not.toMatch(/ajustes|retoques/);
   });
 
-  it('grows the bar, never backwards and never to the end', () => {
-    for (const task of TASKS) {
-      let previous = -1;
-      for (const ms of [0, 1000, 5000, 20_000, 60_000, 600_000, 3_600_000]) {
-        const { progress } = inkStage(task, ms);
-        expect(progress).toBeGreaterThanOrEqual(previous);
-        expect(progress).toBeLessThanOrEqual(BAR_CEILING);
-        previous = progress;
-      }
-      expect(previous).toBeLessThan(1);
-    }
+  it('moves forward with the steps', () => {
+    const progress = STEPS.map((stage) => inkStage('running', { stage }).progress!);
+    expect([...progress].sort((a, b) => a - b)).toEqual(progress);
+    expect(Math.max(...progress)).toBeLessThan(1);
   });
 
-  it('treats a clock that went backwards as the start', () => {
-    expect(inkStage('running', -500)).toEqual(inkStage('running', 0));
+  it('without a reported step it claims nothing', () => {
+    expect(inkStage('running')).toEqual({
+      title: 'Creando tu diseño',
+      line: 'Empezando…',
+      progress: null,
+    });
+  });
+
+  it('a queued design says how many are ahead', () => {
+    expect(inkStage('queued', { queuePosition: 1 }).line).toBe('Eres el siguiente.');
+    expect(inkStage('queued', { queuePosition: 2 }).line).toBe('Hay 1 diseño antes que el tuyo.');
+    expect(inkStage('queued', { queuePosition: 4 }).line).toBe('Hay 3 diseños antes que el tuyo.');
   });
 });
 

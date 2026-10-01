@@ -9,6 +9,8 @@ last_reviewed: 2026-09-26
 
 # Module: orchestration
 
+TASK-0076: `StateGraph.invoke(state, on_node=...)` calls `on_node` with each node's name as it starts; the composition root maps nodes to client steps.
+
 TASK-0052: `skin_plate` is the graph's entry point, ahead of `master_artwork`. It settles the
 background (own photo, parent plate, or a text-only generated plate) so that a plate provider that
 fails does so before the artwork is paid for. `surface_warp` now requires a background instead of

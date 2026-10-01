@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0076: `Studio.generate` reports `references`, then each graph node through `NODE_STAGES`; a re-placement reports `placing`.
+
 TASK-0074: ESLint no longer asks plain `.mjs` modules for type annotations they cannot carry; JSDoc documents them.
 
 TASK-0073 (audit UX-01, ADR-0008 amended): `resizes_print` — only an edit with `coverage: "full"` changes print millimetres. An initial design keeps its accepted size; a placement-only whole-zone phrase is refused with `ZONE_NEEDS_CONTROL`.

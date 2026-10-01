@@ -2372,3 +2372,23 @@ body::after {
     transition: none;
   }
 }
+/* TASK-0076: with no step reported, the bar says "working", not how far. */
+.ink-bar-waiting span {
+  width: 30%;
+  animation: ink-waiting 1.6s ease-in-out infinite alternate;
+}
+@keyframes ink-waiting {
+  from {
+    transform: translateX(-20%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink-bar-waiting span {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
+}

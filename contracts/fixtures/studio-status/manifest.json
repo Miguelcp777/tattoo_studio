@@ -126,6 +126,30 @@
       "file": "invalid/capture-without-photo.json",
       "valid": false,
       "why": "A capture version must carry the photograph it is named for."
+    },
+    {
+      "name": "running-stage",
+      "file": "valid/running-stage.json",
+      "valid": true,
+      "why": "TASK-0076: a running job reports its real pipeline step"
+    },
+    {
+      "name": "queued-position",
+      "file": "valid/queued-position.json",
+      "valid": true,
+      "why": "TASK-0076: a queued job reports its place in the queue"
+    },
+    {
+      "name": "unknown-stage",
+      "file": "invalid/unknown-stage.json",
+      "valid": false,
+      "why": "TASK-0076: the stage is a closed vocabulary"
+    },
+    {
+      "name": "queue-position-zero",
+      "file": "invalid/queue-position-zero.json",
+      "valid": false,
+      "why": "TASK-0076: a place in the queue starts at 1"
     }
   ]
 }

@@ -1186,6 +1186,8 @@ export default function ConsultationPage(): ReactNode {
               phase={
                 submittingGeneration ? 'preparing' : job?.state === 'queued' ? 'queued' : 'running'
               }
+              stage={job?.stage}
+              queuePosition={job?.queuePosition}
             />
           )}
 
@@ -1302,6 +1304,8 @@ export default function ConsultationPage(): ReactNode {
               phase={
                 submittingGeneration ? 'preparing' : job?.state === 'queued' ? 'queued' : 'running'
               }
+              stage={job?.stage}
+              queuePosition={job?.queuePosition}
             />
           ) : step === 'idea' ? (
             <IdeaStep

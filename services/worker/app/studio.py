@@ -69,6 +69,14 @@ REFUSED_UPLOAD = {
 }
 
 
+#: TASK-0076 (audit UX-03): the step the client is shown for each pipeline node.
+NODE_STAGES = {
+    "skin_plate": "skin",
+    "master_artwork": "drawing",
+    "stencil_trace": "stencil",
+    "surface_warp": "placing",
+}
+
 ZONE_NEEDS_CONTROL = (
     "Para que ocupe toda la zona hay que cambiar las medidas de impresión. Usa el botón «Ocupar "
     "toda la zona»: te dirá las medidas nuevas antes de aplicarlas."
@@ -569,6 +577,8 @@ class Studio:
         zone = self.zone_intent(brief, payload, coverage, bool(edit))
         if zone and resizes_print(edit):
             brief["size"] = self.zone_millimetres(brief)
+        if references and not parent:
+            self.jobs.stage("references")
         analysis = (
             parent["referenceAnalysis"]
             if parent
@@ -587,7 +597,8 @@ class Studio:
         state = build_generation_graph(
             deps, blend=_StudioBlend(self.provider), geometry=GeometryCheck(BLEND_TOLERANCE)
         ).invoke(
-            PipelineState(
+            on_node=lambda node: self.jobs.stage(NODE_STAGES.get(node, "finishing")),
+            state=PipelineState(
                 brief=brief,
                 references=references,
                 analysis=analysis,
@@ -599,7 +610,7 @@ class Studio:
                 background=background,
                 # An own photo is marked as such so the finish declines it (ADR-0018).
                 body_photo=background if payload.get("bodyPhotoId") else None,
-            )
+            ),
         )
         # The graph always fills these on the success path; assert to narrow the optional state
         # fields and to fail loudly rather than storing a half-built result.
@@ -731,6 +742,7 @@ class Studio:
         A parent stored before TASK-0024 has no vector master, so it keeps its millimetres rather
         than letting the brief and the stencil disagree.
         """
+        self.jobs.stage("placing")
         brief = payload["brief"]
         body_part = brief["placement"]["bodyPart"]
         previous = dict(payload.get("placement") or {})

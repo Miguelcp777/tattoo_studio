@@ -22,6 +22,19 @@ class State(StrEnum):
     cancelled = 'cancelled'
 
 
+class Stage(StrEnum):
+    """
+    TASK-0076 (audit UX-03): the pipeline step a running job is in, as the worker reports it. Absent when unknown.
+    """
+
+    references = 'references'
+    skin = 'skin'
+    drawing = 'drawing'
+    stencil = 'stencil'
+    placing = 'placing'
+    finishing = 'finishing'
+
+
 class MimeType(StrEnum):
     image_png = 'image/png'
     image_svg_xml = 'image/svg+xml'
@@ -253,3 +266,16 @@ class StudioJobStatus(BaseModel):
     state: State
     result: Artifact | None
     error: str | None
+    stage: Annotated[
+        Stage | None,
+        Field(
+            description='TASK-0076 (audit UX-03): the pipeline step a running job is in, as the worker reports it. Absent when unknown.'
+        ),
+    ] = None
+    queuePosition: Annotated[
+        int | None,
+        Field(
+            description="TASK-0076: for a queued job, how many jobs (including it) are ahead in the studio's queue.",
+            ge=1,
+        ),
+    ] = None

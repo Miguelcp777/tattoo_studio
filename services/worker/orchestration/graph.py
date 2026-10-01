@@ -76,7 +76,10 @@ class Graph(Generic[S]):
             current = self._edges[current]
         return order
 
-    def invoke(self, state: S) -> S:
+    def invoke(self, state: S, on_node: Callable[[str], None] | None = None) -> S:
+        """Run the nodes in order. `on_node` hears each node's name as it starts (TASK-0076)."""
         for name in self.node_order():
+            if on_node:
+                on_node(name)
             state = self._nodes[name](state)
         return state

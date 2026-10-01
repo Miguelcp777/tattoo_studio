@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0076 (audit UX-03, supersedes TASK-0069's timed lines): `inkStage(task, {stage, queuePosition})` shows the worker's step («paso N de 6») or the queue place; other waits show one description and an indeterminate bar (`.ink-bar-waiting`).
+
 TASK-0075 (audit UX-02): `isCurrentDesign` (`lib/opening.ts`): with a consultation open only a design with its `briefId` is restored as its result or counted by the "design ready" gates; a restored failed job shows its plain message.
 
 TASK-0074 (audit SEG-01): `security-headers.mjs`, applied by `next.config.mjs` to every path: nosniff, frame denial, referrer policy, camera-only permissions, a minimal enforced CSP and the complete CSP as Report-Only; HSTS in production.

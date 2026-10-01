@@ -1,122 +1,84 @@
 /**
- * What the studio says while an agent works (TASK-0069).
+ * What the studio says while an agent works (TASK-0069; TASK-0076, audit UX-03).
  *
- * Nothing here is tracked from the server: no provider reports how far along it is. The lines are
- * the stages each task goes through, shown on a timer, and the bar is a curve of the time spent
- * against the usual time of the task. Both exist so a long wait never looks like a frozen page;
- * the bar slows down and never reaches the end, so it cannot promise a finish it does not know.
+ * The first version advanced its lines and bar on a clock, so it could announce «últimos
+ * retoques» while the worker was still drawing. Now nothing is attributed that the server has not
+ * confirmed: a generation shows the step the worker reports (`stage`) and its place in the queue
+ * (`queuePosition`); every other wait shows one plain description of the whole task and an
+ * indeterminate bar. The tattooing hand and the clock still say that the page is alive.
  */
+import type { StudioJobStatus } from '@tattoo/contracts';
+
 export type InkTask =
   'idea' | 'save' | 'search' | 'image' | 'accept' | 'reset' | 'preparing' | 'queued' | 'running';
 
-interface Script {
-  title: string;
-  lines: string[];
-  /** How long each line stays, in milliseconds. */
-  every: number;
-  /** The usual duration of the task, in milliseconds: the bar is at about 63% by then. */
-  usual: number;
-}
+export type InkStep = NonNullable<StudioJobStatus['stage']>;
 
-const SCRIPTS: Record<InkTask, Script> = {
-  idea: {
-    title: 'Estudiando tu idea',
-    lines: [
-      'Leyendo tu idea…',
-      'Anotando el estilo, la zona y el tamaño…',
-      'Redactando la descripción profesional…',
-      'Buscando imágenes de referencia…',
-      'Comprobando que las referencias encajan con tu idea…',
-    ],
-    every: 4500,
-    usual: 20000,
-  },
-  save: {
-    title: 'Guardando tus respuestas',
-    lines: ['Anotando tus respuestas…', 'Ajustando la propuesta a la zona…'],
-    every: 3000,
-    usual: 3000,
-  },
-  search: {
-    title: 'Buscando referencias',
-    lines: [
-      'Buscando imágenes de referencia…',
-      'Descartando las que no encajan…',
-      'Quedándonos con las mejores…',
-    ],
-    every: 5000,
-    usual: 15000,
-  },
-  image: {
-    title: 'Revisando tu imagen',
-    lines: [
-      'Subiendo la imagen…',
-      'Quitando los datos de ubicación…',
-      'Comprobando que es apta…',
-      'Guardándola cifrada…',
-    ],
-    every: 2500,
-    usual: 8000,
-  },
-  accept: {
-    title: 'Preparando el encargo',
-    lines: ['Fijando el resumen que has aceptado…'],
-    every: 3000,
-    usual: 3000,
-  },
-  reset: {
-    title: 'Preparando una hoja en blanco',
-    lines: ['Recogiendo la mesa…'],
-    every: 3000,
-    usual: 2000,
-  },
-  preparing: {
-    title: 'Preparando el encargo',
-    lines: ['Revisando las referencias…', 'Enviando el encargo al estudio…'],
-    every: 5000,
-    usual: 15000,
-  },
-  queued: {
-    title: 'Tu diseño está en cola',
-    lines: ['Esperando turno en el estudio…', 'Enseguida empezamos…'],
-    every: 8000,
-    usual: 30000,
-  },
-  running: {
-    title: 'Tatuando tu diseño',
-    lines: [
-      'Dibujando el diseño…',
-      'Trazando la plantilla línea a línea…',
-      'Preparando la piel…',
-      'Colocando el tatuaje sobre la piel…',
-      'Repasando luces y sombras…',
-      'Dando los últimos retoques…',
-    ],
-    every: 25000,
-    usual: 150000,
-  },
+/** The worker's steps, in the order it runs them. */
+export const STEPS: readonly InkStep[] = [
+  'references',
+  'skin',
+  'drawing',
+  'stencil',
+  'placing',
+  'finishing',
+];
+
+const STEP_LINES: Record<InkStep, string> = {
+  references: 'Analizando tus referencias…',
+  skin: 'Preparando la piel…',
+  drawing: 'Dibujando el diseño…',
+  stencil: 'Trazando la plantilla…',
+  placing: 'Colocándolo sobre la piel…',
+  finishing: 'Últimos ajustes y revisión…',
 };
 
-/** The bar never claims the end: it approaches this and stops there until the task is done. */
-export const BAR_CEILING = 0.94;
+const TASKS: Record<Exclude<InkTask, 'queued' | 'running'>, { title: string; line: string }> = {
+  idea: {
+    title: 'Estudiando tu idea',
+    line: 'Leemos tu idea, buscamos referencias y preparamos la propuesta.',
+  },
+  save: { title: 'Guardando tus respuestas', line: 'Un momento…' },
+  search: { title: 'Buscando referencias', line: 'Buscamos imágenes que encajen con tu idea.' },
+  image: { title: 'Revisando tu imagen', line: 'Comprobamos que es apta antes de guardarla.' },
+  accept: { title: 'Preparando el encargo', line: 'Fijamos el resumen que has aceptado.' },
+  reset: { title: 'Preparando una hoja en blanco', line: 'Un momento…' },
+  preparing: { title: 'Enviando el encargo', line: 'Enviamos tu encargo al estudio.' },
+};
 
 export interface InkStage {
   title: string;
   line: string;
-  /** From 0 to `BAR_CEILING`, growing with time and slowing down. */
-  progress: number;
+  /** From 0 to 1 when a confirmed step says how far along it is; `null` when nothing does. */
+  progress: number | null;
 }
 
-export function inkStage(task: InkTask, elapsedMs: number): InkStage {
-  const script = SCRIPTS[task];
-  const elapsed = Math.max(0, elapsedMs);
-  // The lines advance and stay on the last one: going back to the first would look like a restart.
-  const index = Math.min(script.lines.length - 1, Math.floor(elapsed / script.every));
-  return {
-    title: script.title,
-    line: script.lines[index]!,
-    progress: BAR_CEILING * (1 - Math.exp(-elapsed / script.usual)),
-  };
+export function inkStage(
+  task: InkTask,
+  status: { stage?: InkStep | undefined; queuePosition?: number | undefined } = {},
+): InkStage {
+  if (task === 'queued') {
+    const ahead = (status.queuePosition ?? 1) - 1;
+    return {
+      title: 'Tu diseño está en cola',
+      line:
+        ahead > 0
+          ? `Hay ${ahead} ${ahead === 1 ? 'diseño' : 'diseños'} antes que el tuyo.`
+          : 'Eres el siguiente.',
+      progress: null,
+    };
+  }
+  if (task === 'running') {
+    const index = status.stage ? STEPS.indexOf(status.stage) : -1;
+    if (index < 0) return { title: 'Creando tu diseño', line: 'Empezando…', progress: null };
+    return {
+      title: `Creando tu diseño · paso ${index + 1} de ${STEPS.length}`,
+      line: STEP_LINES[status.stage!],
+      // Half a step in: the step has started, not finished.
+      progress: (index + 0.5) / STEPS.length,
+    };
+  }
+  return { ...TASKS[task], progress: null };
 }
 
 /** «0:07», «2:31». */

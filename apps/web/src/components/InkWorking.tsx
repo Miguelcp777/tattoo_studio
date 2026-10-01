@@ -2,12 +2,13 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
-import { clock, inkStage, type InkTask } from '@/lib/ink-progress';
+import { clock, inkStage, type InkStep, type InkTask } from '@/lib/ink-progress';
 
 /**
  * While an agent works (TASK-0069): a gloved hand tattoos a rose on skin, line by line, with the
  * stage, a bar and the time spent beneath it. It is there so a wait of seconds or minutes never
- * reads as a frozen page; what it says is timed, not reported by the server (`ink-progress.ts`).
+ * reads as a frozen page. What it says is what the server reports, or else a plain description
+ * with an indeterminate bar (`ink-progress.ts`, TASK-0076).
  *
  * `delay` keeps a quick answer from flashing it. With reduced motion the rose is shown finished
  * and the hand still; the text and the time still move.
@@ -232,10 +233,16 @@ function TattooingHand({ still }: { still: boolean }): ReactNode {
 
 export function InkWorking({
   task,
+  stage: step,
+  queuePosition,
   delay = 400,
   note,
 }: {
   task: InkTask;
+  /** The step the worker reports for a running design (TASK-0076). */
+  stage?: InkStep | undefined;
+  /** Its place in the queue, for a queued design. */
+  queuePosition?: number | undefined;
   /** Milliseconds before it appears, so a quick answer does not flash it. */
   delay?: number;
   /** A line under the time, such as how long a design usually takes. */
@@ -249,10 +256,6 @@ export function InkWorking({
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
   }, []);
-  // The time counts the whole wait; the lines and the bar start again when the task changes,
-  // as a design goes from «preparing» to «queued» to «running».
-  const [taskStarted, setTaskStarted] = useState(started);
-  useEffect(() => setTaskStarted(Date.now()), [task]);
   const elapsed = now - started;
   const shown = elapsed >= delay;
   // Brought into sight once, since it may appear below a long dialog on a phone.
@@ -261,20 +264,33 @@ export function InkWorking({
   }, [shown]);
   if (!shown) return null;
 
-  const stage = inkStage(task, now - taskStarted);
+  // TASK-0076 (audit UX-03): only what the server reports; nothing advances on a clock.
+  const stage = inkStage(task, { stage: step, queuePosition });
   return (
     <section ref={box} className="ink-working" aria-busy="true" aria-label={stage.title}>
       <TattooingHand still={still} />
       <p className="ink-title" role="status">
         {stage.title}
       </p>
-      {/* Not announced: a line every few seconds would talk over the screen reader. */}
-      <p className="ink-line" key={stage.line} aria-hidden="true">
+      <p className="ink-line" key={stage.line}>
         {stage.line}
       </p>
-      <div className="ink-bar" role="progressbar" aria-label={stage.title}>
-        <span style={{ width: `${(stage.progress * 100).toFixed(1)}%` }} />
-      </div>
+      {stage.progress === null ? (
+        <div className="ink-bar ink-bar-waiting" role="progressbar" aria-label={stage.title}>
+          <span />
+        </div>
+      ) : (
+        <div
+          className="ink-bar"
+          role="progressbar"
+          aria-label={stage.title}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(stage.progress * 100)}
+        >
+          <span style={{ width: `${(stage.progress * 100).toFixed(1)}%` }} />
+        </div>
+      )}
       <p className="ink-time">
         {clock(elapsed)}
         {note ? ` · ${note}` : ''}

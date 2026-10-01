@@ -9,6 +9,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,9 @@ from tattoo_contracts.validation import validate
 
 from jobs.client_messages import GENERIC, for_client
 from telemetry import activity, record
+
+#: The job this thread is executing, so a pipeline step can report itself (TASK-0076).
+_running: ContextVar[str | None] = ContextVar("running_job", default=None)
 
 
 class JobQueue:
@@ -28,6 +32,9 @@ class JobQueue:
         self.path = path
         self.execute = execute
         self.maintenance = maintenance
+        # TASK-0076 (audit UX-03): the step each running job is in, as the pipeline reports it.
+        # In memory on purpose: a restart fails running jobs anyway.
+        self.stages: dict[str, str] = {}
         self.stop = threading.Event()
         with self.connect() as db:
             db.execute(
@@ -141,9 +148,27 @@ class JobQueue:
             row = db.execute(
                 "SELECT * FROM jobs WHERE id=? AND owner=?", (job_id, owner)
             ).fetchone()
-        if row is None:
-            raise KeyError("Trabajo no encontrado")
-        return self.public(row)
+            if row is None:
+                raise KeyError("Trabajo no encontrado")
+            status = self.public(row)
+            # TASK-0076 (audit UX-03): what the client is shown comes from the queue and the
+            # pipeline, never from a clock.
+            if row["state"] == "running" and row["id"] in self.stages:
+                status["stage"] = self.stages[row["id"]]
+            elif row["state"] == "queued":
+                ahead = db.execute(
+                    "SELECT count(*) FROM jobs WHERE state='running' "
+                    "OR (state='queued' AND created < ?)",
+                    (row["created"],),
+                ).fetchone()[0]
+                status["queuePosition"] = ahead + 1
+        return status
+
+    def stage(self, name: str) -> None:
+        """Record the pipeline step of the job running in this thread (TASK-0076)."""
+        job = _running.get()
+        if job:
+            self.stages[job] = name
 
     def cancel(self, owner: str, job_id: str) -> None:
         with self.connect() as db:
@@ -184,6 +209,7 @@ class JobQueue:
         payload = json.loads(row["payload"])
         started = time.monotonic()
         # Every provider call made for this job is attributed to its owner and to it (TASK-0054).
+        token = _running.set(row["id"])
         with activity(row["owner"], row["id"]):
             try:
                 result = self.execute(row["owner"], payload)
@@ -208,6 +234,8 @@ class JobQueue:
                     "ownPhoto": bool(payload.get("bodyPhotoId")),
                 },
             )
+        _running.reset(token)
+        self.stages.pop(row["id"], None)
         with self.connect() as db:
             db.execute(
                 "UPDATE jobs SET state=?,result=?,error=? WHERE id=? AND state='running'",

@@ -1653,3 +1653,39 @@ def test_the_generation_refusals_reach_the_client_unchanged() -> None:
 
     for plain in (CONTENT_REFUSED, PLATE_REFUSED):
         assert client_messages.for_client(plain) == plain
+
+
+def test_a_running_job_reports_its_real_step(tmp_path: Path) -> None:
+    """TASK-0076 (audit UX-03): the step shown comes from the pipeline, not from a clock."""
+    seen: list[dict[str, Any]] = []
+    queue: JobQueue
+
+    def execute(owner: str, body: dict[str, Any]) -> dict[str, Any]:
+        job = seen[0]["jobId"]
+        queue.stage("drawing")
+        seen.append(queue.get(owner, job))
+        raise ValueError("stop here")
+
+    queue = JobQueue(tmp_path / "jobs.db", execute)
+    seen.append(queue.enqueue("owner", payload()))
+    queue.tick()
+    assert seen[1]["state"] == "running" and seen[1]["stage"] == "drawing"
+    # Once it ends the step is forgotten.
+    assert "stage" not in queue.get("owner", seen[0]["jobId"])
+
+
+def test_a_queued_job_knows_its_place(tmp_path: Path) -> None:
+    queue = JobQueue(tmp_path / "jobs.db", lambda owner, body: {})
+    first = queue.enqueue("a", payload())
+    second = queue.enqueue("b", payload())
+    assert queue.get("a", first["jobId"])["queuePosition"] == 1
+    assert queue.get("b", second["jobId"])["queuePosition"] == 2
+
+
+def test_a_generation_reports_each_step_in_order(tmp_path: Path) -> None:
+    studio = Studio(tmp_path, b"x" * 32, FakeProvider())
+    steps: list[str] = []
+    studio.jobs.stage = steps.append  # type: ignore[method-assign,assignment]
+    a_design_for(studio, "11111111-1111-4111-8111-111111111111")
+    order = [step for i, step in enumerate(steps) if i == 0 or steps[i - 1] != step]
+    assert order == ["references", "skin", "drawing", "stencil", "placing", "finishing"]
