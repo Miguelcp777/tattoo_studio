@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: stencil
 
+TASK-0088 (audit section 5): `export_pdf` adds A4 pieces (190 × 257 mm, 10 mm overlap, corner marks, position, calibration bar) after the full-size page when the design does not fit A4 (`tile_grid`).
+
 TASK-0086: `Master.simplification` records the pass that succeeded; it is excluded from `design_hash`.
 
 TASK-0071: a skeleton above `MAX_TRACE_POINTS` is traced again at coarser detail

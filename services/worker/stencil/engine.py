@@ -224,8 +224,80 @@ def export_pdf(master: Master, mirrored: bool = False) -> bytes:
     pdf.line(10 * mm, 10 * mm, 60 * mm, 10 * mm)
     pdf.drawString(10 * mm, 5 * mm, "Calibration: 50 mm | Tattooer review required")
     pdf.showPage()
+    _a4_tiles(pdf, master, mirrored)
     pdf.save()
     return output.getvalue()
+
+
+#: TASK-0088 (audit, section 5 «Impresión profesional»): A4 portrait, the area printed on each
+#: piece, and how much consecutive pieces overlap so they can be aligned and taped.
+A4_MM = (210.0, 297.0)
+TILE_AREA_MM = (190.0, 257.0)
+TILE_OVERLAP_MM = 10.0
+
+
+def tile_grid(width_mm: float, height_mm: float) -> tuple[int, int]:
+    """Columns and rows of A4 pieces for a design; (0, 0) when it fits on one A4 page."""
+    if width_mm + 20 <= A4_MM[0] and height_mm + 35 <= A4_MM[1]:
+        return 0, 0
+    step_w, step_h = TILE_AREA_MM[0] - TILE_OVERLAP_MM, TILE_AREA_MM[1] - TILE_OVERLAP_MM
+    columns = max(1, math.ceil((width_mm - TILE_OVERLAP_MM) / step_w))
+    rows = max(1, math.ceil((height_mm - TILE_OVERLAP_MM) / step_h))
+    return columns, rows
+
+
+def _a4_tiles(pdf: canvas.Canvas, master: Master, mirrored: bool) -> None:
+    """The same design at 1:1 in A4 pieces, after the full-size page (TASK-0088).
+
+    A home printer set to A4 shrinks or crops a page larger than A4. These pages print at 100 % on
+    A4: each carries its piece, a 10 mm overlap with the next, corner marks, its position and the
+    50 mm calibration bar.
+    """
+    columns, rows = tile_grid(master.width_mm, master.height_mm)
+    if not columns:
+        return
+    mm = 72 / 25.4
+    step_w, step_h = TILE_AREA_MM[0] - TILE_OVERLAP_MM, TILE_AREA_MM[1] - TILE_OVERLAP_MM
+    left, bottom = 10.0, 30.0
+    total = columns * rows
+    for row in range(rows):
+        for column in range(columns):
+            ox, oy = column * step_w, row * step_h
+            pdf.setPageSize((A4_MM[0] * mm, A4_MM[1] * mm))
+            pdf.saveState()
+            clip = pdf.beginPath()
+            clip.rect(left * mm, bottom * mm, TILE_AREA_MM[0] * mm, TILE_AREA_MM[1] * mm)
+            pdf.clipPath(clip, stroke=0, fill=0)
+            pdf.setLineWidth(master.stroke_mm * mm)
+            for points in master.paths:
+                path = pdf.beginPath()
+                for i, (x, y) in enumerate(points):
+                    dx = (master.width_mm - x if mirrored else x) - ox
+                    px = (left + dx) * mm
+                    py = (bottom + TILE_AREA_MM[1] - (y - oy)) * mm
+                    if i == 0:
+                        path.moveTo(px, py)
+                    else:
+                        path.lineTo(px, py)
+                pdf.drawPath(path, stroke=1, fill=0)
+            pdf.restoreState()
+            # Corner marks of the printed area, to align the overlaps.
+            pdf.setLineWidth(0.2 * mm)
+            for cx in (left, left + TILE_AREA_MM[0]):
+                for cy in (bottom, bottom + TILE_AREA_MM[1]):
+                    pdf.line((cx - 4) * mm, cy * mm, (cx + 4) * mm, cy * mm)
+                    pdf.line(cx * mm, (cy - 4) * mm, cx * mm, (cy + 4) * mm)
+            pdf.setFont("Helvetica", 8)
+            number = row * columns + column + 1
+            pdf.drawString(
+                left * mm,
+                20 * mm,
+                f"A4 piece {number} of {total} (row {row + 1}, column {column + 1}) - "
+                f"{TILE_OVERLAP_MM:g} mm overlap - print 100%, no fit",
+            )
+            pdf.line(left * mm, 10 * mm, (left + 50) * mm, 10 * mm)
+            pdf.drawString(left * mm, 5 * mm, "Calibration: 50 mm")
+            pdf.showPage()
 
 
 def rasterize(master: Master, dpi: int = 150) -> Image.Image:

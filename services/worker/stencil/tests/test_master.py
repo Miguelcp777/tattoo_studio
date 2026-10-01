@@ -120,3 +120,25 @@ def test_a_design_too_dense_at_every_pass_says_so(monkeypatch: pytest.MonkeyPatc
     with pytest.raises(ValueError, match="demasiado complejo") as refused:
         engine.trace_native_lineart(_large_drawing(False), 80, 120)
     assert type(refused.value) is ValueError
+
+
+def test_a_design_larger_than_a4_also_prints_in_a4_pieces() -> None:
+    """TASK-0088: a 150 x 300 mm calf design does not fit an A4 page at 100 %."""
+    import re
+
+    from stencil.engine import A4_MM, export_pdf, tile_grid
+
+    assert tile_grid(80, 150) == (0, 0)
+    assert tile_grid(150, 300) == (1, 2)
+    assert tile_grid(300, 500) == (2, 2)  # 2 x 247 mm steps, the last piece 257 mm tall
+    big = Master([[(0.0, 0.0), (150.0, 300.0)]], 150.0, 300.0, 0.3)
+    pdf = export_pdf(big)
+    boxes = re.findall(rb"/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)", pdf)
+    # The full-size page, then two A4 pieces.
+    assert len(boxes) == 3
+    for width, height in boxes[1:]:
+        assert float(width) == pytest.approx(A4_MM[0] * 72 / 25.4, abs=0.01)
+        assert float(height) == pytest.approx(A4_MM[1] * 72 / 25.4, abs=0.01)
+    assert b"A4 piece 2 of 2" in pdf
+    small = export_pdf(Master([[(0.0, 0.0), (80.0, 150.0)]], 80.0, 150.0, 0.3))
+    assert len(re.findall(rb"/MediaBox", small)) == 1

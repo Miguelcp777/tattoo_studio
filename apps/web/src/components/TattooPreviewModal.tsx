@@ -5,6 +5,7 @@ import { ImageDetail } from './ImageDetail';
 import { messageForError } from '@/lib/client-errors';
 import { zoneProposal } from '@/lib/zone-size';
 import { stencilNotes } from '@/lib/stencil-review';
+import { needsA4Pieces } from '@/lib/print-pieces';
 import { IMAGE_FAILURE_TEXT, imageFailure, probe, type ImageFailure } from '@/lib/image-failure';
 import { Confirm } from './Confirm';
 export function TattooPreviewModal({
@@ -256,6 +257,14 @@ export function TattooPreviewModal({
         He revisado los símbolos. El tatuador debe validar el trazo y la impresión antes de
         utilizarlo.
       </label>
+      {reviewed && needsA4Pieces(artifact.size) && (
+        <p className="small-note">
+          {/* TASK-0088 (audit, «Impresión profesional»). */}
+          Este diseño no cabe en un A4. La primera página del PDF tiene su tamaño real; si imprimes
+          en A4, imprime desde la página 2: son piezas a escala 1:1 con 10 mm de solape y marcas
+          para unirlas. Imprime siempre al 100 %, sin ajustar a la página.
+        </p>
+      )}
       {reviewed && (
         <div className="download-row">
           <a

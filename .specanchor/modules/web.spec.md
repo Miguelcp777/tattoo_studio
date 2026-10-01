@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: web
 
+TASK-0088: the viewer explains the A4 pieces beside the downloads when they apply (`lib/print-pieces.ts`).
+
 TASK-0086: `lib/stencil-review.ts`; the viewer marks a preliminary stencil, says why, and overlays it on the design on request.
 
 TASK-0085: the panel shows «Espera en cola» (median and p95).
