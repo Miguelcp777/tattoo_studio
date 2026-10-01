@@ -29,18 +29,37 @@ class Master:
         return hashlib.sha256(json.dumps(self.__dict__, sort_keys=True).encode()).hexdigest()
 
 
+#: A skeleton with more points than this is not traced: too slow and too dense to transfer.
+MAX_TRACE_POINTS = 180_000
+TOO_COMPLEX = "Line-art demasiado complejo para un stencil fiable."
+#: TASK-0071: a detailed design is traced again at coarser detail before giving up. A realistic
+#: colour piece failed a whole paid generation at the first, finest pass.
+LINEART_SIZES = (1536, 1152, 864, 640)
+COLOUR_PASSES = ((1536, 1.2), (1536, 2.0), (1152, 2.5), (864, 3.0))
+
+
+class _TooComplexError(ValueError):
+    """This pass has too many points; a coarser one may not."""
+
+
 def trace_native_lineart(
     data: bytes, width_mm: float, height_mm: float, stroke_mm: float = 0.3
 ) -> Master:
     """Threshold only the dedicated flat native line-art pass, never a shaded render."""
     with Image.open(io.BytesIO(data)) as image:
-        image.thumbnail((1536, 1536))
-        gray = np.asarray(image.convert("L"))
-    ink = gray < 128
-    fraction = float(ink.mean())
-    if not 0.001 < fraction < 0.35:
-        raise ValueError("El proveedor no produjo line-art limpio. Reintenta con otro diseño.")
-    return _trace_mask(ink, width_mm, height_mm, stroke_mm)
+        gray = image.convert("L")
+    for size in LINEART_SIZES:
+        pass_image = gray.copy()
+        pass_image.thumbnail((size, size))
+        ink = np.asarray(pass_image) < 128
+        fraction = float(ink.mean())
+        if not 0.001 < fraction < 0.35:
+            raise ValueError("El proveedor no produjo line-art limpio. Reintenta con otro diseño.")
+        try:
+            return _trace_mask(ink, width_mm, height_mm, stroke_mm)
+        except _TooComplexError:
+            continue
+    raise ValueError(TOO_COMPLEX)
 
 
 def trace_colour_artwork(
@@ -52,17 +71,29 @@ def trace_colour_artwork(
     approximation for tattooer review, not guaranteed semantic line selection.
     """
     with Image.open(io.BytesIO(data)) as source:
-        artwork = source.convert("RGB")
-        artwork.thumbnail((1536, 1536))
-    rgb = np.asarray(artwork, dtype=np.float64) / 255
-    edges = np.zeros(rgb.shape[:2], dtype=bool)
-    for channel in range(3):
-        edges |= canny(  # type: ignore[no-untyped-call]
-            rgb[:, :, channel], sigma=1.2, low_threshold=0.08, high_threshold=0.2
-        )
-    if not 0.001 < float(edges.mean()) < 0.35:
-        raise ValueError("No se pueden extraer contornos suficientes del diseño a color.")
-    master = _trace_mask(edges, width_mm, height_mm, stroke_mm)
+        original = source.convert("RGB")
+    artwork = original.copy()
+    artwork.thumbnail((1536, 1536))
+    master: Master | None = None
+    # TASK-0071: smoother edges, then a smaller image, until the contours can be traced.
+    for size, sigma in COLOUR_PASSES:
+        pass_image = original.copy()
+        pass_image.thumbnail((size, size))
+        rgb = np.asarray(pass_image, dtype=np.float64) / 255
+        edges = np.zeros(rgb.shape[:2], dtype=bool)
+        for channel in range(3):
+            edges |= canny(  # type: ignore[no-untyped-call]
+                rgb[:, :, channel], sigma=sigma, low_threshold=0.08, high_threshold=0.2
+            )
+        if not 0.001 < float(edges.mean()) < 0.35:
+            raise ValueError("No se pueden extraer contornos suficientes del diseño a color.")
+        try:
+            master = _trace_mask(edges, width_mm, height_mm, stroke_mm)
+            break
+        except _TooComplexError:
+            continue
+    if master is None:
+        raise ValueError(TOO_COMPLEX)
     master.source_hash = hashlib.sha256(artwork.tobytes()).hexdigest()
     # Same millimetre fit and one-millimetre margin as the vector paths.
     factor = 150 / 25.4
@@ -90,8 +121,8 @@ def trace_colour_artwork(
 def _trace_mask(ink: np.ndarray, width_mm: float, height_mm: float, stroke_mm: float) -> Master:
     skel = skeletonize(ink)  # type: ignore[no-untyped-call]
     points = {(int(x), int(y)) for y, x in np.argwhere(skel)}
-    if len(points) > 180_000:
-        raise ValueError("Line-art demasiado complejo para un stencil fiable.")
+    if len(points) > MAX_TRACE_POINTS:
+        raise _TooComplexError(TOO_COMPLEX)
 
     def neighbours(p: tuple[int, int]) -> list[tuple[int, int]]:
         x, y = p

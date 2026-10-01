@@ -48,3 +48,66 @@ def test_an_unknown_vector_document_is_refused() -> None:
 def test_rescale_rejects_a_non_positive_size() -> None:
     with pytest.raises(ValueError, match="positivas"):
         rescale(sample(), 0.0, 10.0)
+
+
+def _large_drawing(colour: bool) -> bytes:
+    import io
+
+    from PIL import Image, ImageDraw
+
+    image = Image.new("RGB", (2000, 3000), "white")
+    draw = ImageDraw.Draw(image)
+    if colour:
+        draw.ellipse((300, 300, 1700, 2700), fill="red")
+    else:
+        draw.ellipse((300, 300, 1700, 2700), outline="black", width=12)
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
+
+
+@pytest.mark.parametrize("colour", [False, True])
+def test_a_dense_design_is_traced_at_coarser_detail(
+    monkeypatch: pytest.MonkeyPatch, colour: bool
+) -> None:
+    """TASK-0071: a detailed design used to fail the whole generation at the first, finest pass."""
+    from stencil import engine
+
+    shapes: list[tuple[int, ...]] = []
+    real = engine._trace_mask
+
+    def dense_twice(ink, *args):  # type: ignore[no-untyped-def]
+        shapes.append(ink.shape)
+        if len(shapes) <= 2:
+            raise engine._TooComplexError(engine.TOO_COMPLEX)
+        return real(ink, *args)
+
+    monkeypatch.setattr(engine, "_trace_mask", dense_twice)
+    if colour:
+        master, _ = engine.trace_colour_artwork(_large_drawing(True), 80, 120)
+    else:
+        master = engine.trace_native_lineart(_large_drawing(False), 80, 120)
+    assert master.paths and len(shapes) == 3
+    # Line-art gets smaller each pass; colour first smooths its edges at the same size.
+    expected = (
+        [(1536, 1024), (1536, 1024), (1152, 768)]
+        if colour
+        else [
+            (1536, 1024),
+            (1152, 768),
+            (864, 576),
+        ]
+    )
+    assert shapes == expected
+
+
+def test_a_design_too_dense_at_every_pass_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    from stencil import engine
+
+    def always(ink, *args):  # type: ignore[no-untyped-def]
+        raise engine._TooComplexError(engine.TOO_COMPLEX)
+
+    monkeypatch.setattr(engine, "_trace_mask", always)
+    with pytest.raises(ValueError, match="demasiado complejo") as refused:
+        engine.trace_native_lineart(_large_drawing(False), 80, 120)
+    assert type(refused.value) is ValueError

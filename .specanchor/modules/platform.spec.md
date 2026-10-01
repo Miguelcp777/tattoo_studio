@@ -23,6 +23,9 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0071: `REFUSED_UPLOAD` in `app/studio.py` gives each gate reason its own message (a real
+person, explicit content, a failed check, no check); the refused-upload event records it.
+
 TASK-0070 (ADR-0031): the web service also receives `OPENAI_API_KEY`, for the free text
 moderation of the client's words (only with a live consultation backend).
 

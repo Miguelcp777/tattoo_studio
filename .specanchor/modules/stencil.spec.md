@@ -9,6 +9,9 @@ last_reviewed: 2026-09-19
 
 # Module: stencil
 
+TASK-0071: a skeleton above `MAX_TRACE_POINTS` is traced again at coarser detail
+(`LINEART_SIZES`, `COLOUR_PASSES`) before «Line-art demasiado complejo» is raised.
+
 TASK-0024 (ADR-0008): the `Master` is persisted as a vector via `serialize_master` /
 `deserialize_master`, and `rescale` performs an exact uniform scale to new millimetres. ADR-0007
 makes the vector master authoritative, but only a 150 dpi raster of it was stored, so a resize

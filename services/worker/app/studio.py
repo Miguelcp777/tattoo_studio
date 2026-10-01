@@ -30,7 +30,7 @@ from mockup.engine import DEFAULT_SURFACE, composite, visible_artwork, visible_s
 from mockup.geometry import BLEND_TOLERANCE, GeometryCheck
 from mockup.placement import Coverage, coverage_request, fit_coverage
 from orchestration import PipelineState, build_finish_graph, build_generation_graph
-from safety.gate import InputGate
+from safety.gate import InputGate, ReasonCode
 from stencil.engine import (
     Master,
     deserialize_master,
@@ -46,6 +46,26 @@ from telemetry import activity, forget, record, usage
 from telemetry.report import activity as account_activity
 from telemetry.report import overview, window
 from telemetry.store import EventStore
+
+# TASK-0071: why an upload was refused. They used to share one message, so a reference refused
+# because the check could not run read as if it showed a person, and nobody could tell which.
+REFUSED_UPLOAD = {
+    ReasonCode.CONTAINS_PERSON: (
+        "La revisión ha visto una persona real en la imagen. Como referencia usa dibujos, "
+        "objetos, animales o símbolos; para ver el tatuaje sobre ti, sube tu foto como foto de tu "
+        "piel."
+    ),
+    ReasonCode.EXPLICIT: (
+        "La imagen tiene contenido explícito (desnudos, sexo o violencia gráfica) y no se puede "
+        "usar."
+    ),
+    ReasonCode.PROVIDER_FAILED: (
+        "No hemos podido revisar la imagen en este momento. Inténtalo de nuevo en unos segundos."
+    ),
+    ReasonCode.NO_PROVIDER: (
+        "La revisión de imágenes no está disponible ahora mismo. Inténtalo más tarde."
+    ),
+}
 
 
 class _StudioBlend:
@@ -463,9 +483,9 @@ class Studio:
             normalized, own_body_consented=kind == "body"
         )
         if not gate.passed or gate.clearance is None:
+            # TASK-0071: one message per reason, so the client and the panel know which it was.
             raise ValueError(
-                "La imagen no ha superado la revisión de contenido. Usa una referencia sin "
-                "personas o una foto corporal propia no explícita."
+                REFUSED_UPLOAD.get(gate.reason, REFUSED_UPLOAD[ReasonCode.PROVIDER_FAILED])
             )
         with self.lock:
             self.still_mine(owner, mark)

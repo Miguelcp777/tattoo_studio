@@ -1533,3 +1533,22 @@ def test_the_administrator_sees_a_design_and_never_a_body(
     ]
     assert {e["operation"] for e in audit} == {"view_account", "view_asset"}
     assert all(e["account"] == ADMIN for e in audit)
+
+
+class _FailingModeration(FakeProvider):
+    def classify(self, data: bytes) -> ModerationOutcome:
+        raise RuntimeError("timeout")
+
+
+def test_each_upload_refusal_says_its_own_reason(tmp_path: Path) -> None:
+    """TASK-0071: one message for every reason hid why a cartoon reference was refused."""
+    skin = {**an_upload(), "data": base64.b64encode(picture(lines=False)).decode()}
+    person = RecordingProvider()
+    with pytest.raises(ValueError, match="persona real"):
+        Studio(tmp_path / "a", b"x" * 32, person).ingest(ACCOUNT, skin)
+    explicit = RecordingProvider()
+    explicit.explicit = True
+    with pytest.raises(ValueError, match="contenido explícito"):
+        Studio(tmp_path / "b", b"x" * 32, explicit).ingest(ACCOUNT, an_upload())
+    with pytest.raises(ValueError, match="No hemos podido revisar"):
+        Studio(tmp_path / "c", b"x" * 32, _FailingModeration()).ingest(ACCOUNT, an_upload())
