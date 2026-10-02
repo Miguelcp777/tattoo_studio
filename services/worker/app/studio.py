@@ -79,6 +79,12 @@ NODE_STAGES = {
     "surface_warp": "placing",
 }
 
+#: TASK-0090: said when the model drew something else twice, instead of delivering it.
+ARTWORK_MISREAD = (
+    "El generador no ha dibujado el diseño como se pidió (dibujó un cuerpo o le faltaba el "
+    "motivo principal). Vuelve a generarlo; si se repite, describe el motivo con más claridad."
+)
+
 #: TASK-0079: a consultation in progress lives a day after its last change, as the web cookie does.
 CONSULTATION_TTL_S = 86400
 CONSULTATION_ID = "[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}"
@@ -226,6 +232,7 @@ class _StudioGenerationDeps:
             native = edited_native or self.studio.provider.colour_artwork(
                 brief, state.references, state.analysis
             )
+            native = self.reviewed(state, native, edited_native is not None)
             if not state.colour and not self.edit:
                 with Image.open(io.BytesIO(native)) as source:
                     monochrome = io.BytesIO()
@@ -235,9 +242,45 @@ class _StudioGenerationDeps:
             native = edited_native or self.studio.provider.lineart(
                 brief, state.references, state.analysis
             )
+            native = self.reviewed(state, native, edited_native is not None)
         # TASK-0089: a backdrop the model painted behind the design would be tattooed as a panel
         # and traced into the stencil. It is turned to white before anything is built on it.
         return clear_backdrop(native)
+
+    def reviewed(self, state: PipelineState, native: bytes, edited: bool) -> bytes:
+        """TASK-0090: the artwork is what was asked, or it is drawn once more with a correction.
+
+        A design for a thigh came back as a thigh with the tattoo on it. A failed check redraws
+        once, telling the model what went wrong; a second failure is said plainly rather than
+        delivered. An edit is redrawn with the same request, which cannot take a correction.
+        """
+        provider = self.studio.provider
+        verdict = provider.check_artwork(state.brief, native)
+        if verdict is None or not verdict.misread:
+            return native
+        self.studio.jobs.stage("drawing")
+        if edited:
+            assert self.parent and self.edit
+            again = provider.edit_artwork(
+                state.brief,
+                self.studio.owned(self.owner, self.parent["master"]["assetId"], "artifact"),
+                state.references,
+                self.edit["instruction"],
+                rendered=state.rendered,
+                attached=len(self.edit.get("referenceIds") or []),
+            )
+        elif state.rendered:
+            again = provider.colour_artwork(
+                state.brief, state.references, state.analysis, correction=verdict.correction()
+            )
+        else:
+            again = provider.lineart(
+                state.brief, state.references, state.analysis, correction=verdict.correction()
+            )
+        second = provider.check_artwork(state.brief, again)
+        if second is not None and second.misread:
+            raise ValueError(ARTWORK_MISREAD)
+        return again
 
     def trace(self, state: PipelineState, native: bytes) -> tuple[Any, Any]:
         brief = state.brief

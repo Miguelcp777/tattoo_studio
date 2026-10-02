@@ -20,7 +20,7 @@ from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw
 
 from app.studio import Studio, router
-from generation.studio import StudioProvider
+from generation.studio import ArtworkCheck, StudioProvider
 from jobs import client_messages
 from jobs.queue import JobQueue, billable_job
 from jobs.quota import Limits, QuotaExceededError, TurnLedger
@@ -64,11 +64,21 @@ class FakeProvider(StudioProvider):
     def classify(self, data: bytes) -> ModerationOutcome:
         return ModerationOutcome(explicit=False, contains_person=False)
 
+    def check_artwork(self, brief: dict[str, Any], artwork: bytes) -> ArtworkCheck | None:
+        # TASK-0090: the fakes draw what is asked; tests of the review override this.
+        return ArtworkCheck(depicts_body=False, subject_present=True)
+
     def analyze(self, references: list[bytes], subject: str) -> str:
         self.references = references
         return "Referencia de prueba: contorno circular y línea vertical."
 
-    def lineart(self, brief: dict[str, Any], references: list[bytes], analysis: str) -> bytes:
+    def lineart(
+        self,
+        brief: dict[str, Any],
+        references: list[bytes],
+        analysis: str,
+        correction: str = "",
+    ) -> bytes:
         self.calls += 1
         assert references == self.references
         return picture()
@@ -77,7 +87,11 @@ class FakeProvider(StudioProvider):
         return picture(False)
 
     def colour_artwork(
-        self, brief: dict[str, Any], references: list[bytes], analysis: str
+        self,
+        brief: dict[str, Any],
+        references: list[bytes],
+        analysis: str,
+        correction: str = "",
     ) -> bytes:
         self.calls += 1
         assert references == self.references
@@ -1016,7 +1030,13 @@ def test_a_deletion_during_a_generation_leaves_nothing_behind(tmp_path: Path) ->
     """
 
     class ErasesMidway(FakeProvider):
-        def lineart(self, brief: dict[str, Any], references: list[bytes], analysis: str) -> bytes:
+        def lineart(
+            self,
+            brief: dict[str, Any],
+            references: list[bytes],
+            analysis: str,
+            correction: str = "",
+        ) -> bytes:
             studio.delete(ACCOUNT)
             return super().lineart(brief, references, analysis)
 
@@ -1386,7 +1406,13 @@ def test_a_kept_camera_photo_goes_with_its_photo(tmp_path: Path) -> None:
 
 def test_only_runs_that_produced_nothing_are_swept(tmp_path: Path) -> None:
     class Failing(FakeProvider):
-        def lineart(self, brief: dict[str, Any], references: list[bytes], analysis: str) -> bytes:
+        def lineart(
+            self,
+            brief: dict[str, Any],
+            references: list[bytes],
+            analysis: str,
+            correction: str = "",
+        ) -> bytes:
             raise ValueError("Proveedor no disponible")
 
     studio = Studio(tmp_path, b"x" * 32, Failing())
@@ -1839,7 +1865,11 @@ class _PaintedBackdrop(FakeProvider):
     """The model drew a shaded design inside a grey card (TASK-0089)."""
 
     def colour_artwork(
-        self, brief: dict[str, Any], references: list[bytes], analysis: str
+        self,
+        brief: dict[str, Any],
+        references: list[bytes],
+        analysis: str,
+        correction: str = "",
     ) -> bytes:
         self.calls += 1
         image = Image.new("RGB", (200, 300), (128, 128, 130))
@@ -1865,3 +1895,57 @@ def test_a_backdrop_painted_by_the_model_never_reaches_the_design(tmp_path: Path
         assert grey.getpixel((grey.width // 2, 8)) == 255
         centre = grey.getpixel((grey.width // 2, grey.height // 2))
         assert isinstance(centre, (int, float)) and centre < 80
+
+
+class _DrawsALegFirst(FakeProvider):
+    """TASK-0090: the first artwork is a leg with a tattoo on it; the corrected one is not."""
+
+    def __init__(self, misread_every_time: bool = False) -> None:
+        super().__init__()
+        self.corrections: list[str] = []
+        self.misread_every_time = misread_every_time
+
+    def lineart(
+        self, brief: dict[str, Any], references: list[bytes], analysis: str, correction: str = ""
+    ) -> bytes:
+        self.corrections.append(correction)
+        return super().lineart(brief, references, analysis)
+
+    def check_artwork(self, brief: dict[str, Any], artwork: bytes) -> ArtworkCheck | None:
+        first = len(self.corrections) <= 1
+        bad = self.misread_every_time or first
+        return ArtworkCheck(depicts_body=bad, subject_present=True)
+
+
+def test_a_misread_artwork_is_drawn_again_with_a_correction(tmp_path: Path) -> None:
+    provider = _DrawsALegFirst()
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    job = a_design_for(studio, ACCOUNT)
+    assert studio.jobs.get(ACCOUNT, job)["state"] == "succeeded"
+    assert provider.corrections[0] == ""
+    assert "body or skin" in provider.corrections[1]
+
+
+def test_a_design_misread_twice_is_refused_plainly(tmp_path: Path) -> None:
+    from app.studio import ARTWORK_MISREAD
+
+    provider = _DrawsALegFirst(misread_every_time=True)
+    studio = Studio(tmp_path, b"x" * 32, provider)
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    failed = studio.jobs.get(ACCOUNT, job["jobId"])
+    assert failed["state"] == "failed" and failed["error"] == ARTWORK_MISREAD
+    assert len(provider.corrections) == 2
+
+
+def test_an_unavailable_review_lets_the_artwork_through(tmp_path: Path) -> None:
+    class Unreviewed(FakeProvider):
+        def check_artwork(self, brief: dict[str, Any], artwork: bytes) -> ArtworkCheck | None:
+            return None
+
+    studio = Studio(tmp_path, b"x" * 32, Unreviewed())
+    job = a_design_for(studio, ACCOUNT)
+    assert studio.jobs.get(ACCOUNT, job)["state"] == "succeeded"

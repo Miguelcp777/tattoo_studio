@@ -153,6 +153,7 @@ const OPERATION: Record<string, string> = {
   scout_plan: 'Búsqueda: plan',
   scout_judge: 'Búsqueda: juez',
   web_image_search: 'Búsqueda web de imágenes',
+  artwork_check: 'Revisión del dibujo',
   text_moderation: 'Revisión del texto',
 };
 

@@ -320,3 +320,66 @@ def test_the_colour_prompt_forbids_a_backdrop_behind_the_design() -> None:
     brief = {"size": {"widthMm": 80, "heightMm": 150}, "subject": {"description": "x"}}
     prompt = StudioProvider.artwork_prompt(brief, "", colour=True, referenced=False)
     assert "#FFFFFF" in prompt and "no background panel" in prompt
+
+
+def test_the_prompt_asks_for_the_design_alone_never_a_body() -> None:
+    """TASK-0090: a design for a thigh came back as a thigh with a tattoo on it."""
+    from generation.studio import ISOLATED_DESIGN
+
+    brief = {"size": {"widthMm": 160, "heightMm": 280}, "subject": {"description": "x"}}
+    for colour in (True, False):
+        prompt = StudioProvider.artwork_prompt(brief, "", colour=colour, referenced=False)
+        assert ISOLATED_DESIGN in prompt and "Do NOT draw any body" in prompt
+    corrected = StudioProvider.artwork_prompt(
+        brief, "", colour=True, referenced=False, correction="it drew a body."
+    )
+    assert "Correction from a review of the previous attempt: it drew a body." in corrected
+
+
+def test_the_review_reads_only_a_strict_answer() -> None:
+    from generation.studio import ArtworkCheck
+
+    ok = ArtworkCheck.parse('{"depicts_body": false, "subject_present": true}')
+    assert ok is not None and not ok.misread
+    leg = ArtworkCheck.parse('```json\n{"depicts_body": true, "subject_present": true}\n```')
+    assert leg is not None and leg.misread and "body or skin" in leg.correction()
+    assert ArtworkCheck.parse('{"depicts_body": "no", "subject_present": true}') is None
+    assert ArtworkCheck.parse("not json") is None
+
+
+def test_the_review_asks_the_vision_model_with_the_subject(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = StudioProvider("test-not-a-secret")
+    sent: list[dict[str, Any]] = []
+
+    def post(url: str, **kwargs: Any) -> object:
+        sent.append(kwargs["json"])
+        return _Answer(
+            200,
+            {
+                "output": [
+                    {
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": '{"depicts_body": true, "subject_present": true}',
+                            }
+                        ]
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(provider.client, "post", post)
+    brief = {"subject": {"description": "un murciélago biomecánico"}}
+    verdict = provider.check_artwork(brief, b"png")
+    assert verdict is not None and verdict.depicts_body
+    text = sent[0]["input"][0]["content"][0]["text"]
+    assert "murciélago biomecánico" in text
+    provider.close()
+
+
+def test_a_failed_review_is_no_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = StudioProvider("test-not-a-secret")
+    monkeypatch.setattr(provider.client, "post", lambda url, **kwargs: _Answer(500, {}))
+    assert provider.check_artwork({"subject": {"description": "x"}}, b"png") is None
+    provider.close()

@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: consultation
 
+TASK-0090: rule 10 describes the design as drawn on paper, the zone only as the shape to fill, never the body or skin.
+
 TASK-0073 (audit UX-01): `statedSize` reads compact and labelled sizes in either order; a single dimension is kept as `size.stated` and only the other is proposed (`proposeSize` keeps it across zone changes; the summary says which is the client's).
 
 TASK-0070 (ADR-0031): `agents/content-screen.ts` holds `TextScreen`, `OpenAITextModeration`
