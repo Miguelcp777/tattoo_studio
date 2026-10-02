@@ -23,6 +23,8 @@ last_reviewed: 2026-09-19
 
 # Module: platform
 
+TASK-0089: `make_artwork` returns `clear_backdrop(native)` for every artwork, new or edited.
+
 TASK-0086: `Studio.generate` reports `stencilReview` with each result.
 
 TASK-0085: the runbook test asserts the sign-in requirement and the daily limits come before the deployment steps.

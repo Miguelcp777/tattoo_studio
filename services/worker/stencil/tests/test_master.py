@@ -142,3 +142,61 @@ def test_a_design_larger_than_a4_also_prints_in_a4_pieces() -> None:
     assert b"A4 piece 2 of 2" in pdf
     small = export_pdf(Master([[(0.0, 0.0), (80.0, 150.0)]], 80.0, 150.0, 0.3))
     assert len(re.findall(rb"/MediaBox", small)) == 1
+
+
+def _card(backdrop: tuple[int, int, int] | None) -> bytes:
+    import io
+
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    if backdrop is None:
+        image = Image.new("RGB", (600, 900), "white")
+    else:
+        # A gradient card, as the model painted behind a biomechanical piece.
+        ys = np.linspace(0, 1, 900)[:, None, None]
+        base = np.array(backdrop, dtype=np.float32) + 50 * ys
+        image = Image.fromarray(
+            np.clip(np.broadcast_to(base, (900, 600, 3)), 0, 255).astype(np.uint8)
+        )
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((180, 250, 420, 650), fill=(35, 35, 38))
+    for r in range(40):
+        draw.ellipse((200 + r, 270 + r, 400 - r, 630 - r), outline=(75 + r, 75 + r, 78 + r))
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
+
+
+def test_a_painted_backdrop_is_cleared_and_the_design_kept() -> None:
+    """TASK-0089: a grey card behind the design was tattooed onto the skin as a panel."""
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    from stencil.backdrop import clear_backdrop
+
+    cleared = np.asarray(
+        Image.open(io.BytesIO(clear_backdrop(_card((115, 115, 118))))).convert("L")
+    )
+    assert cleared[3, 3] == 255 and cleared[-3, -3] == 255 and cleared[450, 20] == 255
+    assert cleared[450, 300] < 60  # the motif's dark core
+    assert 70 <= cleared[450, 215] <= 140  # its soft shading
+
+
+def test_white_and_dark_grounds_are_left_alone() -> None:
+    """A white ground is already right; a dark field is a blackwork design, not a backdrop."""
+    import io
+
+    from PIL import Image, ImageDraw
+
+    from stencil.backdrop import clear_backdrop
+
+    white = _card(None)
+    assert clear_backdrop(white) == white
+    field = Image.new("RGB", (400, 400), (14, 14, 14))
+    ImageDraw.Draw(field).ellipse((100, 100, 300, 300), fill="white")
+    out = io.BytesIO()
+    field.save(out, format="PNG")
+    assert clear_backdrop(out.getvalue()) == out.getvalue()

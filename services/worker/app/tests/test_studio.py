@@ -1833,3 +1833,35 @@ def test_a_result_says_how_its_stencil_was_obtained(tmp_path: Path) -> None:
     review = studio.jobs.get(ACCOUNT, job)["result"]["stencilReview"]
     assert review["method"] in ("lineart", "colour_contours")
     assert review["simplification"] == 0
+
+
+class _PaintedBackdrop(FakeProvider):
+    """The model drew a shaded design inside a grey card (TASK-0089)."""
+
+    def colour_artwork(
+        self, brief: dict[str, Any], references: list[bytes], analysis: str
+    ) -> bytes:
+        self.calls += 1
+        image = Image.new("RGB", (200, 300), (128, 128, 130))
+        ImageDraw.Draw(image).ellipse((40, 30, 160, 260), fill=(30, 30, 32))
+        out = io.BytesIO()
+        image.save(out, format="PNG")
+        return out.getvalue()
+
+
+def test_a_backdrop_painted_by_the_model_never_reaches_the_design(tmp_path: Path) -> None:
+    """TASK-0089: the grey card became a grey panel tattooed on the thigh."""
+    studio = Studio(tmp_path, b"x" * 32, _PaintedBackdrop())
+    reference = studio.ingest(ACCOUNT, an_upload())
+    request = payload()
+    request["referenceIds"] = [reference["assetId"]]
+    request["brief"]["shading"]["technique"] = "smooth_blend"  # the shaded, colour path
+    job = studio.jobs.enqueue(ACCOUNT, request)
+    assert studio.jobs.tick()
+    result = studio.jobs.get(ACCOUNT, job["jobId"])["result"]
+    with Image.open(io.BytesIO(studio.owned(ACCOUNT, result["master"]["assetId"]))) as master:
+        grey = master.convert("L")
+        # The design's own frame: corners inside the 1 mm margin are what was the card.
+        assert grey.getpixel((grey.width // 2, 8)) == 255
+        centre = grey.getpixel((grey.width // 2, grey.height // 2))
+        assert isinstance(centre, (int, float)) and centre < 80

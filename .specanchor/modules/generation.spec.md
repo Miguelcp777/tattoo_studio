@@ -9,6 +9,8 @@ last_reviewed: 2026-09-19
 
 # Module: generation
 
+TASK-0089: the colour artwork prompt requires #FFFFFF outside the motif, with no panel, card, vignette or gradient.
+
 TASK-0072: `PLATE_REFUSED` no longer names «el proveedor».
 
 TASK-0070 (ADR-0031): `StudioProvider.check` turns a `moderation_blocked` answer into

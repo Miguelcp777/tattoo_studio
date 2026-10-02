@@ -216,6 +216,10 @@ class StudioProvider:
             )
             + "Keep identifying flag and emblem colours faithful to the reference images. "
             "No text labels, frames, paper texture, cast shadows or background scenery. "
+            "Everything outside the tattoo motif must be pure white (#FFFFFF): no background "
+            "panel, card, tinted rectangle, vignette or gradient behind the design. Effects such "
+            "as torn skin are part of the motif's ink and fade into white, never into a filled "
+            "backdrop. "
             if colour
             else "Create a FLAT NATIVE TATTOO LINE-ART MASTER on pure white, "
             "not a skin photograph. "

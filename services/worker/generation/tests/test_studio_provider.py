@@ -313,3 +313,10 @@ def test_a_paid_image_call_is_recorded_with_its_usage(
         "job-7",
         "ok",
     )
+
+
+def test_the_colour_prompt_forbids_a_backdrop_behind_the_design() -> None:
+    """TASK-0089: a biomechanical piece came back inside a grey card."""
+    brief = {"size": {"widthMm": 80, "heightMm": 150}, "subject": {"description": "x"}}
+    prompt = StudioProvider.artwork_prompt(brief, "", colour=True, referenced=False)
+    assert "#FFFFFF" in prompt and "no background panel" in prompt

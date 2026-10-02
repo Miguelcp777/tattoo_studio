@@ -33,6 +33,7 @@ from mockup.geometry import BLEND_TOLERANCE, GeometryCheck
 from mockup.placement import Coverage, coverage_request, fit_coverage
 from orchestration import PipelineState, build_finish_graph, build_generation_graph
 from safety.gate import InputGate, ReasonCode
+from stencil.backdrop import clear_backdrop
 from stencil.engine import (
     Master,
     deserialize_master,
@@ -234,7 +235,9 @@ class _StudioGenerationDeps:
             native = edited_native or self.studio.provider.lineart(
                 brief, state.references, state.analysis
             )
-        return native
+        # TASK-0089: a backdrop the model painted behind the design would be tattooed as a panel
+        # and traced into the stencil. It is turned to white before anything is built on it.
+        return clear_backdrop(native)
 
     def trace(self, state: PipelineState, native: bytes) -> tuple[Any, Any]:
         brief = state.brief
